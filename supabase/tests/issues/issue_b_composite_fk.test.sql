@@ -22,8 +22,8 @@ select throws_ok(
   '23503', null, 'payment in A pointing at an invoice of B is rejected'
 );
 select throws_ok(
-  $$insert into public.messages (tenant_id, customer_id, channel, direction, idempotency_key)
-    values ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000cb', 'email', 'out', 'k1')$$,
+  $$insert into public.messages (tenant_id, customer_id, channel, direction, idempotency_key, send_state)
+    values ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000cb', 'email', 'out', 'k1', 'pending')$$,
   '23503', null, 'message in A pointing at a customer of B is rejected'
 );
 

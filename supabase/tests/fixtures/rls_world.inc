@@ -46,9 +46,9 @@ insert into public.invoice_events (tenant_id, invoice_id, type) values
   ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000001aa', 'InvoiceImported'),
   ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000001bb', 'InvoiceImported');
 
-insert into public.messages (id, tenant_id, customer_id, channel, direction, idempotency_key) values
-  ('00000000-0000-0000-0000-0000000000ea', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000ca', 'email', 'out', 'A-1:s1:email'),
-  ('00000000-0000-0000-0000-0000000000eb', '00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000cb', 'email', 'out', 'B-1:s1:email');
+insert into public.messages (id, tenant_id, customer_id, channel, direction, idempotency_key, send_state) values
+  ('00000000-0000-0000-0000-0000000000ea', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000ca', 'email', 'out', 'A-1:s1:email', 'sent'),
+  ('00000000-0000-0000-0000-0000000000eb', '00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000cb', 'email', 'out', 'B-1:s1:email', 'sent');
 
 insert into public.message_invoices (tenant_id, message_id, invoice_id) values
   ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000ea', '00000000-0000-0000-0000-0000000001aa'),
@@ -65,6 +65,26 @@ insert into public.import_batches (id, tenant_id, file_name, file_sha256, mappin
 insert into public.import_rows (tenant_id, batch_id, row_number, raw, normalised) values
   ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000003aa', 2, '[]', '{}'),
   ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000003bb', 2, '[]', '{}');
+
+-- Phase 3 tables (one row per tenant).
+insert into public.templates (tenant_id, template_key, channel, locale, tone, subject, body) values
+  ('00000000-0000-0000-0000-00000000000a', 'friendly', 'email', 'en', 'friendly', 'Reminder', 'Hello {{customer_name}}'),
+  ('00000000-0000-0000-0000-00000000000b', 'friendly', 'email', 'en', 'friendly', 'Reminder', 'Hello {{customer_name}}');
+insert into public.channel_accounts (tenant_id, channel, config) values
+  ('00000000-0000-0000-0000-00000000000a', 'email', '{"host": "localhost"}'),
+  ('00000000-0000-0000-0000-00000000000b', 'email', '{"host": "localhost"}');
+insert into public.customer_consents (tenant_id, customer_id, channel, granted_at, source) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000ca', 'whatsapp', now(), 'test'),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000cb', 'whatsapp', now(), 'test');
+insert into public.approvals (tenant_id, invoice_id, idempotency_key, step_id, channel, requested_at) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000001aa', 'fixture-a:s1:email', 's1', 'email', now()),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000001bb', 'fixture-b:s1:email', 's1', 'email', now());
+insert into public.dead_letters (tenant_id, invoice_id, source, reason, attempts) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000001aa', 'followup_actions', 'test', 5),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000001bb', 'followup_actions', 'test', 5);
+insert into public.notifications (tenant_id, dedupe_key, period, kind, created_at) values
+  ('00000000-0000-0000-0000-00000000000a', 'fixture', '2026-01-01', 'test', now()),
+  ('00000000-0000-0000-0000-00000000000b', 'fixture', '2026-01-01', 'test', now());
 
 -- Runs `stmt` as `actor` (NULL = anon) and ALWAYS rolls it back (subtransaction).
 -- Returns 'ok:<rows affected>' or 'err:<sqlstate>'.
