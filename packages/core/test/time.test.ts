@@ -14,7 +14,8 @@ const local = (iso: string, zone: string): DateTime => DateTime.fromISO(iso, { z
 
 /** Adapter over the nextSendWindow API; returns the window as an ISO string with offset. */
 function win(t: DateTime, s: Settings): string | null {
-  return nextSendWindow(t, s).toISO();
+  const r = nextSendWindow(t, s);
+  return r.ok ? r.at.toISO() : null;
 }
 
 const LDN = 'Europe/London';
@@ -150,5 +151,17 @@ describe('nextSendWindow: termination', () => {
   });
   it('5000 consecutive holidays still terminate with a correct answer', () => {
     expect(run('2026-01-01', 5000)).toBe(DateTime.fromISO('2026-01-01', { zone: LDN }).plus({ days: 5000 }).set({ hour: 9 }).toISO());
+  });
+  it('settings with no allowed hour (invalid, -1..24) end in no_window_found, not a wrong time', () => {
+    expect(nextSendWindow(local('2026-06-10T12:00', LDN), settings(LDN, -1, 24))).toEqual({ ok: false, reason: 'no_window_found' });
+  });
+  it('an invalid zone gives invalid_input', () => {
+    expect(nextSendWindow(local('2026-06-10T12:00', LDN), settings('Fantasia/Castle', 20, 9))).toEqual({ ok: false, reason: 'invalid_input' });
+  });
+  it('converts t into the tenant zone before checking', () => {
+    // 2026-06-10T20:30Z is 21:30 in London (quiet) but 16:30 in New York (allowed).
+    const t = DateTime.fromISO('2026-06-10T20:30:00Z', { zone: 'UTC' });
+    expect(win(t, settings(NY, 20, 9))).toBe('2026-06-10T16:30:00.000-04:00');
+    expect(win(t, settings(LDN, 20, 9))).toBe('2026-06-11T09:00:00.000+01:00');
   });
 });
