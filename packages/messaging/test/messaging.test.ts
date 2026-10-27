@@ -64,7 +64,7 @@ describe('money and dates at the edge', () => {
     [10000000, 'PKR', 'en', 'PKR 100,000.00'],
     [125050, 'EUR', 'de', '1.250,50 €'],
   ])('%d %s in %s', (minor, cur, locale, want) => {
-    expect(formatAmount(minor, cur, locale).replace(/ /g, ' ')).toBe(want);
+    expect(formatAmount(minor, cur, locale).replace(/\u00A0/g, ' ')).toBe(want);
   });
   it('dates follow the customer locale', () => {
     expect(formatDueDate('2026-03-04', 'en-GB')).toBe('4 Mar 2026');

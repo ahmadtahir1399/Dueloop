@@ -10,11 +10,13 @@ export const DEFAULT_RATE_LIMIT: RateLimit = { capacity: 5, refillPerSecond: 1 }
 
 export class TokenBucketLimiter {
   private readonly buckets = new Map<string, { tokens: number; at: number }>();
+  private readonly limitFor: (key: string) => RateLimit;
+  private readonly nowMs: () => number;
 
-  constructor(
-    private readonly limitFor: (key: string) => RateLimit,
-    private readonly nowMs: () => number,
-  ) {}
+  constructor(limitFor: (key: string) => RateLimit, nowMs: () => number) {
+    this.limitFor = limitFor;
+    this.nowMs = nowMs;
+  }
 
   /** Takes a token if available. Returns the wait in ms when not (0 = allowed). */
   tryTake(key: string): number {

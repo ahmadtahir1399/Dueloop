@@ -2,6 +2,7 @@
 // Every value that ends up in a header goes through here: control characters (incl. CR, LF, NUL, U+2028/9)
 // become spaces, whitespace collapses, and the result is capped.
 
+// eslint-disable-next-line no-control-regex -- matching control characters is the whole point here
 const CONTROL = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g;
 
 export function sanitiseHeaderValue(value: string, max = 200): string {
