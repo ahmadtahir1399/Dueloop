@@ -7,6 +7,7 @@
     "node": ">=24.12.0"
   },
   "scripts": {
+    "dev": "pnpm --filter @dueloop/web dev",
     "lint": "eslint .",
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
     "test": "vitest run",
@@ -18,7 +19,8 @@
     "db:types": "node packages/db/scripts/db-types.ts write",
     "db:types:check": "node packages/db/scripts/db-types.ts check",
     "import": "node packages/ingest/src/cli.ts",
-    "import:twice": "node packages/ingest/scripts/import-twice-check.ts"
+    "import:twice": "node packages/ingest/scripts/import-twice-check.ts",
+    "web:build": "pnpm --filter @dueloop/web build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
