@@ -22,7 +22,8 @@ export async function findUnprotected(dbUrl: string): Promise<string[]> {
   }
 }
 
-const problems = await findUnprotected(localEnv().dbUrl);
+// SUPABASE_DB_URL checks any database (e.g. a hosted project); otherwise the local stack.
+const problems = await findUnprotected(process.env.SUPABASE_DB_URL ?? localEnv().dbUrl);
 if (problems.length > 0) {
   console.error(`RLS check FAILED (${problems.length}):\n${problems.map((p) => `  - ${p}`).join('\n')}`);
   process.exitCode = 1;
