@@ -43,7 +43,7 @@ w('clean.csv', [
 ].join('\n') + '\n');
 
 // UTF-8 BOM, semicolons, decimal commas, DMY dates, CRLF line endings, currency inside the amount cell.
-w('messy-eu.csv', 'FEFF' + [
+w('messy-eu.csv', '\uFEFF' + [
   'Rechnungsnr;Kunde;E-Mail;Telefon;Betrag;Rechnungsdatum;Fällig',
   'RE-2026-01;Müller GmbH;buchhaltung@mueller.example;030 1234567;1.250,00 EUR;01.09.2026;15.10.2026',
   'RE-2026-02;Schröder & Söhne KG; Info@Schroeder.Example ;+49 89 1234567;"12.500,50 EUR";03.09.2026;20.10.2026',
