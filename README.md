@@ -14,6 +14,25 @@ classifier, payment integration or UI yet.
 - `supabase/`: migrations, the demo seed, and pgTAP tests.
 - `docs/decisions`: architecture decision records.
 
+- `apps/web`: Next.js 16 + shadcn/ui web app. It covers sign in and sign up, creating a business, a
+  dashboard with ageing buckets, invoices with a timeline, customers, and the CSV import wizard (mapping,
+  dry-run preview, commit, error report). It runs as the signed-in user under RLS and never uses the
+  service-role key.
+
+## Web app
+
+```bash
+pnpm dev
+```
+
+- The app reads the repo-root `.env` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), so
+  by default it talks to the hosted project. Variables already set in your shell win, which is how to point
+  it at the local stack instead (values from `pnpm exec supabase status -o env`: `API_URL` and
+  `PUBLISHABLE_KEY`).
+- On the hosted project, sign-up sends a confirmation email. Add `http://localhost:3000/auth/confirm` to
+  Authentication -> URL Configuration -> Redirect URLs in the Supabase dashboard so the link comes back
+  to the app.
+
 ## Requirements
 
 - Node.js >= 24.12 (`.nvmrc`) and pnpm (pinned in `package.json` `packageManager`).

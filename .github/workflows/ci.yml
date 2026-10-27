@@ -26,6 +26,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Web app production build
+        run: pnpm web:build
 
       - name: Simulator smoke run (must be deterministic and violation-free)
         run: |
