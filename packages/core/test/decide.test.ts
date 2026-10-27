@@ -113,6 +113,22 @@ describe('decide(): other pinned behaviour', () => {
     expect(second.some((a) => a.kind === 'send_reminder')).toBe(false);
   });
 
+  it('DST: the weekly cap is a rolling 168 hours, not 7 calendar days (found by the simulator)', () => {
+    const NY = 'America/New_York';
+    // Two sends on 2026-03-03 10:00 EST. 2026-03-10 10:00 EDT is only 167 hours later (spring forward on 03-08).
+    const base = {
+      invoice: { dueOn: '2026-02-20' },
+      settings: { timezone: NY },
+      policy: { maxMessagesPerWeek: 2 },
+      history: { sentStepIds: ['s1', 's2'], sentAt: [at('2026-03-03T10:00', NY), at('2026-03-03T10:00', NY)] },
+    };
+    const r = decide(ctx({ ...base, now: at('2026-03-10T10:00', NY) }));
+    expect(r.some((a) => a.kind === 'send_reminder')).toBe(false);
+    // One hour later, 168 hours have passed: the old sends no longer count.
+    const later = decide(ctx({ ...base, now: at('2026-03-10T11:00', NY) }));
+    expect(later).toEqual([{ kind: 'send_reminder', step: s3, idempotencyKey: 'inv-1:s3:email' }]);
+  });
+
   it('DST: days overdue are counted in calendar days across spring-forward (New York)', () => {
     const NY = 'America/New_York';
     // Due 2026-03-07; 2026-03-08 is the 23-hour day. On 03-14 10:30 it is 7 days overdue -> step 2.
