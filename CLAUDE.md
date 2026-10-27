@@ -10,3 +10,8 @@
 8. Never invent library APIs or provider details; check docs.
 9. Never claim a command passed unless you ran it this session.
 10. Bug fixes: write the failing test first, then the fix.
+11. Every public table has tenant_id, RLS enabled, and tests.
+12. The service-role key never reaches a browser, a NEXT_PUBLIC_ variable, a log line or the repo.
+13. Cross-table references include tenant_id (composite FKs).
+14. Uploaded files are untrusted: size limits, encoding checks, spreadsheet-formula neutralisation on every export.
+15. DB invariants are tested against the real local database.
