@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // No ambient Node or DOM types: process, console, setTimeout etc. do not exist in core.
+    "types": []
+  },
+  "include": ["src"]
+}

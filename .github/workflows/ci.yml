@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reads the pnpm version from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      - name: Simulator smoke run (must be deterministic and violation-free)
+        run: |
+          pnpm --silent sim --days 90 --invoices 500 --seed 42 > sim-a.txt
+          pnpm --silent sim --days 90 --invoices 500 --seed 42 > sim-b.txt
+          cmp sim-a.txt sim-b.txt
+          cat sim-a.txt
