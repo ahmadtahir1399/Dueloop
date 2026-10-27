@@ -10,6 +10,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -32,3 +33,24 @@ jobs:
           pnpm --silent sim --days 90 --invoices 500 --seed 42 > sim-b.txt
           cmp sim-a.txt sim-b.txt
           cat sim-a.txt
+
+      # Supabase CLI comes from the lockfile (devDependency `supabase`), the same version as locally.
+      # supabase/config.toml disables services Phase 2 does not need (studio, storage, realtime, ...).
+      - name: Start local Supabase (migrations + seed)
+        run: pnpm exec supabase start
+
+      - name: Reset applies migrations and seed cleanly (second time)
+        run: pnpm exec supabase db reset
+
+      - name: Database tests (pgTAP + integration)
+        run: pnpm db:test
+
+      - run: pnpm db:rls-check
+      - run: pnpm db:types:check
+
+      - name: Import dry run, then the same import twice with identical counts
+        run: |
+          ARGS="--tenant 5eed0000-0000-4000-8000-00000000000a --file packages/ingest/fixtures/messy-eu.csv --mapping packages/ingest/fixtures/mappings/eu.json --options packages/ingest/fixtures/options/de-dmy.json --skip-invalid"
+          eval "$(pnpm exec supabase status -o env | grep -E '^(API_URL|SERVICE_ROLE_KEY)=' | sed -E 's/^API_URL=/export SUPABASE_URL=/; s/^SERVICE_ROLE_KEY=/export SUPABASE_SERVICE_ROLE_KEY=/')"
+          pnpm run import $ARGS --dry-run
+          pnpm import:twice $ARGS

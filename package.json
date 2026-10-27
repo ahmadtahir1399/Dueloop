@@ -17,7 +17,8 @@
     "db:rls-check": "node packages/db/scripts/rls-check.ts",
     "db:types": "node packages/db/scripts/db-types.ts write",
     "db:types:check": "node packages/db/scripts/db-types.ts check",
-    "import": "node packages/ingest/src/cli.ts"
+    "import": "node packages/ingest/src/cli.ts",
+    "import:twice": "node packages/ingest/scripts/import-twice-check.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
