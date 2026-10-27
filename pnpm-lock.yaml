@@ -201,6 +201,19 @@ importers:
         specifier: ^3.7.6
         version: 3.7.6
 
+  packages/sim:
+    dependencies:
+      '@dueloop/core':
+        specifier: workspace:*
+        version: link:../core
+      luxon:
+        specifier: ^3.7.2
+        version: 3.7.2
+    devDependencies:
+      '@types/luxon':
+        specifier: ^3.7.6
+        version: 3.7.6
+
 packages:
 
   '@cacheable/memory@2.2.0':
