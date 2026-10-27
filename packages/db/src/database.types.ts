@@ -353,6 +353,9 @@ isOneToOne: false
           Functions: {
             "commit_import_batch":
 { Args: { "p_batch_id": string,"p_dry_run"?: boolean,"p_skip_invalid_rows"?: boolean }; Returns: Json
+                           },
+"create_tenant":
+{ Args: { "p_currency": string,"p_name": string,"p_quiet_end_hour"?: number,"p_quiet_start_hour"?: number,"p_timezone": string }; Returns: string
                            }
           }
           Enums: {
