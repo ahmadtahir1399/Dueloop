@@ -1,0 +1,122 @@
+// @ts-check
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import js from '@eslint/js';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+const repoRoot = path.dirname(fileURLToPath(import.meta.url));
+const coreSrc = path.join(repoRoot, 'packages', 'core', 'src');
+
+/**
+ * Relative imports inside packages/core/src must resolve inside packages/core/src.
+ * no-restricted-imports cannot express "relative path that escapes this folder"
+ * for files at different depths, so this small local rule resolves the path.
+ * @type {import('eslint').Rule.RuleModule}
+ */
+const noImportOutsideCore = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: { escape: 'packages/core may not import files outside packages/core/src ("{{source}}").' },
+  },
+  create(context) {
+    /** @param {import('estree').Node & { source?: import('estree').Node | null }} node */
+    const check = (node) => {
+      const src = node.source;
+      if (!src || src.type !== 'Literal' || typeof src.value !== 'string') return;
+      if (!src.value.startsWith('.')) return;
+      const target = path.resolve(path.dirname(context.filename), src.value);
+      const rel = path.relative(coreSrc, target);
+      if (rel.startsWith('..') || path.isAbsolute(rel)) {
+        context.report({ node: src, messageId: 'escape', data: { source: src.value } });
+      }
+    };
+    return {
+      ImportDeclaration: check,
+      ExportNamedDeclaration: check,
+      ExportAllDeclaration: check,
+      ImportExpression: check,
+    };
+  },
+};
+
+/** Rules shared by core and sim logic: no hidden clock, no hidden randomness. */
+const purityRules = {
+  'no-restricted-syntax': [
+    'error',
+    {
+      selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+      message: 'new Date() reads the clock. Pass "now" in as an argument.',
+    },
+    {
+      selector: "CallExpression[callee.name='Date']",
+      message: 'Date() reads the clock. Pass "now" in as an argument.',
+    },
+  ],
+  'no-restricted-properties': [
+    'error',
+    { object: 'Date', property: 'now', message: 'Date.now() reads the clock. Pass "now" in as an argument.' },
+    { object: 'Math', property: 'random', message: 'Math.random() is non-deterministic. Use an injected seeded PRNG.' },
+    { object: 'performance', property: 'now', message: 'performance.now() reads the clock.' },
+    { object: 'DateTime', property: 'now', message: 'DateTime.now() reads the clock. Pass "now" in as an argument.' },
+    { object: 'DateTime', property: 'local', message: 'DateTime.local() reads the clock and the host zone.' },
+    { object: 'crypto', property: 'randomUUID', message: 'crypto.randomUUID() is non-deterministic.' },
+    { object: 'crypto', property: 'getRandomValues', message: 'crypto.getRandomValues() is non-deterministic.' },
+  ],
+};
+
+export default defineConfig([
+  globalIgnores(['**/node_modules/**', '**/coverage/**']),
+  js.configs.recommended,
+  tseslint.configs.strict,
+  {
+    languageOptions: { globals: { ...globals.node } },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/consistent-type-imports': 'error',
+    },
+  },
+  {
+    files: ['packages/*/src/**/*.ts', 'packages/*/test/**/*.ts'],
+    rules: purityRules,
+  },
+  {
+    // Core is pure: it may import only luxon (plus its own files).
+    files: ['packages/core/src/**/*.ts'],
+    languageOptions: { globals: {} },
+    plugins: { dueloop: { rules: { 'no-import-outside-core': noImportOutsideCore } } },
+    rules: {
+      'dueloop/no-import-outside-core': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^(?!luxon$)(?!\\.{1,2}/)',
+              message: 'packages/core may import only "luxon" and its own files (no node built-ins, no other packages).',
+            },
+          ],
+        },
+      ],
+      'no-restricted-globals': [
+        'error',
+        { name: 'process', message: 'core has no environment access.' },
+        { name: 'console', message: 'core does no I/O.' },
+        { name: 'setTimeout', message: 'core has no timers.' },
+        { name: 'setInterval', message: 'core has no timers.' },
+        { name: 'fetch', message: 'core does no I/O.' },
+      ],
+    },
+  },
+  {
+    // Only the CLI entry point may touch process (argv, stdout, exit code).
+    files: ['packages/sim/src/**/*.ts'],
+    ignores: ['packages/sim/src/cli.ts'],
+    rules: {
+      'no-restricted-globals': ['error', { name: 'process', message: 'Only cli.ts may use process.' }],
+    },
+  },
+]);
