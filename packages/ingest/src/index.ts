@@ -7,3 +7,4 @@ export { decodeUtf8, detectDelimiter, parseCsv } from './csv.ts';
 export { generateReferenceCode, isValidReferenceCode, normaliseReferenceCode, REFERENCE_ALPHABET } from './reference.ts';
 export { identityKey, validateFile } from './validate.ts';
 export { errorReportCsv, neutraliseCell } from './report.ts';
+export { commitImport, stageImport, type Client, type CommitCounts, type CommitResult, type StageResult } from './stage.ts';

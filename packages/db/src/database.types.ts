@@ -351,7 +351,9 @@ isOneToOne: false
                 }
           }
           Functions: {
-            [_ in never]: never
+            "commit_import_batch":
+{ Args: { "p_batch_id": string,"p_dry_run"?: boolean,"p_skip_invalid_rows"?: boolean }; Returns: Json
+                           }
           }
           Enums: {
             [_ in never]: never
