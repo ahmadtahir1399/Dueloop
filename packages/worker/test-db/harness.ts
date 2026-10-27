@@ -81,6 +81,8 @@ export function crashAt(point: FailpointName): Failpoints & { fired: number } {
   return fp;
 }
 
+type Overrides = Omit<Partial<WorkerDeps>, 'config'> & { config?: Partial<WorkerConfig> };
+
 export interface World {
   tenantId: string;
   customerId: string;
@@ -90,8 +92,8 @@ export interface World {
   whatsapp: FakeChannel;
   notifier: MemoryNotifier;
   logs: string[];
-  deps: (over?: Partial<WorkerDeps> & { config?: Partial<WorkerConfig> }) => WorkerDeps;
-  run: (over?: Partial<WorkerDeps> & { config?: Partial<WorkerConfig> }) => Promise<BatchResult>;
+  deps: (over?: Overrides) => WorkerDeps;
+  run: (over?: Overrides) => Promise<BatchResult>;
   sweep: () => Promise<{ unknown: number; expired: number }>;
 }
 
@@ -179,7 +181,7 @@ export async function world(o: WorldOptions = {}): Promise<World> {
   const whatsapp = new FakeChannel('whatsapp');
   const notifier = new MemoryNotifier();
   const logs: string[] = [];
-  const deps = (over: Partial<WorkerDeps> & { config?: Partial<WorkerConfig> } = {}): WorkerDeps => ({
+  const deps = (over: Overrides = {}): WorkerDeps => ({
     db,
     clock,
     channels: { get: (ch) => (ch === 'email' ? email : ch === 'whatsapp' ? whatsapp : undefined) },
