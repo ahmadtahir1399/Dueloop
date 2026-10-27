@@ -1,0 +1,2 @@
+invoice_no,customer,email,phone,amount,currency,issued,due,customer_id,status
+X-1,Müller,m@example.com,,10,GBP,2026-09-01,2026-10-01,,Open

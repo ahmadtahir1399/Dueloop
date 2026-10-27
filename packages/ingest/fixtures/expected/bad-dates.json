@@ -1,0 +1,226 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": true,
+    "header": [
+      "invoice_no",
+      "customer",
+      "email",
+      "phone",
+      "amount",
+      "currency",
+      "issued",
+      "due",
+      "customer_id",
+      "status"
+    ],
+    "rows": 6,
+    "importable": 3,
+    "invalid": 3,
+    "skipped": 0,
+    "errors": [],
+    "warnings": [
+      {
+        "code": "date_format_unconfirmed",
+        "message": "every day value is 12 or less, so the data cannot confirm DMY; check the preview (03/04/2026 is 3 April)"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "B-1",
+        "Alpha",
+        "a@example.com",
+        "",
+        "10",
+        "GBP",
+        "31/02/2026",
+        "01/03/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "invalid_date",
+            "message": "no such DMY date: \"31/02/2026\"",
+            "column": "issued"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "B-2",
+        "Beta",
+        "b@example.com",
+        "",
+        "10",
+        "GBP",
+        "03/04/2026",
+        "05/06/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "B-2",
+          "customer": {
+            "name": "Beta",
+            "email": "b@example.com",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 1000,
+          "currency": "GBP",
+          "issuedOn": "2026-04-03",
+          "dueOn": "2026-06-05",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 4,
+      "raw": [
+        "B-3",
+        "Gamma",
+        "c@example.com",
+        "",
+        "10",
+        "GBP",
+        "46113",
+        "46143",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "B-3",
+          "customer": {
+            "name": "Gamma",
+            "email": "c@example.com",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 1000,
+          "currency": "GBP",
+          "issuedOn": "2026-04-01",
+          "dueOn": "2026-05-01",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 5,
+      "raw": [
+        "B-4",
+        "Delta",
+        "d@example.com",
+        "",
+        "10",
+        "GBP",
+        "2026-04-03",
+        "01/05/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "invalid_date",
+            "message": "not a DMY date: \"2026-04-03\"",
+            "column": "issued"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "line": 6,
+      "raw": [
+        "B-5",
+        "Epsilon",
+        "e@example.com",
+        "",
+        "10",
+        "GBP",
+        "1/2/26",
+        "12/12/26",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "B-5",
+          "customer": {
+            "name": "Epsilon",
+            "email": "e@example.com",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 1000,
+          "currency": "GBP",
+          "issuedOn": "2026-02-01",
+          "dueOn": "2026-12-12",
+          "referenceCodes": [
+            "Q7HT5ZJB",
+            "XFKCKBQC",
+            "AFVPZWE3",
+            "JA5PBSXK",
+            "4GT5Z7Q5"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 7,
+      "raw": [
+        "B-6",
+        "Zeta",
+        "f@example.com",
+        "",
+        "10",
+        "GBP",
+        "123",
+        "04/04/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "invalid_date",
+            "message": "a plain number that is not a plausible Excel date serial: \"123\"",
+            "column": "issued"
+          }
+        ],
+        "warnings": []
+      }
+    }
+  ]
+}

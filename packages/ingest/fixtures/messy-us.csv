@@ -1,0 +1,7 @@
+Invoice #,Bill To,Email Address,Phone,Amount Due,Invoice Date,Due Date,Status
+1001,"Smith, John",john@smith.example,(415) 555-2671,"$1,250.00",09/01/2026,10/15/2026,Open
+1002,Jane Doe LLC,ap@janedoe.example,212-555-0183,$980,09/03/2026,10/03/2026,Open
+1003,Old Client,old@client.example,,"$5,000.00",08/01/2026,08/31/2026,Paid
+1004,Void Corp,void@corp.example,,$10.00,08/02/2026,09/01/2026,VOID
+1005,Negative Inc,neg@example.com,,-$50.00,09/04/2026,10/04/2026,Open
+1006,Due Early LLC,due@early.example,,$75.25,09/20/2026,09/10/2026,Open

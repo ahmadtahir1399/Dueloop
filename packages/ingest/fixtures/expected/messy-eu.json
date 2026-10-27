@@ -1,0 +1,159 @@
+{
+  "summary": {
+    "delimiter": ";",
+    "delimiterDetected": true,
+    "header": [
+      "Rechnungsnr",
+      "Kunde",
+      "E-Mail",
+      "Telefon",
+      "Betrag",
+      "Rechnungsdatum",
+      "Fällig"
+    ],
+    "rows": 4,
+    "importable": 3,
+    "invalid": 1,
+    "skipped": 0,
+    "errors": [],
+    "warnings": []
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "RE-2026-01",
+        "Müller GmbH",
+        "buchhaltung@mueller.example",
+        "030 1234567",
+        "1.250,00 EUR",
+        "01.09.2026",
+        "15.10.2026"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "RE-2026-01",
+          "customer": {
+            "name": "Müller GmbH",
+            "email": "buchhaltung@mueller.example",
+            "phone": "+49301234567",
+            "externalId": null
+          },
+          "amountMinor": 125000,
+          "currency": "EUR",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-15",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "RE-2026-02",
+        "Schröder & Söhne KG",
+        " Info@Schroeder.Example ",
+        "+49 89 1234567",
+        "12.500,50 EUR",
+        "03.09.2026",
+        "20.10.2026"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "RE-2026-02",
+          "customer": {
+            "name": "Schröder & Söhne KG",
+            "email": "info@schroeder.example",
+            "phone": "+49891234567",
+            "externalId": null
+          },
+          "amountMinor": 1250050,
+          "currency": "EUR",
+          "issuedOn": "2026-09-03",
+          "dueOn": "2026-10-20",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 4,
+      "raw": [
+        "RE-2026-03",
+        "Bäckerei Weiß",
+        "",
+        "",
+        "1 250,00",
+        "10.09.2026",
+        "30.09.2026"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "RE-2026-03",
+          "customer": {
+            "name": "Bäckerei Weiß",
+            "email": null,
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 125000,
+          "currency": "EUR",
+          "issuedOn": "2026-09-10",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "Q7HT5ZJB",
+            "XFKCKBQC",
+            "AFVPZWE3",
+            "JA5PBSXK",
+            "4GT5Z7Q5"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "no_contact_method",
+            "message": "no usable email or phone; the customer cannot be contacted"
+          }
+        ]
+      }
+    },
+    {
+      "line": 5,
+      "raw": [
+        "RE-2026-04",
+        "Ölmühle AG",
+        "oel@example.com",
+        "0171 1234567",
+        "199,999",
+        "12.09.2026",
+        "12.10.2026"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "excess_decimals",
+            "message": "EUR has 2 decimal place(s); \"199,999\" has 3",
+            "column": "Betrag"
+          }
+        ],
+        "warnings": []
+      }
+    }
+  ]
+}

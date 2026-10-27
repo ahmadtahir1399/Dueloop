@@ -1,0 +1,8 @@
+{
+  "delimiter": "auto",
+  "decimal": ".",
+  "dateFormat": "MDY",
+  "defaultCountry": "US",
+  "defaultCurrency": "USD",
+  "timezone": "America/New_York"
+}

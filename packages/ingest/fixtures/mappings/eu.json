@@ -1,0 +1,9 @@
+{
+  "invoiceNumber": "Rechnungsnr",
+  "customerName": "Kunde",
+  "email": "E-Mail",
+  "phone": "Telefon",
+  "total": "Betrag",
+  "issuedOn": "Rechnungsdatum",
+  "dueOn": "Fällig"
+}

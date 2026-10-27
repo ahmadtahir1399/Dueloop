@@ -1,0 +1,8 @@
+{
+  "delimiter": "auto",
+  "decimal": ".",
+  "dateFormat": "YMD",
+  "defaultCountry": "PK",
+  "defaultCurrency": "PKR",
+  "timezone": "Asia/Karachi"
+}

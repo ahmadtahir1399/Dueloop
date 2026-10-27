@@ -1,0 +1,4 @@
+invoice_no,customer,email,phone,amount,currency,issued,due,customer_id,status
+N-1,No Contact Ltd,,,500,GBP,2026-09-01,2026-10-01,,Open
+N-2,Bad Contact Ltd,not-an-email,12345,600,GBP,2026-09-01,2026-10-01,,Open
+N-3,Ext Only Ltd,,,700,GBP,2026-09-01,2026-10-01,EXT-9,Open

@@ -1,1 +1,4 @@
 * text=auto eol=lf
+# Golden import fixtures are byte-exact (BOM, CRLF, invalid UTF-8): never normalise them.
+packages/ingest/fixtures/*.csv -text
+packages/ingest/fixtures/expected/*.csv -text
