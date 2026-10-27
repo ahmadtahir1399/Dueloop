@@ -1,0 +1,18 @@
+{
+  "invoiceNumber": "invoice_no",
+  "customerName": "customer",
+  "email": "email",
+  "phone": "phone",
+  "total": "amount",
+  "currency": "currency",
+  "issuedOn": "issued",
+  "dueOn": "due",
+  "externalCustomerId": "customer_id",
+  "status": {
+    "column": "status",
+    "skipValues": [
+      "Paid",
+      "Void"
+    ]
+  }
+}

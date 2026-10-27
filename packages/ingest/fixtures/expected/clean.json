@@ -1,0 +1,162 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": true,
+    "header": [
+      "invoice_no",
+      "customer",
+      "email",
+      "phone",
+      "amount",
+      "currency",
+      "issued",
+      "due",
+      "customer_id",
+      "status"
+    ],
+    "rows": 4,
+    "importable": 3,
+    "invalid": 0,
+    "skipped": 1,
+    "errors": [],
+    "warnings": []
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "INV-1001",
+        "Acme Ltd",
+        "accounts@acme.example",
+        "+44 20 7946 0958",
+        "1250.00",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "C-001",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "INV-1001",
+          "customer": {
+            "name": "Acme Ltd",
+            "email": "accounts@acme.example",
+            "phone": "+442079460958",
+            "externalId": "C-001"
+          },
+          "amountMinor": 125000,
+          "currency": "GBP",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "INV-1002",
+        "Beta Traders",
+        "billing@beta.example",
+        "020 7946 0018",
+        "2,400.50",
+        "GBP",
+        "2026-09-05",
+        "2026-10-05",
+        "C-002",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "INV-1002",
+          "customer": {
+            "name": "Beta Traders",
+            "email": "billing@beta.example",
+            "phone": "+442079460018",
+            "externalId": "C-002"
+          },
+          "amountMinor": 240050,
+          "currency": "GBP",
+          "issuedOn": "2026-09-05",
+          "dueOn": "2026-10-05",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 4,
+      "raw": [
+        "INV-1003",
+        "Acme Ltd",
+        "accounts@acme.example",
+        "",
+        "99.99",
+        "GBP",
+        "2026-09-10",
+        "2026-10-10",
+        "C-001",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "INV-1003",
+          "customer": {
+            "name": "Acme Ltd",
+            "email": "accounts@acme.example",
+            "phone": null,
+            "externalId": "C-001"
+          },
+          "amountMinor": 9999,
+          "currency": "GBP",
+          "issuedOn": "2026-09-10",
+          "dueOn": "2026-10-10",
+          "referenceCodes": [
+            "Q7HT5ZJB",
+            "XFKCKBQC",
+            "AFVPZWE3",
+            "JA5PBSXK",
+            "4GT5Z7Q5"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 5,
+      "raw": [
+        "INV-1004",
+        "Gamma & Co",
+        "gamma@example.com",
+        "07700 900123",
+        "15000",
+        "GBP",
+        "2026-09-12",
+        "2026-11-12",
+        "",
+        "Paid"
+      ],
+      "outcome": {
+        "kind": "skipped",
+        "reason": "status \"Paid\""
+      }
+    }
+  ]
+}

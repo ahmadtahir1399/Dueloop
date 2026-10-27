@@ -1,0 +1,8 @@
+{
+  "delimiter": "auto",
+  "decimal": ".",
+  "dateFormat": "DMY",
+  "defaultCountry": "GB",
+  "defaultCurrency": "GBP",
+  "timezone": "Europe/London"
+}

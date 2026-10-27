@@ -1,0 +1,241 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": true,
+    "header": [
+      "invoice_no",
+      "customer",
+      "email",
+      "phone",
+      "amount",
+      "currency",
+      "issued",
+      "due",
+      "customer_id",
+      "status"
+    ],
+    "rows": 5,
+    "importable": 5,
+    "invalid": 0,
+    "skipped": 0,
+    "errors": [],
+    "warnings": [
+      {
+        "code": "mixed_currencies",
+        "message": "rows use EUR, JPY, KWD, PKR; most use EUR"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "I-1",
+        "Müller & Söhne",
+        "mueller@example.de",
+        "",
+        "100.00",
+        "EUR",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "I-1",
+          "customer": {
+            "name": "Müller & Söhne",
+            "email": "mueller@example.de",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 10000,
+          "currency": "EUR",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "I-2",
+        "شركة الأمل للتجارة",
+        "amal@example.ae",
+        "+971 50 123 4567",
+        "250.000",
+        "KWD",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "I-2",
+          "customer": {
+            "name": "شركة الأمل للتجارة",
+            "email": "amal@example.ae",
+            "phone": "+971501234567",
+            "externalId": null
+          },
+          "amountMinor": 250000,
+          "currency": "KWD",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "currency_differs_from_file",
+            "message": "KWD differs from the file's EUR"
+          }
+        ]
+      }
+    },
+    {
+      "line": 4,
+      "raw": [
+        "I-3",
+        "عمران ٹریڈرز",
+        "imran@example.pk",
+        "0321 7654321",
+        "1,50,000",
+        "PKR",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "I-3",
+          "customer": {
+            "name": "عمران ٹریڈرز",
+            "email": "imran@example.pk",
+            "phone": "+923217654321",
+            "externalId": null
+          },
+          "amountMinor": 15000000,
+          "currency": "PKR",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "Q7HT5ZJB",
+            "XFKCKBQC",
+            "AFVPZWE3",
+            "JA5PBSXK",
+            "4GT5Z7Q5"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "currency_differs_from_file",
+            "message": "PKR differs from the file's EUR"
+          }
+        ]
+      }
+    },
+    {
+      "line": 5,
+      "raw": [
+        "I-4",
+        "Café 😀 Ltd",
+        "cafe@example.com",
+        "",
+        "99",
+        "JPY",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "I-4",
+          "customer": {
+            "name": "Café 😀 Ltd",
+            "email": "cafe@example.com",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 99,
+          "currency": "JPY",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "P8E6NC8G",
+            "MWBSD5V2",
+            "D2RNWX84",
+            "MG73QQAA",
+            "AC28ZKZF"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "currency_differs_from_file",
+            "message": "JPY differs from the file's EUR"
+          }
+        ]
+      }
+    },
+    {
+      "line": 6,
+      "raw": [
+        "I-5",
+        "Zoë Ørsted",
+        "zoe@example.dk",
+        "",
+        "10.50",
+        "EUR",
+        "2026-09-01",
+        "2026-10-01",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "I-5",
+          "customer": {
+            "name": "Zoë Ørsted",
+            "email": "zoe@example.dk",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 1050,
+          "currency": "EUR",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-01",
+          "referenceCodes": [
+            "67JADFE9",
+            "PDCWBGMF",
+            "JK9BABPD",
+            "87PB5B38",
+            "K8GDQXTD"
+          ]
+        },
+        "warnings": []
+      }
+    }
+  ]
+}

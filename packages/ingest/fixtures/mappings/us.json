@@ -1,0 +1,16 @@
+{
+  "invoiceNumber": "Invoice #",
+  "customerName": "Bill To",
+  "email": "Email Address",
+  "phone": "Phone",
+  "total": "Amount Due",
+  "issuedOn": "Invoice Date",
+  "dueOn": "Due Date",
+  "status": {
+    "column": "Status",
+    "skipValues": [
+      "paid",
+      "void"
+    ]
+  }
+}

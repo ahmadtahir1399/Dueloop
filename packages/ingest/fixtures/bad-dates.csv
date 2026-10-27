@@ -1,0 +1,7 @@
+invoice_no,customer,email,phone,amount,currency,issued,due,customer_id,status
+B-1,Alpha,a@example.com,,10,GBP,31/02/2026,01/03/2026,,Open
+B-2,Beta,b@example.com,,10,GBP,03/04/2026,05/06/2026,,Open
+B-3,Gamma,c@example.com,,10,GBP,46113,46143,,Open
+B-4,Delta,d@example.com,,10,GBP,2026-04-03,01/05/2026,,Open
+B-5,Epsilon,e@example.com,,10,GBP,1/2/26,12/12/26,,Open
+B-6,Zeta,f@example.com,,10,GBP,123,04/04/2026,,Open

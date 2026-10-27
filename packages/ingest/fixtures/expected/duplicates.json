@@ -1,0 +1,361 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": true,
+    "header": [
+      "invoice_no",
+      "customer",
+      "email",
+      "phone",
+      "amount",
+      "currency",
+      "issued",
+      "due",
+      "customer_id",
+      "status"
+    ],
+    "rows": 9,
+    "importable": 7,
+    "invalid": 2,
+    "skipped": 0,
+    "errors": [],
+    "warnings": []
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "D-1",
+        "Imran Traders",
+        "",
+        "0300 1234567",
+        "PKR 1,00,000",
+        "PKR",
+        "01/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "D-1",
+          "customer": {
+            "name": "Imran Traders",
+            "email": null,
+            "phone": "+923001234567",
+            "externalId": null
+          },
+          "amountMinor": 10000000,
+          "currency": "PKR",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "D-2",
+        "Imran Traders",
+        "",
+        "+92 300 1234567",
+        "50,000",
+        "PKR",
+        "02/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "D-2",
+          "customer": {
+            "name": "Imran Traders",
+            "email": null,
+            "phone": "+923001234567",
+            "externalId": null
+          },
+          "amountMinor": 5000000,
+          "currency": "PKR",
+          "issuedOn": "2026-09-02",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 4,
+      "raw": [
+        "D-3",
+        "Imran Traders",
+        "",
+        "0092-300-1234567",
+        "25,000.50",
+        "PKR",
+        "03/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "D-3",
+          "customer": {
+            "name": "Imran Traders",
+            "email": null,
+            "phone": "+923001234567",
+            "externalId": null
+          },
+          "amountMinor": 2500050,
+          "currency": "PKR",
+          "issuedOn": "2026-09-03",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "Q7HT5ZJB",
+            "XFKCKBQC",
+            "AFVPZWE3",
+            "JA5PBSXK",
+            "4GT5Z7Q5"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 5,
+      "raw": [
+        "D-4",
+        "John Smith",
+        "john1@example.com",
+        "",
+        "1000",
+        "PKR",
+        "04/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "D-4",
+          "customer": {
+            "name": "John Smith",
+            "email": "john1@example.com",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 100000,
+          "currency": "PKR",
+          "issuedOn": "2026-09-04",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "P8E6NC8G",
+            "MWBSD5V2",
+            "D2RNWX84",
+            "MG73QQAA",
+            "AC28ZKZF"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "same_name_different_customer",
+            "message": "\"John Smith\" also appears with other contact details; kept as separate customers"
+          }
+        ]
+      }
+    },
+    {
+      "line": 6,
+      "raw": [
+        "D-5",
+        "John Smith",
+        "john2@example.com",
+        "",
+        "2000",
+        "PKR",
+        "05/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "D-5",
+          "customer": {
+            "name": "John Smith",
+            "email": "john2@example.com",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 200000,
+          "currency": "PKR",
+          "issuedOn": "2026-09-05",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "67JADFE9",
+            "PDCWBGMF",
+            "JK9BABPD",
+            "87PB5B38",
+            "K8GDQXTD"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "same_name_different_customer",
+            "message": "\"John Smith\" also appears with other contact details; kept as separate customers"
+          }
+        ]
+      }
+    },
+    {
+      "line": 7,
+      "raw": [
+        "D-6",
+        "Repeat Co",
+        "repeat@example.com",
+        "",
+        "300",
+        "PKR",
+        "06/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "duplicate_invoice_number",
+            "message": "invoice number \"D-6\" appears on lines 7, 8",
+            "column": "invoice_no"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "line": 8,
+      "raw": [
+        "D-6",
+        "Repeat Co",
+        "repeat@example.com",
+        "",
+        "300",
+        "PKR",
+        "06/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "duplicate_invoice_number",
+            "message": "invoice number \"D-6\" appears on lines 7, 8",
+            "column": "invoice_no"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "line": 9,
+      "raw": [
+        "D-7",
+        "ACME",
+        "Billing@ACME.example",
+        "",
+        "400",
+        "PKR",
+        "07/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "D-7",
+          "customer": {
+            "name": "ACME",
+            "email": "billing@acme.example",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 40000,
+          "currency": "PKR",
+          "issuedOn": "2026-09-07",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "AHJNF629",
+            "6Y4WEH4D",
+            "T3D8QJ4B",
+            "YRNSJTHD",
+            "74439PPY"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 10,
+      "raw": [
+        "D-8",
+        "Acme Pvt",
+        "billing@acme.example",
+        "",
+        "500",
+        "PKR",
+        "08/09/2026",
+        "30/09/2026",
+        "",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "D-8",
+          "customer": {
+            "name": "Acme Pvt",
+            "email": "billing@acme.example",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 50000,
+          "currency": "PKR",
+          "issuedOn": "2026-09-08",
+          "dueOn": "2026-09-30",
+          "referenceCodes": [
+            "JZ2DCAT2",
+            "J8YY9HV8",
+            "YPKTBGRX",
+            "JPJJZZR7",
+            "BMPVDWBE"
+          ]
+        },
+        "warnings": []
+      }
+    }
+  ]
+}

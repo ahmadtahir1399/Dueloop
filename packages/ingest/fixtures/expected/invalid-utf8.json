@@ -1,0 +1,19 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": false,
+    "header": [],
+    "rows": 0,
+    "importable": 0,
+    "invalid": 0,
+    "skipped": 0,
+    "errors": [
+      {
+        "code": "invalid_utf8",
+        "message": "the file is not valid UTF-8; save it as \"CSV UTF-8\" and upload again"
+      }
+    ],
+    "warnings": []
+  },
+  "rows": []
+}

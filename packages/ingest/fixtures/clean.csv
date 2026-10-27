@@ -1,0 +1,5 @@
+invoice_no,customer,email,phone,amount,currency,issued,due,customer_id,status
+INV-1001,Acme Ltd,accounts@acme.example,+44 20 7946 0958,1250.00,GBP,2026-09-01,2026-10-01,C-001,Open
+INV-1002,Beta Traders,billing@beta.example,020 7946 0018,"2,400.50",GBP,2026-09-05,2026-10-05,C-002,Open
+INV-1003,Acme Ltd,accounts@acme.example,,99.99,GBP,2026-09-10,2026-10-10,C-001,Open
+INV-1004,Gamma & Co,gamma@example.com,07700 900123,15000,GBP,2026-09-12,2026-11-12,,Paid

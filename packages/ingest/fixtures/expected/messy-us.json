@@ -1,0 +1,198 @@
+{
+  "summary": {
+    "delimiter": ",",
+    "delimiterDetected": true,
+    "header": [
+      "Invoice #",
+      "Bill To",
+      "Email Address",
+      "Phone",
+      "Amount Due",
+      "Invoice Date",
+      "Due Date",
+      "Status"
+    ],
+    "rows": 6,
+    "importable": 3,
+    "invalid": 1,
+    "skipped": 2,
+    "errors": [],
+    "warnings": []
+  },
+  "rows": [
+    {
+      "line": 2,
+      "raw": [
+        "1001",
+        "Smith, John",
+        "john@smith.example",
+        "(415) 555-2671",
+        "$1,250.00",
+        "09/01/2026",
+        "10/15/2026",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "1001",
+          "customer": {
+            "name": "Smith, John",
+            "email": "john@smith.example",
+            "phone": "+14155552671",
+            "externalId": null
+          },
+          "amountMinor": 125000,
+          "currency": "USD",
+          "issuedOn": "2026-09-01",
+          "dueOn": "2026-10-15",
+          "referenceCodes": [
+            "MFVP7HAM",
+            "MVG9WRBP",
+            "7HPM2GV3",
+            "3K2A37SB",
+            "H27VGTBG"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 3,
+      "raw": [
+        "1002",
+        "Jane Doe LLC",
+        "ap@janedoe.example",
+        "212-555-0183",
+        "$980",
+        "09/03/2026",
+        "10/03/2026",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "1002",
+          "customer": {
+            "name": "Jane Doe LLC",
+            "email": "ap@janedoe.example",
+            "phone": "+12125550183",
+            "externalId": null
+          },
+          "amountMinor": 98000,
+          "currency": "USD",
+          "issuedOn": "2026-09-03",
+          "dueOn": "2026-10-03",
+          "referenceCodes": [
+            "F33JK9NT",
+            "8BRVH8A8",
+            "A4NPPX43",
+            "YEY652CT",
+            "GMW4QYAR"
+          ]
+        },
+        "warnings": []
+      }
+    },
+    {
+      "line": 4,
+      "raw": [
+        "1003",
+        "Old Client",
+        "old@client.example",
+        "",
+        "$5,000.00",
+        "08/01/2026",
+        "08/31/2026",
+        "Paid"
+      ],
+      "outcome": {
+        "kind": "skipped",
+        "reason": "status \"Paid\""
+      }
+    },
+    {
+      "line": 5,
+      "raw": [
+        "1004",
+        "Void Corp",
+        "void@corp.example",
+        "",
+        "$10.00",
+        "08/02/2026",
+        "09/01/2026",
+        "VOID"
+      ],
+      "outcome": {
+        "kind": "skipped",
+        "reason": "status \"VOID\""
+      }
+    },
+    {
+      "line": 6,
+      "raw": [
+        "1005",
+        "Negative Inc",
+        "neg@example.com",
+        "",
+        "-$50.00",
+        "09/04/2026",
+        "10/04/2026",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "error",
+        "errors": [
+          {
+            "code": "non_positive_amount",
+            "message": "amount must be positive: \"-$50.00\"",
+            "column": "Amount Due"
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "line": 7,
+      "raw": [
+        "1006",
+        "Due Early LLC",
+        "due@early.example",
+        "",
+        "$75.25",
+        "09/20/2026",
+        "09/10/2026",
+        "Open"
+      ],
+      "outcome": {
+        "kind": "ok",
+        "row": {
+          "invoiceNumber": "1006",
+          "customer": {
+            "name": "Due Early LLC",
+            "email": "due@early.example",
+            "phone": null,
+            "externalId": null
+          },
+          "amountMinor": 7525,
+          "currency": "USD",
+          "issuedOn": "2026-09-20",
+          "dueOn": "2026-09-10",
+          "referenceCodes": [
+            "Q7HT5ZJB",
+            "XFKCKBQC",
+            "AFVPZWE3",
+            "JA5PBSXK",
+            "4GT5Z7Q5"
+          ]
+        },
+        "warnings": [
+          {
+            "code": "due_before_issued",
+            "message": "due 2026-09-10 is before issued 2026-09-20"
+          }
+        ]
+      }
+    }
+  ]
+}

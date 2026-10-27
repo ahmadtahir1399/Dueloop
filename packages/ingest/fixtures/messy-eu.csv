@@ -1,0 +1,5 @@
+﻿Rechnungsnr;Kunde;E-Mail;Telefon;Betrag;Rechnungsdatum;Fällig
+RE-2026-01;Müller GmbH;buchhaltung@mueller.example;030 1234567;1.250,00 EUR;01.09.2026;15.10.2026
+RE-2026-02;Schröder & Söhne KG; Info@Schroeder.Example ;+49 89 1234567;"12.500,50 EUR";03.09.2026;20.10.2026
+RE-2026-03;Bäckerei Weiß;;;"1 250,00";10.09.2026;30.09.2026
+RE-2026-04;Ölmühle AG;oel@example.com;0171 1234567;199,999;12.09.2026;12.10.2026
