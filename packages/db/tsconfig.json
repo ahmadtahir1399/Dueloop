@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    // supabase-js type declarations reference DOM types (BroadcastChannel, WebAuthn); core stays DOM-free.
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    // auth-js 2.118 webauthn.dom.d.ts conflicts with the TypeScript 6 DOM lib; see ADR 0011. Only .d.ts files are skipped.
+    "skipLibCheck": true
   },
   "include": ["src", "scripts", "test", "test-db"]
 }
