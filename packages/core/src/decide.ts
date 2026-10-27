@@ -47,7 +47,9 @@ export function decide(ctx: Ctx): Action[] {
     .sort((a, b) => a.daysAfterDue - b.daysAfterDue)[0];
 
   if (nextStep && nextStep.daysAfterDue <= daysOverdue) {
-    const weekAgo = now.minus({ days: 7 });
+    // A rolling 168 hours (absolute time). The guide's minus({ days: 7 }) is calendar
+    // math in the tenant zone: only 167 h across spring-forward, allowing cap + 1.
+    const weekAgo = now.minus({ hours: 7 * 24 });
     const recent = history.sentAt.filter((d) => DateTime.fromJSDate(d) > weekAgo).length;
     const window = nextSendWindow(now, settings);
     if (recent >= policy.maxMessagesPerWeek) {
