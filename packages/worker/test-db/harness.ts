@@ -104,7 +104,7 @@ export interface WorldOptions {
   steps?: { id: string; daysAfterDue: number; channel: Channel; templateKey: string }[];
   maxPerWeek?: number;
   budgetMinor?: number;
-  customer?: { email?: string | null; phone?: string | null; optedOut?: boolean };
+  customer?: { email?: string | null; phone?: string | null; optedOut?: boolean; language?: string };
   holidays?: string[];
   templates?: boolean;
   emailAccount?: boolean;
@@ -159,12 +159,13 @@ export async function world(o: WorldOptions = {}): Promise<World> {
   }
   await q(`insert into public.channel_accounts (tenant_id, channel, config) values ($1, 'whatsapp', '{"phone_number_id": "1"}')`, [tenantId]);
   const customerId = randomUUID();
-  await q(`insert into public.customers (id, tenant_id, display_name, email, phone_e164, opted_out) values ($1, $2, 'Ada Customer', $3, $4, $5)`, [
+  await q(`insert into public.customers (id, tenant_id, display_name, email, phone_e164, opted_out, language) values ($1, $2, 'Ada Customer', $3, $4, $5, $6)`, [
     customerId,
     tenantId,
     o.customer?.email === undefined ? 'ada@customer.example' : o.customer.email,
     o.customer?.phone === undefined ? '+447700900123' : o.customer.phone,
     o.customer?.optedOut ?? false,
+    o.customer?.language ?? 'en',
   ]);
   if (o.whatsappConsent) {
     await q(`insert into public.customer_consents (tenant_id, customer_id, channel, granted_at, source) values ($1, $2, 'whatsapp', now(), 'test')`, [tenantId, customerId]);

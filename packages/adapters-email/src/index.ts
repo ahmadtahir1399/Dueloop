@@ -16,6 +16,11 @@ export interface SmtpChannelOptions {
   readonly defaults: SmtpSettings | null;
   /** Kept below the worker's hard timeout, so most hangs are classified here first. */
   readonly timeoutMs: number;
+  /**
+   * Honour smtp_host/smtp_port from the tenant's channel account. Off by default: a tenant-chosen host makes
+   * the worker connect wherever a tenant owner says (SSRF), so only enable it for vetted deployments.
+   */
+  readonly allowTenantHost?: boolean;
 }
 
 /** Codes Node sets only when no connection was ever established: nothing can have been sent. */
@@ -54,8 +59,8 @@ export function classifySmtpError(e: unknown): SendOutcome {
   return { kind: 'ambiguous', reason: `smtp_${code.toLowerCase()}` };
 }
 
-function settingsFor(account: Readonly<Record<string, unknown>>, defaults: SmtpSettings | null): SmtpSettings | null {
-  if (typeof account.smtp_host === 'string' && account.smtp_host !== '') {
+function settingsFor(account: Readonly<Record<string, unknown>>, defaults: SmtpSettings | null, allowTenantHost: boolean): SmtpSettings | null {
+  if (allowTenantHost && typeof account.smtp_host === 'string' && account.smtp_host !== '') {
     return {
       host: account.smtp_host,
       port: typeof account.smtp_port === 'number' ? account.smtp_port : 587,
@@ -71,7 +76,7 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
     channel: 'email',
     async send(envelope: OutboundEnvelope, credentials: string | null): Promise<SendOutcome> {
       if (envelope.content.kind !== 'email') return { kind: 'permanent', reason: 'wrong_content_kind' };
-      const settings = settingsFor(envelope.account, options.defaults);
+      const settings = settingsFor(envelope.account, options.defaults, options.allowTenantHost === true);
       if (!settings) return { kind: 'not_sent_retryable', reason: 'smtp_not_configured' };
       const mail: EmailContent = envelope.content;
       const transport = nodemailer.createTransport({

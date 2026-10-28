@@ -10,6 +10,9 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dueloop/adapters-email": "workspace:*",
+    "@dueloop/adapters-notify": "workspace:*",
+    "@dueloop/adapters-whatsapp": "workspace:*",
     "@dueloop/core": "workspace:*",
     "@dueloop/db": "workspace:*",
     "@dueloop/messaging": "workspace:*",

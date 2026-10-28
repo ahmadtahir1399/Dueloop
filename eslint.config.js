@@ -93,6 +93,12 @@ export default defineConfig([
     rules: purityRules,
   },
   {
+    // The worker's composition root is the one place that constructs the system Clock; everything it
+    // wires up receives `now` through that Clock (rule 1).
+    files: ['packages/worker/src/runtime.ts', 'packages/worker/src/bin/**/*.ts'],
+    rules: { 'no-restricted-syntax': 'off', 'no-restricted-properties': 'off' },
+  },
+  {
     // Core is pure: it may import only luxon (plus its own files).
     files: ['packages/core/src/**/*.ts'],
     languageOptions: { globals: {} },

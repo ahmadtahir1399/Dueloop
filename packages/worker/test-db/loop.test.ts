@@ -254,6 +254,20 @@ describe('outcomes', () => {
   });
 });
 
+describe('rendering', () => {
+  it('amounts, dates and the footer follow the template actually used, not the customer language', async () => {
+    // Only English templates exist; an Arabic-speaking customer gets the English text, formatted as English.
+    const w = await world({ customer: { language: 'ar' } });
+    await w.run();
+    const env = w.email.calls[0]?.content;
+    expect(env?.kind).toBe('email');
+    const text = env?.kind === 'email' ? env.text : '';
+    expect(text).toContain('£1,250.50');
+    expect(text).toContain('Jun 1, 2026');
+    expect(text).toContain('reply STOP');
+  });
+});
+
 describe('logging (rules 19, 20)', () => {
   it('captured logs contain no emails, phone numbers, names or message text', async () => {
     const w = await world();
