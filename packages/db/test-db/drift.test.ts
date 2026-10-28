@@ -1,7 +1,7 @@
 // DRIFT TESTS: the database must say exactly what packages/core and packages/db say.
-import { CHANNELS, INVOICE_STATUSES, TRANSITIONS, isIanaZone } from '@dueloop/core';
+import { CHANNELS, INVOICE_STATUSES, PLAN_TASK_TYPES, TRANSITIONS, isIanaZone } from '@dueloop/core';
 import { describe, expect, it } from 'vitest';
-import { INVOICE_EVENT_TYPES } from '../src/events.ts';
+import { INVOICE_EVENT_TYPES, TENANT_EVENT_TYPES } from '../src/events.ts';
 import { query, withClient } from './db.ts';
 
 /** Quoted string literals inside the CHECK constraint that constrains exactly `table.column`. */
@@ -42,6 +42,15 @@ describe('core <-> database drift', () => {
 
   it('invoice_events.type CHECK equals the packages/db event type union', async () => {
     expect(await checkValues('public.invoice_events', 'type')).toEqual([...INVOICE_EVENT_TYPES].sort());
+  });
+
+  it('tenant_events.type CHECK equals the packages/db tenant event type union', async () => {
+    expect(await checkValues('public.tenant_events', 'type')).toEqual([...TENANT_EVENT_TYPES].sort());
+  });
+
+  it('tasks.type CHECK contains every task type core planReplyOutcome can create', async () => {
+    const db = await checkValues('public.tasks', 'type');
+    for (const t of PLAN_TASK_TYPES) expect(db).toContain(t);
   });
 
   it('the timezone trigger accepts exactly the Postgres zone names that core isIanaZone() accepts', async () => {

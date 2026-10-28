@@ -86,6 +86,20 @@ insert into public.notifications (tenant_id, dedupe_key, period, kind, created_a
   ('00000000-0000-0000-0000-00000000000a', 'fixture', '2026-01-01', 'test', now()),
   ('00000000-0000-0000-0000-00000000000b', 'fixture', '2026-01-01', 'test', now());
 
+-- Phase 4 tables (one row per tenant).
+insert into public.inbound_events (tenant_id, channel_account_id, provider, provider_event_id, kind, payload, received_at, purge_after)
+select ca.tenant_id, ca.id, 'whatsapp', 'wamid.fixture-' || ca.tenant_id, 'message', '{"x": 1}', now(), now() + interval '90 days'
+from public.channel_accounts ca where ca.tenant_id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b');
+insert into public.promises (tenant_id, invoice_id, customer_id, promised_on, reference_at) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000001aa', '00000000-0000-0000-0000-0000000000ca', '2031-01-15', now()),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000001bb', '00000000-0000-0000-0000-0000000000cb', '2031-01-15', now());
+insert into public.tasks (tenant_id, type, invoice_id, dedupe_key, created_at) values
+  ('00000000-0000-0000-0000-00000000000a', 'human_review', '00000000-0000-0000-0000-0000000001aa', 'fixture', now()),
+  ('00000000-0000-0000-0000-00000000000b', 'human_review', '00000000-0000-0000-0000-0000000001bb', 'fixture', now());
+insert into public.tenant_events (tenant_id, customer_id, type, idempotency_key) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000ca', 'ReplyUnmatched', 'fixture'),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000cb', 'ReplyUnmatched', 'fixture');
+
 -- Runs `stmt` as `actor` (NULL = anon) and ALWAYS rolls it back (subtransaction).
 -- Returns 'ok:<rows affected>' or 'err:<sqlstate>'.
 create function pg_temp.try_as(actor uuid, stmt text) returns text
