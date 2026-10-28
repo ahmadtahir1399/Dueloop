@@ -138,11 +138,13 @@ try {
   const afterSecond = second.reminders;
   console.log(`Mailpit: ${afterSecond.length} reminder email(s): ${afterSecond.length - afterFirst.length} new sends; owner alerts: ${second.alerts.length - first.alerts.length} new (de-duplicated).`);
   if (afterSecond.length !== afterFirst.length) fail('the second run sent again');
-  if (second.alerts.length !== first.alerts.length) {
-    const seen = new Set(first.alerts.map((m) => m.MessageID));
-    const extra = second.alerts.filter((m) => !seen.has(m.MessageID)).map((m) => m.MessageID.split('.').slice(0, 2).join('.'));
-    fail(`an owner alert was sent twice (new in the second pass: ${extra.join(', ')})`);
-  }
+  // An alert's Message-ID is derived from its dedupe key (+ recipient): a duplicate send = the same id twice.
+  // A NEW key in the second pass is legitimate (e.g. an invoice whose job was deferred escalates now).
+  const alertIds = second.alerts.map((m) => m.MessageID);
+  if (new Set(alertIds).size !== alertIds.length) fail('an owner alert was sent twice (same alert Message-ID)');
+  const seen = new Set(first.alerts.map((m) => m.MessageID));
+  const fresh = second.alerts.filter((m) => !seen.has(m.MessageID)).map((m) => m.MessageID.split('.').slice(0, 2).join('.'));
+  if (fresh.length) console.log(`  (new owner alert(s) in the second pass, each sent once: ${fresh.join(', ')})`);
 
   console.log(`\nDEMO OK: ${afterFirst.length} approved reminder email(s), one each, Message-IDs match the outbox; second run: 0 new. Open ${MAILPIT} to read them.`);
 } catch (e) {
