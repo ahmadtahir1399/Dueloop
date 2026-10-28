@@ -87,7 +87,8 @@ describe('the invariant checker can fail (deliberately broken decide)', () => {
     expect(kinds((c) => decide({ ...c, customer: { optedOut: false } })).has('opted_out')).toBe(true);
   });
 
-  it('forgetting what was sent -> duplicate_key and weekly_cap violations', () => {
+  // Heavy: the broken decide floods sends (3.6 s before prompt 4's extra invariants, ~5 s after).
+  it('forgetting what was sent -> duplicate_key and weekly_cap violations', { timeout: 30_000 }, () => {
     const k = kinds((c) => decide({ ...c, history: { ...c.history, sentStepIds: [], sentAt: [] } }));
     expect(k.has('duplicate_key')).toBe(true);
     expect(k.has('weekly_cap')).toBe(true);
@@ -104,6 +105,28 @@ describe('the invariant checker can fail (deliberately broken decide)', () => {
   });
 });
 
+describe('prompt 4 reply stage: invariants hold and can fail', () => {
+  it('replies go through planReplyOutcome: tasks and reminder blocks happen, zero violations', () => {
+    const r = runSimulation({ days: 90, invoices: 500, seed: 42, start: DEFAULT_START });
+    expect(r.violations).toEqual([]);
+    expect(r.stats.replyTasks).toBeGreaterThan(0);
+    expect(r.stats.reminderBlocks).toBeGreaterThan(0);
+    expect(r.stats.promisesMade).toBeGreaterThan(0);
+  });
+  it('ignoring reminder blocks -> blocked violations', () => {
+    const r = runSimulation({ days: 90, invoices: 500, seed: 42, start: DEFAULT_START, faults: { ignoreBlocks: true } });
+    expect(r.violations.some((v) => v.kind === 'blocked')).toBe(true);
+  });
+  it('ignoring promises -> promised_too_early violations', () => {
+    const broken: DecideFn = (c) => decide(c.invoice.status === 'promised' ? { ...c, invoice: { id: c.invoice.id, status: 'overdue', dueOn: c.invoice.dueOn } } : c);
+    expect(runSimulation({ days: 90, invoices: 500, seed: 42, start: DEFAULT_START }, broken).violations.some((v) => v.kind === 'promised_too_early')).toBe(true);
+  });
+  it('reviving opted-out customers -> opt_out_not_final violations', () => {
+    const r = runSimulation({ days: 90, invoices: 500, seed: 42, start: DEFAULT_START, faults: { reviveOptOuts: true } });
+    expect(r.violations.some((v) => v.kind === 'opt_out_not_final')).toBe(true);
+  });
+});
+
 describe('checkSends()', () => {
   const nyc = new Map(TENANTS.filter((t) => t.id === 't-nyc').map((t) => [t.id, t])); // quiet 20->9, cap 2, holiday 2026-02-16
   const send = (iso: string, o: Partial<SendRecord> = {}): SendRecord => ({
@@ -116,6 +139,8 @@ describe('checkSends()', () => {
     idempotencyKey: `i1:s1:${iso}`,
     statusAtSend: 'overdue',
     optedOutAtSend: false,
+    promisedOnAtSend: undefined,
+    blockedUntilAtSend: null,
     ...o,
   });
 
@@ -131,6 +156,15 @@ describe('checkSends()', () => {
     ['weekly_cap', [send('2026-02-10T15:00:00Z'), send('2026-02-11T15:00:00Z'), send('2026-02-12T15:00:00Z')]],
   ] as const)('detects %s', (kind, sends) => {
     expect(checkSends(sends, nyc).map((v) => v.kind)).toEqual([kind]);
+  });
+  it.each([
+    ['promised_too_early', [send('2026-02-10T15:00:00Z', { statusAtSend: 'promised', promisedOnAtSend: '2026-02-09' })]], // grace runs to 11 Feb
+    ['blocked', [send('2026-02-10T15:00:00Z', { blockedUntilAtSend: Date.parse('2026-02-11T00:00:00Z') })]],
+  ] as const)('detects %s (prompt 4)', (kind, sends) => {
+    expect(checkSends(sends, nyc).map((v) => v.kind)).toEqual([kind]);
+  });
+  it('detects a send after an opt-out (prompt 4: opt-out is final)', () => {
+    expect(checkSends([send('2026-02-10T15:00:00Z')], nyc, new Map([['c1', Date.parse('2026-02-09T00:00:00Z')]])).map((v) => v.kind)).toEqual(['opt_out_not_final']);
   });
   it('weekly cap window is (t - 168h, t]: a send exactly 168h earlier does not count', () => {
     const sends = [send('2026-02-10T15:00:00Z'), send('2026-02-11T15:00:00Z'), send('2026-02-17T15:00:00Z')];

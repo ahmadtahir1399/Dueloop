@@ -16,7 +16,8 @@ function quietAt(hour: number, start: number, end: number): boolean {
  * Checks every outbound reminder against the invariants of guide Section 3.4.
  * Works only from the send log and tenant data; it never calls decide().
  */
-export function checkSends(sends: readonly SendRecord[], tenants: ReadonlyMap<string, Tenant>): Violation[] {
+/** `optOutAt`: when each customer opted out (prompt 4: opt-out is final, nothing may be sent afterwards). */
+export function checkSends(sends: readonly SendRecord[], tenants: ReadonlyMap<string, Tenant>, optOutAt: ReadonlyMap<string, number> = new Map()): Violation[] {
   const violations: Violation[] = [];
   const keys = new Set<string>();
   const byCustomer = new Map<string, number[]>();
@@ -41,6 +42,15 @@ export function checkSends(sends: readonly SendRecord[], tenants: ReadonlyMap<st
     if (['paid', 'written_off', 'cancelled', 'disputed'].includes(s.statusAtSend)) {
       v('no_contact_status', `${s.idempotencyKey} sent while ${s.statusAtSend}`);
     }
+    // Prompt 4: a promised invoice is never reminded before promise date + grace (tenant-local dates).
+    if (s.statusAtSend === 'promised' && s.promisedOnAtSend !== undefined) {
+      const earliest = DateTime.fromISO(s.promisedOnAtSend, { zone: timezone }).plus({ days: tenant.policy.graceDaysAfterPromise }).toFormat('yyyy-MM-dd');
+      if (local.toFormat('yyyy-MM-dd') < earliest) v('promised_too_early', `${s.idempotencyKey} sent before ${earliest} (promised ${s.promisedOnAtSend})`);
+    }
+    // A blocked invoice (open task) is never reminded inside its block.
+    if (s.blockedUntilAtSend !== null && s.at < s.blockedUntilAtSend) v('blocked', `${s.idempotencyKey} sent inside a reminder block`);
+    const out = optOutAt.get(s.customerId);
+    if (out !== undefined && s.at > out) v('opt_out_not_final', `${s.idempotencyKey} sent after ${s.customerId} opted out`);
     if (keys.has(s.idempotencyKey)) v('duplicate_key', `${s.idempotencyKey} sent twice`);
     keys.add(s.idempotencyKey);
 
