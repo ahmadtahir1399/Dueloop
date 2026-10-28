@@ -19,6 +19,12 @@
     "db:types": "node packages/db/scripts/db-types.ts write",
     "db:types:check": "node packages/db/scripts/db-types.ts check",
     "chaos": "vitest run --config vitest.db.config.ts packages/worker/test-db/chaos.test.ts",
+    "worker": "node packages/worker/src/bin/worker.ts",
+    "approvals": "node packages/worker/src/bin/approvals.ts",
+    "messages": "node packages/worker/src/bin/messages.ts",
+    "tenant": "node packages/worker/src/bin/tenant.ts",
+    "demo:send": "node packages/worker/scripts/demo-send.ts",
+    "test:load": "vitest run --config vitest.load.config.ts",
     "import": "node packages/ingest/src/cli.ts",
     "import:twice": "node packages/ingest/scripts/import-twice-check.ts",
     "web:build": "pnpm --filter @dueloop/web build"

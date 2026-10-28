@@ -111,3 +111,50 @@ values
   ('5eed0000-0000-4000-8000-00000000000b', '5eed0000-0000-4000-8000-000000000cb1', 'B-0002', 70000, 'USD', current_date - 5, current_date + 25, 'EVB7PVSV'),
   ('5eed0000-0000-4000-8000-00000000000b', '5eed0000-0000-4000-8000-000000000cb1', 'B-0003', 90000, 'USD', current_date, current_date + 30, '8H3H5TJF');
 update public.invoices set status = 'overdue' where number = 'B-0001';
+
+-- Prompt 3: sending setup for Demo Agency. Templates mirror DEFAULT_TEMPLATES in packages/messaging
+-- (drift-tested). The email account has no SMTP host: the worker uses the operator relay (SMTP_HOST),
+-- which locally is the Mailpit catcher. Bank details are obviously fake demo data.
+update public.tenants
+set bank_instructions = 'Demo Bank plc, sort code 00-00-00, account 00000000 (demo data, do not pay)'
+where id = '5eed0000-0000-4000-8000-00000000000a';
+
+insert into public.templates (tenant_id, template_key, channel, locale, tone, subject, body, provider_template_name, provider_language, provider_status) values
+  ('5eed0000-0000-4000-8000-00000000000a', 'friendly', 'email', 'en', 'friendly', $t$Friendly reminder: invoice {{invoice_number}}$t$, $t$Hi {{customer_name}},
+
+A quick reminder that invoice {{invoice_number}} for {{amount_due}} was due on {{due_date}}. If you have already paid, thank you, and please ignore this message.
+
+To pay by bank transfer, please quote {{reference_code}}.
+{{bank_instructions}}
+{{pay_link}}
+
+Thank you,
+{{business_name}}$t$, null, null, null),
+  ('5eed0000-0000-4000-8000-00000000000a', 'nudge', 'email', 'en', 'neutral', $t$Invoice {{invoice_number}} is {{days_overdue}} days overdue$t$, $t$Hello {{customer_name}},
+
+Our records show invoice {{invoice_number}} for {{amount_due}} is now {{days_overdue}} days past its due date ({{due_date}}). Could you let us know when we can expect payment?
+
+Please quote {{reference_code}} with your transfer.
+{{bank_instructions}}
+{{pay_link}}
+
+Regards,
+{{business_name}}$t$, null, null, null),
+  ('5eed0000-0000-4000-8000-00000000000a', 'firm', 'email', 'en', 'firm', $t$Action needed: invoice {{invoice_number}}$t$, $t$Dear {{customer_name}},
+
+Invoice {{invoice_number}} for {{amount_due}} remains unpaid {{days_overdue}} days after the due date of {{due_date}}. Please arrange payment or reply to agree a date.
+
+Reference: {{reference_code}}
+{{bank_instructions}}
+{{pay_link}}
+
+{{business_name}}$t$, null, null, null),
+  ('5eed0000-0000-4000-8000-00000000000a', 'nudge', 'whatsapp', 'en', 'neutral', null, $t$Hello {{customer_name}}, invoice {{invoice_number}} for {{amount_due}} was due on {{due_date}}. Please quote {{reference_code}} when paying. {{business_name}}$t$, 'payment_reminder', 'en', 'approved');
+
+insert into public.channel_accounts (tenant_id, channel, config) values
+  ('5eed0000-0000-4000-8000-00000000000a', 'email', '{"from_address": "billing@demo-agency.test", "from_name": "Demo Agency", "message_id_domain": "demo-agency.test"}');
+
+-- Imran Textiles agreed to WhatsApp reminders (WhatsApp needs recorded consent; no WhatsApp account is
+-- configured locally, so those steps park with account_missing until one is connected).
+insert into public.customer_consents (tenant_id, customer_id, channel, granted_at, source) values
+  ('5eed0000-0000-4000-8000-00000000000a', '5eed0000-0000-4000-8000-000000000c03', 'whatsapp', now() - interval '30 days', 'seed: signed order form');

@@ -379,6 +379,15 @@ importers:
 
   packages/worker:
     dependencies:
+      '@dueloop/adapters-email':
+        specifier: workspace:*
+        version: link:../adapters-email
+      '@dueloop/adapters-notify':
+        specifier: workspace:*
+        version: link:../adapters-notify
+      '@dueloop/adapters-whatsapp':
+        specifier: workspace:*
+        version: link:../adapters-whatsapp
       '@dueloop/core':
         specifier: workspace:*
         version: link:../core

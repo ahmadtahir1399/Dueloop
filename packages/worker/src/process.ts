@@ -99,7 +99,9 @@ type Content = { ok: true; envelope: OutboundEnvelope; subject: string | null; b
 function buildContent(c: WorkerContext, key: string, stepTemplate: string, channel: 'email' | 'whatsapp' | 'sms', now: Date, overrides: { subject: string | null; body: string | null }): Content {
   const tmpl = pickTemplate(c.templates, stepTemplate, channel, c.customer.language);
   if (!tmpl) return { ok: false, reason: 'template_missing' };
-  const locale = c.customer.language;
+  // Format in the language of the template actually used (it may be the English fallback), so a message
+  // never mixes English text with, say, Arabic numerals and month names.
+  const locale = tmpl.locale;
   const daysLate = Math.max(
     0,
     Math.round(

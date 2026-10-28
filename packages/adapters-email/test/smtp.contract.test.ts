@@ -75,7 +75,7 @@ const envelope = (port: number): OutboundEnvelope => ({
   },
 });
 
-const channel = createSmtpChannel({ defaults: null, timeoutMs: 400 });
+const channel = createSmtpChannel({ defaults: null, timeoutMs: 400, allowTenantHost: true });
 
 describe('SMTP adapter contract', () => {
   it('250 after the body -> sent, with our own Message-ID on the wire', async () => {
@@ -109,6 +109,15 @@ describe('SMTP adapter contract', () => {
     const e = envelope(1);
     expect(await channel.send({ ...e, account: {} }, null)).toEqual({ kind: 'not_sent_retryable', reason: 'smtp_not_configured' });
     expect(await channel.send({ ...e, content: { kind: 'whatsapp_template', to: '+1', templateName: 'x', languageCode: 'en', parameters: [] } }, null)).toMatchObject({ kind: 'permanent' });
+  });
+
+  it('a tenant-chosen SMTP host is ignored unless explicitly allowed (SSRF)', async () => {
+    const s = await smtp();
+    const strict = createSmtpChannel({ defaults: null, timeoutMs: 400 });
+    expect(await strict.send(envelope(s.port), null)).toEqual({ kind: 'not_sent_retryable', reason: 'smtp_not_configured' });
+    const relay = createSmtpChannel({ defaults: { host: '127.0.0.1', port: s.port, secure: false, user: null }, timeoutMs: 400 });
+    expect(await relay.send({ ...envelope(1), account: { smtp_host: '10.0.0.1', smtp_port: 25 } }, null)).toMatchObject({ kind: 'sent' });
+    expect(s.received).toHaveLength(1);
   });
 
   it('a mid-session socket error tagged CONN is NOT treated as not-sent', () => {
