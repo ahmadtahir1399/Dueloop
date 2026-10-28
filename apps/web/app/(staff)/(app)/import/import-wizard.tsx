@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatMinor } from "@/lib/money";
 import { commitBatch, errorReport, previewImport, readColumns, type CommitResultView, type PreviewResult } from "./actions";
 
 type Field = "invoiceNumber" | "customerName" | "total" | "issuedOn" | "dueOn" | "email" | "phone" | "currency" | "externalCustomerId" | "status";
@@ -284,6 +285,43 @@ export function ImportWizard({ defaultCurrency }: { defaultCurrency: string }) {
                 {preview.counts.customers.created} new · {preview.counts.customers.updated} updated · {preview.counts.customers.unchanged} unchanged
               </div>
             </div>
+            {preview.ambiguousDates ? (
+              <Alert variant="destructive" data-testid="ambiguous-dates">
+                <AlertTitle>Check the date format</AlertTitle>
+                <AlertDescription>
+                  No date in this file proves the format you chose: every day is 12 or less, so 03/04 could be 3 April or 4 March. Compare the
+                  dates below with your accounting tool before importing.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            {preview.sample.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table aria-label="First rows as they will be imported" data-testid="import-sample">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Line</TableHead>
+                      <TableHead>Invoice</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Issued</TableHead>
+                      <TableHead>Due</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {preview.sample.map((r) => (
+                      <TableRow key={r.line}>
+                        <TableCell className="tabular-nums">{r.line}</TableCell>
+                        <TableCell dir="auto">{r.number}</TableCell>
+                        <TableCell dir="auto">{r.customer}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatMinor(r.amount, r.currency)}</TableCell>
+                        <TableCell>{r.issuedOn}</TableCell>
+                        <TableCell>{r.dueOn}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : null}
             {preview.issues.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>

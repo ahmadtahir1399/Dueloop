@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { CounterKey } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -12,8 +13,30 @@ export interface NavLink {
 }
 
 /** Role-aware links (the server filters them by the role matrix). Counters are hints, never authority. */
-export function AppNav({ links, counters }: { links: NavLink[]; counters: Partial<Record<CounterKey, number>> }) {
+export const COUNTER_POLL_MS = 30_000;
+
+export function AppNav({ links, counters: initial }: { links: NavLink[]; counters: Partial<Record<CounterKey, number>> }) {
   const pathname = usePathname();
+  const [counters, setCounters] = useState(initial);
+  useEffect(() => setCounters(initial), [initial]);
+  // Polling (not Realtime): a missed update only delays a badge; correctness never depends on it.
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const r = await fetch("/counters", { cache: "no-store" });
+        if (r.ok && !stopped) setCounters((await r.json()) as Partial<Record<CounterKey, number>>);
+      } catch {
+        // offline or signed out: keep the last numbers
+      }
+    };
+    const id = setInterval(() => void tick(), COUNTER_POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, []);
   return (
     <nav aria-label="Main" className="flex flex-wrap items-center gap-1">
       {links.map((l) => {

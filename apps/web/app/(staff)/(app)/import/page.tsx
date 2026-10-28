@@ -1,16 +1,8 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { canImport, requireTenant } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import { ImportWizard } from "./import-wizard";
 
 export default async function ImportPage() {
-  const { role, tenant } = await requireTenant();
-  if (!canImport(role)) {
-    return (
-      <Alert>
-        <AlertDescription>Only owners and accountants can import invoices.</AlertDescription>
-      </Alert>
-    );
-  }
+  const { tenant } = await requirePermission("import.run");
   return (
     <div className="grid gap-6">
       <div>
