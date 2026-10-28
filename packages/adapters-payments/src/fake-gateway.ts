@@ -11,6 +11,8 @@ export interface Clock {
 /** The core port plus switching a hosted object off (issue F); structurally what @dueloop/payments expects. */
 export interface PaymentGateway extends PaymentProvider {
   deactivate?(providerObjectId: string): Promise<void>;
+  /** False = no hosted link in this currency (the reminder carries bank text only). */
+  supportsCurrency?(currency: string): boolean;
 }
 
 export const FAKE_SIGNATURE_HEADER = 'fake-signature';

@@ -7,7 +7,7 @@ import type { PaymentsDeps } from './ports.ts';
 
 const FINAL = new Set(['paid', 'written_off', 'cancelled']);
 
-export type RequestResult = { readonly request: RequestRow; readonly reused: boolean } | { readonly request: null; readonly reason: 'no_account' | 'no_gateway' | 'final_invoice' | 'nothing_due' | 'invoice_missing' };
+export type RequestResult = { readonly request: RequestRow; readonly reused: boolean } | { readonly request: null; readonly reason: 'no_account' | 'no_gateway' | 'final_invoice' | 'nothing_due' | 'invoice_missing' | 'currency_unsupported' };
 
 function stillValid(r: RequestRow, balance: number, currency: string, now: Date, minRemainingMs: number): boolean {
   if (r.amountMinor !== balance || r.currency !== currency) return false;
@@ -58,6 +58,7 @@ export async function createRequestFor(deps: PaymentsDeps, tenantId: string, inv
     return { request: null, reason: 'final_invoice' };
   }
   if (inv.balanceMinor <= 0) return { request: null, reason: 'nothing_due' };
+  if (gw.supportsCurrency && !gw.supportsCurrency(inv.currency)) return { request: null, reason: 'currency_unsupported' };
 
   const now = clock.now();
   if (active) {
