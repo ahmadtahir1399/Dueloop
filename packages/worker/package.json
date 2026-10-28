@@ -13,9 +13,12 @@
     "@dueloop/adapters-email": "workspace:*",
     "@dueloop/adapters-notify": "workspace:*",
     "@dueloop/adapters-whatsapp": "workspace:*",
+    "@dueloop/classifier": "workspace:*",
     "@dueloop/core": "workspace:*",
     "@dueloop/db": "workspace:*",
+    "@dueloop/inbound": "workspace:*",
     "@dueloop/messaging": "workspace:*",
+    "@dueloop/webhooks": "workspace:*",
     "luxon": "^3.7.2",
     "pg": "8.23.1"
   },

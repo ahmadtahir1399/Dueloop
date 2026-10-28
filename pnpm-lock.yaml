@@ -216,10 +216,10 @@ importers:
         version: link:../../packages/ingest
       '@supabase/ssr':
         specifier: 0.12.7
-        version: 0.12.7(@supabase/supabase-js@2.118.0)
+        version: 0.12.7(@supabase/supabase-js@2.118.0(@opentelemetry/api@1.10.0))
       '@supabase/supabase-js':
         specifier: 2.118.0
-        version: 2.118.0
+        version: 2.118.0(@opentelemetry/api@1.10.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -234,7 +234,7 @@ importers:
         version: 3.7.2
       next:
         specifier: 16.4.3
-        version: 16.4.3(@babel/core@7.29.7)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 16.4.3(@babel/core@7.29.7)(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -402,7 +402,7 @@ importers:
         version: link:../db
       '@supabase/supabase-js':
         specifier: 2.118.0
-        version: 2.118.0
+        version: 2.118.0(@opentelemetry/api@1.10.0)
       csv-parse:
         specifier: 7.0.3
         version: 7.0.3
@@ -470,15 +470,24 @@ importers:
       '@dueloop/adapters-whatsapp':
         specifier: workspace:*
         version: link:../adapters-whatsapp
+      '@dueloop/classifier':
+        specifier: workspace:*
+        version: link:../classifier
       '@dueloop/core':
         specifier: workspace:*
         version: link:../core
       '@dueloop/db':
         specifier: workspace:*
         version: link:../db
+      '@dueloop/inbound':
+        specifier: workspace:*
+        version: link:../inbound
       '@dueloop/messaging':
         specifier: workspace:*
         version: link:../messaging
+      '@dueloop/webhooks':
+        specifier: workspace:*
+        version: link:../webhooks
       luxon:
         specifier: ^3.7.2
         version: 3.7.2
@@ -5453,23 +5462,15 @@ snapshots:
       '@supabase/phoenix': 0.4.5
       tslib: 2.8.1
 
-  '@supabase/ssr@0.12.7(@supabase/supabase-js@2.118.0)':
+  '@supabase/ssr@0.12.7(@supabase/supabase-js@2.118.0(@opentelemetry/api@1.10.0))':
     dependencies:
-      '@supabase/supabase-js': 2.118.0
+      '@supabase/supabase-js': 2.118.0(@opentelemetry/api@1.10.0)
       cookie: 1.1.1
 
   '@supabase/storage-js@2.118.0':
     dependencies:
       iceberg-js: 0.8.1
       tslib: 2.8.1
-
-  '@supabase/supabase-js@2.118.0':
-    dependencies:
-      '@supabase/auth-js': 2.118.0
-      '@supabase/functions-js': 2.118.0
-      '@supabase/postgrest-js': 2.118.0
-      '@supabase/realtime-js': 2.118.0
-      '@supabase/storage-js': 2.118.0
 
   '@supabase/supabase-js@2.118.0(@opentelemetry/api@1.10.0)':
     dependencies:
@@ -6648,7 +6649,7 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  next@16.4.3(@babel/core@7.29.7)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.4.3(@babel/core@7.29.7)(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.4.3
       '@swc/helpers': 0.5.23
@@ -6667,6 +6668,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.4.3
       '@next/swc-win32-arm64-msvc': 16.4.3
       '@next/swc-win32-x64-msvc': 16.4.3
+      '@opentelemetry/api': 1.10.0
       sharp: 0.35.5(@types/node@24.19.2)
     transitivePeerDependencies:
       - '@babel/core'

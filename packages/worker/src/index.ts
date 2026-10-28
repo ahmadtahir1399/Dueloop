@@ -4,3 +4,4 @@ export * from './db.ts';
 export * from './context.ts';
 export * from './process.ts';
 export * from './memory-notifier.ts';
+export * from './inbound-runtime.ts';
