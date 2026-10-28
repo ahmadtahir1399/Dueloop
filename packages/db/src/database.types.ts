@@ -21,6 +21,12 @@ export type Database = {
       foreignKeyName: "approvals_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "approvals_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     },{
@@ -59,6 +65,12 @@ isOneToOne: false
       foreignKeyName: "channel_accounts_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "channel_accounts_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -81,6 +93,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "customers"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "credits_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
     },{
       foreignKeyName: "credits_tenant_id_fkey"
       columns: ["tenant_id"]
@@ -135,6 +153,12 @@ isOneToOne: false
       foreignKeyName: "customer_consents_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "customer_consents_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -155,6 +179,12 @@ isOneToOne: false
       foreignKeyName: "customers_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "customers_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -172,6 +202,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "dead_letters_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
       foreignKeyName: "dead_letters_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
@@ -213,6 +249,12 @@ isOneToOne: false
       foreignKeyName: "holidays_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "holidays_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -230,6 +272,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "import_batches_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
       foreignKeyName: "import_batches_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
@@ -255,6 +303,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "import_batches"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "import_rows_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
     },{
       foreignKeyName: "import_rows_tenant_id_fkey"
       columns: ["tenant_id"]
@@ -285,6 +339,12 @@ isOneToOne: false
       foreignKeyName: "inbound_events_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "inbound_events_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -302,6 +362,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "invoice_events_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
       foreignKeyName: "invoice_events_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
@@ -349,6 +415,12 @@ isOneToOne: false
       foreignKeyName: "invoices_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "invoices_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     },{
@@ -375,6 +447,12 @@ isOneToOne: false
       foreignKeyName: "memberships_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "memberships_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -392,6 +470,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "message_invoices_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
       foreignKeyName: "message_invoices_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
@@ -451,6 +535,12 @@ isOneToOne: false
       foreignKeyName: "messages_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "messages_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -468,6 +558,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "notifications_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
       foreignKeyName: "notifications_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
@@ -491,6 +587,12 @@ isOneToOne: false
       foreignKeyName: "payment_accounts_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "payment_accounts_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -508,6 +610,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "payment_events_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
       foreignKeyName: "payment_events_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
@@ -545,6 +653,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "payment_proofs"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "payment_proofs_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
     },{
       foreignKeyName: "payment_proofs_tenant_id_fkey"
       columns: ["tenant_id"]
@@ -599,6 +713,12 @@ isOneToOne: false
       foreignKeyName: "payment_requests_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "payment_requests_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     },{
@@ -643,6 +763,12 @@ isOneToOne: false
       foreignKeyName: "payments_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "payments_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     },{
@@ -675,6 +801,12 @@ isOneToOne: false
       foreignKeyName: "policies_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "policies_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -697,6 +829,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "customers"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "promises_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
     },{
       foreignKeyName: "promises_tenant_id_fkey"
       columns: ["tenant_id"]
@@ -769,6 +907,12 @@ isOneToOne: false
       foreignKeyName: "receipts_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "receipts_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     },{
@@ -809,6 +953,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "customers"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "tasks_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
     },{
       foreignKeyName: "tasks_tenant_id_fkey"
       columns: ["tenant_id"]
@@ -857,6 +1007,12 @@ isOneToOne: false
       foreignKeyName: "templates_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "templates_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -879,6 +1035,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "customers"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "tenant_events_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
     },{
       foreignKeyName: "tenant_events_tenant_id_fkey"
       columns: ["tenant_id"]
@@ -920,6 +1082,12 @@ isOneToOne: false
       foreignKeyName: "invoices_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "invoices_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
@@ -934,9 +1102,39 @@ isOneToOne: false
       foreignKeyName: "invoices_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "invoices_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
       referencedRelation: "tenants"
       referencedColumns: ["id"]
     }
+                  ]
+                },"kpi_ageing_now": {
+                  Row: {
+                    "balance": number | null,"bucket": string | null,"currency": string | null,"invoices": number | null,"tenant_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"kpi_overdue_now": {
+                  Row: {
+                    "balance": number | null,"currency": string | null,"invoices": number | null,"tenant_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"kpi_this_week": {
+                  Row: {
+                    "tenant_id": string,"week_end": string | null,"week_start": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
                   ]
                 }
           }
@@ -955,6 +1153,36 @@ isOneToOne: false
                            },
 "edit_approval":
 { Args: { "p_approval_id": string,"p_body": string,"p_subject": string }; Returns: undefined
+                           },
+"kpi_ageing":
+{ Args: { "p_as_of"?: string }; Returns: {
+              "balance": number,"bucket": string,"currency": string,"invoices": number,"tenant_id": string
+            }[]
+                           },
+"kpi_days_to_pay":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "avg_days_after_due": number,"avg_days_to_pay": number,"invoices": number,"tenant_id": string
+            }[]
+                           },
+"kpi_messages":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "channel": string,"cost_minor": number,"purpose": string,"sent": number,"tenant_id": string
+            }[]
+                           },
+"kpi_overdue_total":
+{ Args: { "p_as_of"?: string }; Returns: {
+              "balance": number,"currency": string,"invoices": number,"tenant_id": string
+            }[]
+                           },
+"kpi_promise_kept_rate":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "broken": number,"kept": number,"rate": number,"tenant_id": string
+            }[]
+                           },
+"kpi_recovered":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "credit": number,"currency": string,"receipts": number,"recovered": number,"tenant_id": string
+            }[]
                            },
 "reopen_task":
 { Args: { "p_note"?: string,"p_task_id": string }; Returns: string
