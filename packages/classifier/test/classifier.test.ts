@@ -76,6 +76,14 @@ describe('model input: only what the model may see', () => {
     const t = redactForModel('Hi, Ada Lovelace from Acme Ltd here (ada@acme.example, +44 7700 900123). DA-0004: I will pay £500 on 15/11.', redaction);
     expect(t).toBe('Hi, [name] from [name] here ([email], [number]). [invoice]: I will pay £500 on 15/11.');
   });
+  it('dates and amounts survive redaction (the model needs them); phone and account numbers do not', () => {
+    const none = { names: [], invoiceNumbers: [] };
+    expect(redactForModel('I will pay on 2026-11-20', none)).toBe('I will pay on 2026-11-20');
+    expect(redactForModel('Zahlung am 20.11.2026 oder 01/12/2026', none)).toBe('Zahlung am 20.11.2026 oder 01/12/2026');
+    expect(redactForModel('Sending £1,250,000.00 and 1.250.000 EUR and USD 2,000,000', none)).toBe('Sending £1,250,000.00 and 1.250.000 EUR and USD 2,000,000');
+    expect(redactForModel('Call 07700 900123 or (020) 7946 0958, account 12345678', none)).toBe('Call [number] or [number], account [number]');
+  });
+
   it('carries the reference LOCAL date, weekday and zone; strips invisible characters; truncates', () => {
     const i = buildClassifierInput({ text: `pay\u200B tomorrow ${'x'.repeat(3000)}`, reference: new Date('2026-10-27T19:00:00Z'), timezone: 'Asia/Kolkata', currency: 'INR', localeHint: 'en-IN', redaction });
     expect(i.referenceDate).toBe('2026-10-28');
