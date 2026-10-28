@@ -10,9 +10,15 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 // Cache Components / Partial Prefetching (opt-in in Next 16) are off: every page here is per-user and
 // per-request (Supabase session cookie), so classic dynamic rendering is simpler and fully supported.
 const nextConfig: NextConfig = {
+  // The Playwright build uses its own folder (it is built against the LOCAL stack: NEXT_PUBLIC_ values are inlined).
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // Workspace packages are TypeScript sources (with .ts import extensions); Next compiles them.
-  transpilePackages: ["@dueloop/core", "@dueloop/db", "@dueloop/ingest"],
+  transpilePackages: ["@dueloop/core", "@dueloop/db", "@dueloop/ingest", "@dueloop/authz"],
+  // No X-Powered-By header (nothing to fingerprint).
+  poweredByHeader: false,
   experimental: {
+    // Two root layouts (staff, public): unmatched URLs get app/global-not-found.tsx.
+    globalNotFound: true,
     // CSV uploads go through a Server Action; the import limit is 5 MiB plus multipart overhead.
     serverActions: { bodySizeLimit: "6mb" },
   },

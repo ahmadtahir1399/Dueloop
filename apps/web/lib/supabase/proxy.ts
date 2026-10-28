@@ -1,14 +1,12 @@
-// Session refresh on every request (Supabase SSR docs, "Hook up proxy"). Returns the response that
-// carries refreshed cookies; unauthenticated visitors are sent to /login.
+// Session refresh on staff requests (Supabase SSR docs, "Hook up proxy"). Returns the response that carries
+// refreshed cookies; when `protect` is set, unauthenticated visitors are sent to /login.
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@dueloop/db";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
-
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+export async function updateSession(request: NextRequest, requestHeaders: Headers, protect: boolean) {
+  let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
   const { url, publishableKey } = publicEnv();
 
   const supabase = createServerClient<Database>(url, publishableKey, {
@@ -18,7 +16,7 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
         cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
         Object.entries(headers).forEach(([key, value]) => supabaseResponse.headers.set(key, value));
       },
@@ -29,7 +27,7 @@ export async function updateSession(request: NextRequest) {
   // getClaims() verifies the token; getSession() would trust the cookie blindly.
   const { data } = await supabase.auth.getClaims();
 
-  if (!data?.claims && !PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))) {
+  if (protect && !data?.claims) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.search = "";
