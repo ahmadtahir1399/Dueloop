@@ -50,24 +50,66 @@ export interface PaymentRequest {
   readonly bankText?: string;
   /** Unique code the customer should quote. */
   readonly reference: string;
+  // Prompt 5 (issue A), additive: what OUR payment_requests row records about the provider's object.
+  /** The provider's id for the hosted object (e.g. a payment link id); our rows resolve events by it. */
+  readonly providerObjectId?: string;
+  readonly amountMinor?: number;
+  readonly currency?: string;
+  /** When the hosted object stops accepting payments, if it does. */
+  readonly expiresAt?: Date;
+}
+
+/** Fields every prompt 5 event may carry (issue A). Older producers may leave them out. */
+interface PaymentEventIds {
+  /** The provider's id for this event: the dedupe key (unique per provider). */
+  readonly providerEventId?: string;
+  /** The provider's id for OUR request's object (resolved against payment_requests, never trusted alone). */
+  readonly requestRef?: string;
+  /** Live or test mode as the provider states it; must match the account's mode. */
+  readonly livemode?: boolean;
 }
 
 export type PaymentEvent =
-  | {
+  | ({
       readonly type: 'payment_confirmed';
       readonly providerRef: string;
       readonly amountMinor: number;
       readonly reference?: string;
       readonly paidAt: Date;
-    }
-  | { readonly type: 'payment_failed'; readonly providerRef: string; readonly reason?: string };
+      /** ISO 4217 code of amountMinor (prompt 5). */
+      readonly currency?: string;
+    } & PaymentEventIds)
+  | ({ readonly type: 'payment_failed'; readonly providerRef: string; readonly reason?: string } & PaymentEventIds)
+  // Prompt 5 additions.
+  /** Started but not definitive (e.g. an async method): never paid. */
+  | ({ readonly type: 'payment_processing'; readonly providerRef: string } & PaymentEventIds)
+  /** Money going back after a confirmation (refund or chargeback/dispute): a task, never a reopened invoice. */
+  | ({
+      readonly type: 'payment_reversed';
+      readonly reversal: 'refund' | 'chargeback';
+      readonly providerRef: string;
+      readonly amountMinor: number;
+      readonly currency?: string;
+      readonly at: Date;
+    } & PaymentEventIds);
 
 export interface PaymentProvider {
   /** 'bank_transfer' | 'stripe' | 'paypal' | ... */
   readonly name: string;
-  createPaymentRequest(args: { readonly invoiceId: string; readonly amountMinor: number; readonly reference: string }): Promise<PaymentRequest>;
+  createPaymentRequest(args: {
+    readonly invoiceId: string;
+    readonly amountMinor: number;
+    readonly reference: string;
+    // Prompt 5, additive.
+    readonly currency?: string;
+    readonly expiresAt?: Date;
+    /** Stable per (invoice, amount): the provider must not create a second object on a retry. */
+    readonly idempotencyKey?: string;
+  }): Promise<PaymentRequest>;
   /** Must verify the signature on the RAW body before trusting anything inside. */
   handleWebhook(rawBody: string, headers: Readonly<Record<string, string>>): Promise<PaymentEvent[]>;
+  /** Prompt 5, optional: polling fallback for requests whose webhook never arrived. */
+  getStatus?(providerObjectId: string): Promise<PaymentEvent[]>;
 }
 
 export interface InvoiceSource {
