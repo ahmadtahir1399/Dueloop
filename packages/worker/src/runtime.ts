@@ -1,7 +1,7 @@
 // Composition root for the production worker and the ops CLIs. This is the ONLY place real adapters are
 // wired, and it can only ever construct NO_FAILPOINTS (tested): failpoints are unreachable in production.
 import { createSmtpChannel, smtpDefaultsFromEnv } from '@dueloop/adapters-email';
-import { createSlackNotifier, fanout } from '@dueloop/adapters-notify';
+import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail } from '@dueloop/adapters-notify';
 import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
 import pg from 'pg';
@@ -43,15 +43,33 @@ export function buildDeps(env: Env, db: WorkerDb, clock: Clock, overrides: Parti
   const logger = stdoutLogger(clock);
   const adapterTimeout = Math.max(1000, config.sendTimeoutMs - 2000); // below the worker's hard timeout
   const channels = new Map<string, OutboundChannel>();
-  channels.set('email', createSmtpChannel({ defaults: smtpDefaultsFromEnv(env), timeoutMs: adapterTimeout, allowTenantHost: env.SMTP_ALLOW_TENANT_HOST === 'true' }));
+  const email = createSmtpChannel({ defaults: smtpDefaultsFromEnv(env), timeoutMs: adapterTimeout, allowTenantHost: env.SMTP_ALLOW_TENANT_HOST === 'true' });
+  channels.set('email', email);
   if (env.WHATSAPP_GRAPH_VERSION) channels.set('whatsapp', createWhatsAppChannel({ graphVersion: env.WHATSAPP_GRAPH_VERSION, timeoutMs: adapterTimeout }));
-  const slack = createSlackNotifier({ webhookFor: (t) => db.secret(t, 'slack'), timeoutMs: 5000, onError: (reason) => logger.warn('alert_delivery', { reason }) });
+  const onError = (reason: string) => logger.warn('alert_delivery', { reason });
+  const slack = createSlackNotifier({ webhookFor: (t) => db.secret(t, 'slack'), timeoutMs: 5000, onError });
+  // Tenants without a Slack webhook get alerts by email to their owners, through their own email account.
+  const emailAlerts = createEmailAlertNotifier({
+    channel: email,
+    accountFor: async (t) =>
+      (await db.pool.query<{ config: Record<string, unknown> }>(`select config from public.channel_accounts where tenant_id = $1 and channel = 'email' and enabled`, [t])).rows[0]?.config ?? null,
+    credentialsFor: (t) => db.secret(t, 'email'),
+    recipientsFor: async (t) =>
+      (
+        await db.pool.query<{ email: string }>(
+          `select u.email from public.memberships m join auth.users u on u.id = m.user_id where m.tenant_id = $1 and m.role = 'owner' and u.email is not null order by u.email`,
+          [t],
+        )
+      ).rows.map((r) => r.email),
+    onError,
+  });
+  const alerts = slackOrEmail(async (t) => (await db.secret(t, 'slack')) !== null, slack, emailAlerts);
   const logAlerts = { notify: async (a: { tenantId: string; kind: string; severity: string }) => logger.warn('alert', { tenantId: a.tenantId, reason: a.kind, outcome: a.severity }) };
   return {
     db,
     clock,
     channels: { get: (ch) => channels.get(ch) },
-    notifier: fanout(logAlerts, slack),
+    notifier: fanout(logAlerts, alerts),
     limiter: new TokenBucketLimiter(() => DEFAULT_RATE_LIMIT, () => clock.now().getTime()),
     logger,
     failpoints: NO_FAILPOINTS,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Alert } from '@dueloop/messaging';
-import { createSlackNotifier, fanout, slackText } from '../src/index.ts';
+import type { Alert, OutboundChannel, OutboundEnvelope } from '@dueloop/messaging';
+import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail, slackText } from '../src/index.ts';
 
 const alert: Alert = { tenantId: 't1', dedupeKey: 'k', kind: 'message_unknown', severity: 'critical', title: 'Invoice <INV-1> & co', lines: ['key: a:s1:email'] };
 const HOOK = 'https://hooks.slack.com/services/T000/B000/XXXX';
@@ -48,5 +48,43 @@ describe('Slack notifier contract', () => {
     const seen: string[] = [];
     await fanout({ notify: async () => Promise.reject(new Error('x')) }, { notify: async (a) => void seen.push(a.kind) }).notify(alert);
     expect(seen).toEqual(['message_unknown']);
+  });
+});
+
+describe('email alert fallback', () => {
+  const sent: OutboundEnvelope[] = [];
+  const channel: OutboundChannel = {
+    channel: 'email',
+    send: async (e) => {
+      sent.push(e);
+      return { kind: 'sent', providerMessageId: null };
+    },
+  };
+  const email = createEmailAlertNotifier({
+    channel,
+    accountFor: async () => ({ from_address: 'billing@test-co.example', message_id_domain: 'test-co.example' }),
+    credentialsFor: async () => null,
+    recipientsFor: async () => ['owner@test-co.example', 'bad\r\nBcc: x@evil.example'],
+  });
+
+  it('tenants without a Slack webhook get the alert by email to the owners; unsafe addresses are skipped', async () => {
+    sent.length = 0;
+    const { f, calls } = fake(200);
+    const slack = createSlackNotifier({ webhookFor: async () => null, timeoutMs: 100, fetch: f });
+    await slackOrEmail(async () => false, slack, email).notify(alert);
+    expect(calls).toHaveLength(0);
+    expect(sent).toHaveLength(1);
+    const c = sent[0]?.content;
+    expect(c?.kind === 'email' && c.to.address).toBe('owner@test-co.example');
+    expect(c?.kind === 'email' && c.subject).toBe('[Dueloop] Invoice <INV-1> & co');
+    expect(c?.kind === 'email' && c.messageId).toMatch(/^<.+@test-co\.example>$/);
+  });
+
+  it('with a Slack webhook, no email is sent', async () => {
+    sent.length = 0;
+    const { f, calls } = fake(200);
+    await slackOrEmail(async () => true, createSlackNotifier({ webhookFor: async () => HOOK, timeoutMs: 100, fetch: f }), email).notify(alert);
+    expect(calls).toHaveLength(1);
+    expect(sent).toHaveLength(0);
   });
 });

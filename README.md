@@ -118,3 +118,8 @@ pnpm test:load                           # 5,000 invoices (slow, not in CI)
   Mailpit (SMTP 54325, web UI http://127.0.0.1:54324).
 - WhatsApp is wired only when `WHATSAPP_GRAPH_VERSION` is set (ADR 0020). The token is a Vault secret.
 - A message in an unknown state is never resent automatically (rule 17). See `docs/decisions/0013`–`0021`.
+- Deliverability: before sending from a real domain, the tenant's domain needs SPF, DKIM and DMARC records
+  that cover the SMTP relay, otherwise reminders land in spam or are rejected. The opt-out is an instruction
+  in the footer ("reply STOP"); a one-click unsubscribe link comes in phase 6.
+- Default reminder wording is polite and factual and is checked against a banned-wording list. It is **not
+  legal advice**: debt-collection messaging rules differ by market, and each market needs its own review.
