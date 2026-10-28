@@ -585,14 +585,14 @@ isOneToOne: false
                   ]
                 },"payment_requests": {
                   Row: {
-                    "amount": number,"created_at": string,"currency": string,"deactivated_at": string | null,"deactivation_reason": string | null,"expires_at": string | null,"id": string,"idempotency_key": string,"invoice_id": string,"payment_account_id": string | null,"provider": string,"provider_object_id": string | null,"status": string,"tenant_id": string,"url": string | null
+                    "amount": number,"created_at": string,"currency": string,"deactivated_at": string | null,"deactivation_reason": string | null,"expires_at": string | null,"id": string,"idempotency_key": string,"invoice_id": string,"payment_account_id": string | null,"provider": string,"provider_deactivated_at": string | null,"provider_object_id": string | null,"status": string,"tenant_id": string,"url": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"created_at": string,"currency": string,"deactivated_at"?: string | null,"deactivation_reason"?: string | null,"expires_at"?: string | null,"id"?: string,"idempotency_key": string,"invoice_id": string,"payment_account_id"?: string | null,"provider": string,"provider_object_id"?: string | null,"status"?: string,"tenant_id": string,"url"?: string | null
+                    "amount": number,"created_at": string,"currency": string,"deactivated_at"?: string | null,"deactivation_reason"?: string | null,"expires_at"?: string | null,"id"?: string,"idempotency_key": string,"invoice_id": string,"payment_account_id"?: string | null,"provider": string,"provider_deactivated_at"?: string | null,"provider_object_id"?: string | null,"status"?: string,"tenant_id": string,"url"?: string | null
                   }
                   Update: {
-                    "amount"?: number,"created_at"?: string,"currency"?: string,"deactivated_at"?: string | null,"deactivation_reason"?: string | null,"expires_at"?: string | null,"id"?: string,"idempotency_key"?: string,"invoice_id"?: string,"payment_account_id"?: string | null,"provider"?: string,"provider_object_id"?: string | null,"status"?: string,"tenant_id"?: string,"url"?: string | null
+                    "amount"?: number,"created_at"?: string,"currency"?: string,"deactivated_at"?: string | null,"deactivation_reason"?: string | null,"expires_at"?: string | null,"id"?: string,"idempotency_key"?: string,"invoice_id"?: string,"payment_account_id"?: string | null,"provider"?: string,"provider_deactivated_at"?: string | null,"provider_object_id"?: string | null,"status"?: string,"tenant_id"?: string,"url"?: string | null
                   }
                   Relationships: [
                     {

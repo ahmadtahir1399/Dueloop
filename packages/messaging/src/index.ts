@@ -6,3 +6,4 @@ export * from './budget.ts';
 export * from './router.ts';
 export * from './pacing.ts';
 export * from './defaults.ts';
+export * from './payment-block.ts';

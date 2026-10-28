@@ -17,6 +17,8 @@ import {
   sanitiseDisplayName,
   sanitiseHeaderValue,
   jitterMinutes,
+  paymentBlock,
+  safePayLink,
   type Alert,
   type OutboundEnvelope,
   type SendOutcome,
@@ -25,7 +27,7 @@ import { DateTime } from 'luxon';
 import { loadContext, pickTemplate, toCtx, type WorkerContext } from './context.ts';
 import type { Job, WorkerDb } from './db.ts';
 import type { Logger } from './logger.ts';
-import type { ChannelRegistry, Clock, Failpoints, Notifier, RateLimiter, WorkerConfig } from './ports.ts';
+import type { ChannelRegistry, Clock, Failpoints, Notifier, PaymentLinks, RateLimiter, WorkerConfig } from './ports.ts';
 
 export interface WorkerDeps {
   readonly db: WorkerDb;
@@ -36,6 +38,8 @@ export interface WorkerDeps {
   readonly logger: Logger;
   readonly failpoints: Failpoints;
   readonly config: WorkerConfig;
+  /** Prompt 5: gateway links for the payment block. Absent = bank text only. */
+  readonly payments?: PaymentLinks;
 }
 
 export type JobOutcome =
@@ -97,7 +101,15 @@ async function withTimeout(p: Promise<SendOutcome>, ms: number): Promise<SendOut
 
 type Content = { ok: true; envelope: OutboundEnvelope; subject: string | null; body: string } | { ok: false; reason: string };
 
-function buildContent(c: WorkerContext, key: string, stepTemplate: string, channel: 'email' | 'whatsapp' | 'sms', now: Date, overrides: { subject: string | null; body: string | null }): Content {
+function buildContent(
+  c: WorkerContext,
+  key: string,
+  stepTemplate: string,
+  channel: 'email' | 'whatsapp' | 'sms',
+  now: Date,
+  overrides: { subject: string | null; body: string | null },
+  link: string | null,
+): Content {
   const tmpl = pickTemplate(c.templates, stepTemplate, channel, c.customer.language);
   if (!tmpl) return { ok: false, reason: 'template_missing' };
   // Format in the language of the template actually used (it may be the English fallback), so a message
@@ -109,16 +121,19 @@ function buildContent(c: WorkerContext, key: string, stepTemplate: string, chann
       DateTime.fromJSDate(now).setZone(c.settings.timezone).startOf('day').diff(DateTime.fromISO(c.invoice.dueOn, { zone: c.settings.timezone }).startOf('day'), 'days').days,
     ),
   );
+  const amountDue = formatAmount(c.invoice.balanceMinor, c.invoice.currency, locale);
   const vars = {
     customer_name: c.customer.name,
     business_name: c.tenant.name,
     invoice_number: c.invoice.number,
-    amount_due: formatAmount(c.invoice.balanceMinor, c.invoice.currency, locale),
+    amount_due: amountDue,
     due_date: formatDueDate(c.invoice.dueOn, locale),
     days_overdue: String(daysLate),
     reference_code: c.invoice.referenceCode,
     bank_instructions: c.tenant.bankInstructions,
-    pay_link: '', // payment links arrive in prompt 5; the variable exists and is empty
+    pay_link: link ?? '',
+    // Composed by code: the CURRENT balance and the reference code, always; the link only after safePayLink.
+    payment_block: paymentBlock({ amountDue, referenceCode: c.invoice.referenceCode, bankText: c.tenant.bankInstructions, link }),
   };
   const body = render(tmpl.body, vars);
   if (!body.ok) return { ok: false, reason: 'template_render_failed' };
@@ -277,14 +292,27 @@ export async function processJob(job: Job, deps: WorkerDeps): Promise<JobOutcome
   return 'busy';
 }
 
-type FinalGate = { kind: 'paused' } | { kind: 'opted_out' } | { kind: 'blocked'; until: Date };
+type FinalGate = { kind: 'paused' } | { kind: 'opted_out' } | { kind: 'blocked'; until: Date } | { kind: 'paid' } | { kind: 'balance_changed' };
+
+const FINAL_STATUSES = new Set(['paid', 'written_off', 'cancelled']);
+
+/**
+ * Issue L (prompt 5): money may land between loading the context and the send. A final invoice or a zero
+ * balance stops the send; a changed balance stops it too, so the next run renders the NEW amount.
+ */
+async function paymentGate(deps: WorkerDeps, job: Job, c: WorkerContext): Promise<FinalGate | null> {
+  const fresh = await deps.db.invoiceBalance(job.tenantId, job.invoiceId);
+  if (!fresh || FINAL_STATUSES.has(fresh.status) || fresh.balance <= 0) return { kind: 'paid' };
+  return fresh.balance === c.invoice.balanceMinor ? null : { kind: 'balance_changed' };
+}
 
 async function finalGate(deps: WorkerDeps, job: Job, c: WorkerContext): Promise<FinalGate | null> {
   const now = deps.clock.now();
   if (await deps.db.pausedFor(job.tenantId)) return { kind: 'paused' };
   if (await deps.db.customerOptedOut(c.invoice.customerId)) return { kind: 'opted_out' };
   const block = await deps.db.openBlockingTask(job.tenantId, job.invoiceId, now);
-  return block ? { kind: 'blocked', until: block.until } : null;
+  if (block) return { kind: 'blocked', until: block.until };
+  return paymentGate(deps, job, c);
 }
 
 async function sendPath(
@@ -372,8 +400,22 @@ async function sendPath(
     overrides = { subject: a.subjectOverride, body: a.bodyOverride };
   }
 
+  // Step 4b (prompt 5): the payment link, created or reused BEFORE the claim. A crash here leaves at worst an
+  // unused request, never a duplicate send; a provider failure retries, then parks (never 'unknown').
+  let link: string | null = null;
+  if (deps.payments) {
+    const p = await deps.payments.linkFor(job.tenantId, job.invoiceId);
+    if (!p.ok) {
+      if (job.readCount >= config.maxAttempts) return park(job, deps, log, c, key, 'payment_link_unavailable');
+      await db.release(job.msgId, config.retryBaseSeconds * 2 ** Math.max(0, job.readCount - 1));
+      logger.warn('send_gate', { ...log, gate: 'payment_link', outcome: 'released', reason: p.reason });
+      return 'released';
+    }
+    link = safePayLink(p.url);
+  }
+
   // Render BEFORE the claim (pure): a template problem can never leave a pending row behind.
-  const content = buildContent(c, key, step.templateKey, channel, now, overrides);
+  const content = buildContent(c, key, step.templateKey, channel, now, overrides, link);
   if (!content.ok) {
     if (content.reason === 'unsafe_address') {
       await db.recordSkip({ tenantId: job.tenantId, invoiceId: job.invoiceId, customerId: c.invoice.customerId, key, stepId: step.id, channel, reason: 'unsafe_address', at: now });
@@ -381,6 +423,15 @@ async function sendPath(
       return 'skipped';
     }
     return park(job, deps, log, c, key, content.reason);
+  }
+
+  // Pre-claim payment gate (issue L): paid, or the balance moved since the context was loaded.
+  const pay = await paymentGate(deps, job, c);
+  if (pay) {
+    await db.setNextAction(job.tenantId, job.invoiceId, now, null);
+    await db.ack(job.msgId);
+    logger.info('send_gate', { ...log, gate: pay.kind, outcome: 'not_sent' });
+    return 'no_action';
   }
 
   // Step 5: claim the key in the outbox.

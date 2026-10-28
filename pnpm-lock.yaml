@@ -307,6 +307,15 @@ importers:
         specifier: workspace:*
         version: link:../messaging
 
+  packages/adapters-payments:
+    dependencies:
+      '@dueloop/core':
+        specifier: workspace:*
+        version: link:../core
+      '@dueloop/ingest':
+        specifier: workspace:*
+        version: link:../ingest
+
   packages/adapters-whatsapp:
     dependencies:
       '@dueloop/messaging':
@@ -433,6 +442,34 @@ importers:
         specifier: ^3.7.6
         version: 3.7.6
 
+  packages/payments:
+    dependencies:
+      '@dueloop/core':
+        specifier: workspace:*
+        version: link:../core
+      '@dueloop/ingest':
+        specifier: workspace:*
+        version: link:../ingest
+      '@dueloop/messaging':
+        specifier: workspace:*
+        version: link:../messaging
+      luxon:
+        specifier: 3.7.2
+        version: 3.7.2
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+    devDependencies:
+      '@dueloop/adapters-payments':
+        specifier: workspace:*
+        version: link:../adapters-payments
+      '@types/luxon':
+        specifier: 3.7.6
+        version: 3.7.6
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+
   packages/sim:
     dependencies:
       '@dueloop/core':
@@ -467,6 +504,9 @@ importers:
       '@dueloop/adapters-notify':
         specifier: workspace:*
         version: link:../adapters-notify
+      '@dueloop/adapters-payments':
+        specifier: workspace:*
+        version: link:../adapters-payments
       '@dueloop/adapters-whatsapp':
         specifier: workspace:*
         version: link:../adapters-whatsapp
@@ -485,6 +525,9 @@ importers:
       '@dueloop/messaging':
         specifier: workspace:*
         version: link:../messaging
+      '@dueloop/payments':
+        specifier: workspace:*
+        version: link:../payments
       '@dueloop/webhooks':
         specifier: workspace:*
         version: link:../webhooks

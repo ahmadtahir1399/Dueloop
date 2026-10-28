@@ -1,6 +1,7 @@
 // pnpm worker --once | --loop [--tenant <id|name>] [--now <iso>] [--interval <seconds>]
 import { parseArgs } from 'node:util';
 import { processBatch, sweep } from '../process.ts';
+import { processReceiptBatch } from '../receipts.ts';
 import { buildDeps, clockFrom, openDb, resolveTenant } from '../runtime.ts';
 
 const { values } = parseArgs({
@@ -56,6 +57,12 @@ async function pass(): Promise<Record<string, number>> {
     if (!progressed) await new Promise((res) => setTimeout(res, 1200));
   }
   if (waiting) totals.left_for_next_pass = waiting;
+  // Receipts (prompt 5): the transactional queue, same outbox rules, no decide().
+  for (;;) {
+    const r = await processReceiptBatch(deps, { limit: 25, filter });
+    for (const [k, n] of Object.entries(r.outcomes)) totals[`receipt_${k}`] = (totals[`receipt_${k}`] ?? 0) + n;
+    if (r.claimed === 0 || stopping || Object.keys(r.outcomes).every((k) => k === 'busy' || k === 'released')) break;
+  }
   return totals;
 }
 

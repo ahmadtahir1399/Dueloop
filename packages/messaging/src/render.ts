@@ -12,7 +12,11 @@ export const TEMPLATE_VARIABLES = [
   'days_overdue',
   'reference_code',
   'bank_instructions',
-  'pay_link', // always supplied as an EMPTY string until prompt 5 adds payment links
+  'pay_link', // prompt 5: the checked gateway link, or '' (kept for tenant templates written before payment_block)
+  // Prompt 5.
+  'payment_block', // composed by code (paymentBlock): current balance, reference code, link or bank text
+  'amount_received', // receipts
+  'balance_remaining', // receipts
 ] as const;
 export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
 export type TemplateVariables = Readonly<Record<TemplateVariable, string>>;
