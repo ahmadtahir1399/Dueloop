@@ -13,6 +13,15 @@ const files = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(path.join(dir, e.name)) : [path.join(dir, e.name)]));
 
 describe('failpoints are unreachable in production', () => {
+  it('the inbound composition root wires the inbound no-op too', async () => {
+    const { buildInboundDeps, HumanOnlyClassifier } = await import('../src/inbound-runtime.ts');
+    const { NO_INBOUND_FAILPOINTS } = await import('@dueloop/inbound');
+    const db = new WorkerDb(new pg.Pool({ connectionString: 'postgres://unused@127.0.0.1:1/x' }));
+    expect(buildInboundDeps({}, db, { now: () => new Date(0) }, new HumanOnlyClassifier()).failpoints).toBe(NO_INBOUND_FAILPOINTS);
+    expect(Object.isFrozen(NO_INBOUND_FAILPOINTS)).toBe(true);
+    void db.pool.end();
+  });
+
   it('the composition root always wires the frozen no-op', () => {
     const db = new WorkerDb(new pg.Pool({ connectionString: 'postgres://unused@127.0.0.1:1/x' })); // never connects
     const deps = buildDeps({}, db, { now: () => new Date(0) });
@@ -27,7 +36,7 @@ describe('failpoints are unreachable in production', () => {
       const text = readFileSync(f, 'utf8');
       expect(text, f).not.toMatch(/from ['"][^'"]*test-db/);
       expect(text, f).not.toMatch(/crashAt\(|new FailpointCrash/);
-      for (const m of text.matchAll(/\bfailpoints\s*:\s*([A-Za-z_]+)\s*[,}\n]/g)) expect(m[1], f).toBe('NO_FAILPOINTS');
+      for (const m of text.matchAll(/\bfailpoints\s*:\s*([A-Za-z_]+)\s*[,}\n]/g)) expect(['NO_FAILPOINTS', 'NO_INBOUND_FAILPOINTS'], f).toContain(m[1]);
     }
   });
 });
