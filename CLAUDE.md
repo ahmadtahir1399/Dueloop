@@ -15,3 +15,8 @@
 13. Cross-table references include tenant_id (composite FKs).
 14. Uploaded files are untrusted: size limits, encoding checks, spreadsheet-formula neutralisation on every export.
 15. DB invariants are tested against the real local database.
+16. An approval authorises one idempotency key and never bypasses decide(); re-validate with fresh context immediately before sending.
+17. At most once: a message in an unknown state is NEVER resent automatically; a human reconciles it.
+18. Check the kill switch immediately before every send.
+19. Secrets live only in Vault/env: never in logs, events, payloads, dead letters or error messages.
+20. Never log message bodies or contact details.

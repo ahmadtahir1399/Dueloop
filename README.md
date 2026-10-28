@@ -1,8 +1,9 @@
 # Dueloop: invoice follow-up agent
 
-Status: **Phase 2 of 7**: the pure domain core and simulator (phase 1), plus the database (schema,
-integrity rules, Row Level Security) and the CSV import pipeline. There is no scheduler, channel adapter,
-classifier, payment integration or UI yet.
+Status: **Phase 3 of 7**: the pure domain core and simulator (phase 1); the database, RLS and CSV import
+(phase 2); and the scheduler plus sending (phase 3): a pgmq queue, a Node worker with an at-most-once
+outbox, approvals, kill switches, pacing, and SMTP / WhatsApp / Slack adapters. Replies, promises,
+payment links and the classifier come in later phases.
 
 ## What is here
 
@@ -11,6 +12,11 @@ classifier, payment integration or UI yet.
 - `packages/sim`: deterministic simulator with an invariant checker.
 - `packages/db`: generated database types, pure row -> core mappers, `rls-check` and `db-types` scripts.
 - `packages/ingest`: CSV validation (pure), staging and commit through the database, and the import CLI.
+- `packages/messaging`: template rendering (fail-closed), footer, header sanitising, budget, router, pacing,
+  and the `OutboundChannel` contract (ADR 0019).
+- `packages/worker`: the send protocol (ADR 0013), the composition root, and the ops CLIs.
+- `packages/adapters-email`, `adapters-whatsapp`, `adapters-notify`: SMTP (nodemailer), WhatsApp Cloud API
+  templates, and Slack alerts, each with contract tests.
 - `supabase/`: migrations, the demo seed, and pgTAP tests.
 - `docs/decisions`: architecture decision records.
 
@@ -87,3 +93,28 @@ pnpm run import --tenant 5eed0000-0000-4000-8000-00000000000a --file packages/in
 - `pnpm import:twice <same args>` imports twice and fails unless the second run changes nothing.
 - Mapping and options formats are in `packages/ingest/src/types.ts`; see the files in
   `packages/ingest/fixtures/mappings` and `options`.
+
+## Sending (phase 3)
+
+```bash
+pnpm worker --once                       # one pass: enqueue due work, sweep, drain the queue
+pnpm worker --loop                       # keep running (SIGINT/SIGTERM stop it cleanly)
+pnpm approvals list --tenant "Demo Agency"
+pnpm approvals approve --all-pending --tenant "Demo Agency"
+pnpm approvals reject <id> --note "..."
+pnpm messages unknown                    # messages that may or may not have been sent
+pnpm messages resolve <id> --as sent     # or --as not_sent, after checking with the provider
+pnpm messages unpark <invoiceId>
+pnpm tenant pause "Demo Agency"          # or: pnpm tenant pause --global
+pnpm demo:send                           # the whole walkthrough against the local Mailpit
+pnpm chaos                               # crash at every step + SIGKILL mid-batch
+pnpm test:load                           # 5,000 invoices (slow, not in CI)
+```
+
+- The worker connects to `WORKER_DATABASE_URL`, or the local stack when it is unset. It never reads
+  `DATABASE_URL` (the hosted project).
+- Email goes through the operator relay `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER`. The password
+  is a Vault secret (`private.set_channel_secret(tenant, 'email', ...)`). Locally, `pnpm demo:send` uses
+  Mailpit (SMTP 54325, web UI http://127.0.0.1:54324).
+- WhatsApp is wired only when `WHATSAPP_GRAPH_VERSION` is set (ADR 0020). The token is a Vault secret.
+- A message in an unknown state is never resent automatically (rule 17). See `docs/decisions/0013`–`0021`.
