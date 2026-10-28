@@ -100,9 +100,11 @@ describe('approvals (issue E, rule 16)', () => {
     expect(w.email.calls).toHaveLength(1);
   });
 
-  it('low_confidence is treated as always until prompt 4', async () => {
+  // Prompt 3 treated low_confidence as 'always'; prompt 4 (issue N) defines it: approval only while a reply is in
+  // doubt. The doubt cases are in gates.test.ts.
+  it('low_confidence without any unresolved reply doubt sends without approval (prompt 4, issue N)', async () => {
     const w = await world({ approvalMode: 'low_confidence' });
-    expect((await w.run()).outcomes).toEqual({ approval_requested: 1 });
+    expect((await w.run()).outcomes).toEqual({ sent: 1 });
   });
 
   it('a rejected step is skipped and never proposed again', async () => {

@@ -52,7 +52,8 @@ export type JobOutcome =
   | 'ambiguous'
   | 'unknown'
   | 'dead_lettered'
-  | 'already_sent';
+  | 'already_sent'
+  | 'blocked';
 
 const MINUTE = 60_000;
 const addMs = (d: Date, ms: number) => new Date(d.getTime() + ms);
@@ -170,12 +171,17 @@ function buildContent(c: WorkerContext, key: string, stepTemplate: string, chann
   return { ok: false, reason: 'channel_unsupported' };
 }
 
-const requiresApproval = (mode: string) => mode !== 'never'; // 'low_confidence' = 'always' until prompt 4 (ADR 0015)
+/** ADR 0015 + issue N: 'low_confidence' needs approval only while there is unresolved doubt about a reply. */
+async function requiresApproval(db: WorkerDb, c: WorkerContext, now: Date): Promise<boolean> {
+  if (c.tenant.approvalMode === 'never') return false;
+  if (c.tenant.approvalMode === 'always') return true;
+  return db.hasOpenLowConfidenceReview(c.invoice.tenantId, c.invoice.id, c.invoice.customerId, new Date(now.getTime() - 14 * 86_400_000));
+}
 
 export async function processJob(job: Job, deps: WorkerDeps): Promise<JobOutcome> {
   const { db, clock, logger, failpoints, config } = deps;
   const log = { correlationId: `${job.invoiceId}:${job.msgId}`, tenantId: job.tenantId, invoiceId: job.invoiceId, msgId: job.msgId };
-  failpoints.hit('after_claim', { idempotencyKey: null });
+  await failpoints.hit('after_claim', { idempotencyKey: null });
 
   for (let round = 0; round < 3; round++) {
     const loaded = await loadContext(db, job.tenantId, job.invoiceId);
@@ -188,6 +194,21 @@ export async function processJob(job: Job, deps: WorkerDeps): Promise<JobOutcome
     }
     const c = loaded.ctx;
     const now = clock.now();
+
+    // Pre-decide gate (prompt 4): an open, unexpired blocking task => wait until it expires, send nothing.
+    const block = await db.openBlockingTask(job.tenantId, job.invoiceId, now);
+    if (block) {
+      await db.setNextAction(job.tenantId, job.invoiceId, block.until, null);
+      await db.ack(job.msgId);
+      logger.info('job_blocked', { ...log, gate: 'open_task' });
+      return 'blocked';
+    }
+    // A block that ran out while its task is still open: tell the owner once, then carry on normally.
+    for (const t of await db.claimExpiredBlockAlerts(job.tenantId, job.invoiceId, now)) {
+      await db.appendEvent(db.pool, job.tenantId, job.invoiceId, { type: 'RemindersResumed', key: `task:${t.taskId}:resumed`, payload: { taskType: t.type } });
+      await alertOnce(deps, { tenantId: job.tenantId, dedupeKey: `resumed:${t.taskId}`, kind: 'reminders_resumed', severity: 'info', title: `Reminders resume for invoice ${c.invoice.number}`, lines: [`open task: ${t.type}`] }, 'once');
+    }
+
     const actions = decide(toCtx(c, now));
     const send = actions.find((a): a is Extract<Action, { kind: 'send_reminder' }> => a.kind === 'send_reminder');
 
@@ -222,6 +243,7 @@ export async function processJob(job: Job, deps: WorkerDeps): Promise<JobOutcome
         break;
       }
       status = t.to;
+      if (a.kind === 'mark_promise_broken') await db.markPromiseBroken(job.tenantId, job.invoiceId, now);
       if (a.kind === 'escalate') {
         await alertOnce(
           deps,
@@ -253,6 +275,16 @@ export async function processJob(job: Job, deps: WorkerDeps): Promise<JobOutcome
   await db.release(job.msgId, 5);
   logger.warn('job_contended', log);
   return 'busy';
+}
+
+type FinalGate = { kind: 'paused' } | { kind: 'opted_out' } | { kind: 'blocked'; until: Date };
+
+async function finalGate(deps: WorkerDeps, job: Job, c: WorkerContext): Promise<FinalGate | null> {
+  const now = deps.clock.now();
+  if (await deps.db.pausedFor(job.tenantId)) return { kind: 'paused' };
+  if (await deps.db.customerOptedOut(c.invoice.customerId)) return { kind: 'opted_out' };
+  const block = await deps.db.openBlockingTask(job.tenantId, job.invoiceId, now);
+  return block ? { kind: 'blocked', until: block.until } : null;
 }
 
 async function sendPath(
@@ -318,7 +350,7 @@ async function sendPath(
 
   // Step 4: approval for exactly this key.
   let overrides = { subject: null as string | null, body: null as string | null };
-  if (requiresApproval(c.tenant.approvalMode)) {
+  if (await requiresApproval(db, c, now)) {
     const a = await db.approvalFor(job.tenantId, key);
     if (!a || a.status === 'expired' || a.status === 'superseded') {
       await db.requestApproval(job.tenantId, job.invoiceId, key, step.id, channel, now);
@@ -420,7 +452,21 @@ async function sendPath(
     messageId = m.id;
     attempt = reclaimed;
   }
-  failpoints.hit('after_pending_insert', { idempotencyKey: key });
+  await failpoints.hit('after_pending_insert', { idempotencyKey: key });
+
+  // Final gate, immediately before the adapter (rules 18 + 22, issue L): a pause, an opt-out or a blocking task
+  // that arrived after decide() stops the send. The adapter was not called, so the claim is given back.
+  const gate = await finalGate(deps, job, c);
+  if (gate) {
+    await db.abandonClaim(messageId, `gate_${gate.kind}`);
+    if (gate.kind === 'paused') await db.release(job.msgId, config.releaseSeconds);
+    else {
+      await db.setNextAction(job.tenantId, job.invoiceId, gate.kind === 'blocked' ? gate.until : clock.now(), null);
+      await db.ack(job.msgId);
+    }
+    logger.info('send_gate', { ...log, gate: `final_${gate.kind}`, outcome: 'not_sent' });
+    return gate.kind === 'paused' ? 'released' : gate.kind === 'blocked' ? 'blocked' : 'no_action';
+  }
 
   // Step 7: the adapter, with a hard timeout. A timeout is AMBIGUOUS (issue K), never a retryable failure.
   const adapter = deps.channels.get(channel);
@@ -428,21 +474,21 @@ async function sendPath(
   const outcome: SendOutcome = adapter
     ? await withTimeout(adapter.send(content.envelope, credentials), config.sendTimeoutMs)
     : { kind: 'not_sent_retryable', reason: 'no_adapter' };
-  failpoints.hit('after_adapter', { idempotencyKey: key });
+  await failpoints.hit('after_adapter', { idempotencyKey: key });
   const at = clock.now();
 
   // Step 8: record the outcome in one transaction; step 9: ack last.
   switch (outcome.kind) {
     case 'sent': {
       await db.recordSent({ tenantId: job.tenantId, invoiceId: job.invoiceId, messageId, key, stepId: step.id, channel, providerMessageId: outcome.providerMessageId, at, nextActionAt: nextActionAfterSend(at, c, config.jitterMinutes) });
-      failpoints.hit('after_record', { idempotencyKey: key });
+      await failpoints.hit('after_record', { idempotencyKey: key });
       await db.ack(job.msgId);
       logger.info('send', { ...log, outcome: 'sent', attempt });
       return 'sent';
     }
     case 'not_sent_retryable': {
       await db.recordRetry(messageId, outcome.reason);
-      failpoints.hit('after_record', { idempotencyKey: key });
+      await failpoints.hit('after_record', { idempotencyKey: key });
       if (attempt >= config.maxAttempts) {
         await deadLetter(job, deps, log, c, key, attempt, outcome.reason);
         return 'dead_lettered';
@@ -453,7 +499,7 @@ async function sendPath(
     }
     case 'permanent': {
       await db.recordPermanent({ tenantId: job.tenantId, invoiceId: job.invoiceId, messageId, key, stepId: step.id, channel, reason: outcome.reason, at });
-      failpoints.hit('after_record', { idempotencyKey: key });
+      await failpoints.hit('after_record', { idempotencyKey: key });
       await alertOnce(deps, { tenantId: job.tenantId, dedupeKey: `failed:${key}`, kind: 'send_failed', severity: 'warning', title: `A reminder for invoice ${c.invoice.number} could not be sent`, lines: [`channel: ${channel}`, `reason: ${outcome.reason}`] }, 'once');
       await db.ack(job.msgId);
       logger.warn('send', { ...log, outcome: 'failed_permanent', reason: outcome.reason });
