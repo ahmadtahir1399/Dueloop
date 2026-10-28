@@ -1139,7 +1139,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "cancel_promise":
+            "audit_export":
+{ Args: { "p_from": string,"p_max"?: number,"p_tenant": string,"p_to": string }; Returns: Json
+                           },
+"cancel_promise":
 { Args: { "p_note"?: string,"p_promise_id": string }; Returns: string
                            },
 "commit_import_batch":
@@ -1153,6 +1156,9 @@ isOneToOne: false
                            },
 "edit_approval":
 { Args: { "p_approval_id": string,"p_body": string,"p_subject": string }; Returns: undefined
+                           },
+"is_globally_paused":
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "kpi_ageing":
 { Args: { "p_as_of"?: string }; Returns: {
@@ -1184,11 +1190,30 @@ isOneToOne: false
               "credit": number,"currency": string,"receipts": number,"recovered": number,"tenant_id": string
             }[]
                            },
+"list_members":
+{ Args: { "p_tenant": string }; Returns: {
+              "created_at": string,"email": string,"role": string,"user_id": string
+            }[]
+                           },
+"log_list_export":
+{ Args: { "p_list": string,"p_rows": number,"p_tenant": string }; Returns: undefined
+                           },
+"nav_counters":
+{ Args: { "p_tenant": string }; Returns: {
+              "approvals": number,"proofs": number,"tasks": number,"unknown_messages": number
+            }[]
+                           },
+"remove_member":
+{ Args: { "p_tenant": string,"p_user": string }; Returns: undefined
+                           },
 "reopen_task":
 { Args: { "p_note"?: string,"p_task_id": string }; Returns: string
                            },
 "resolve_task":
 { Args: { "p_note": string,"p_task_id": string }; Returns: string
+                           },
+"set_member_role":
+{ Args: { "p_role": string,"p_tenant": string,"p_user": string }; Returns: undefined
                            },
 "set_outbound_paused":
 { Args: { "p_paused": boolean,"p_tenant_id": string }; Returns: undefined

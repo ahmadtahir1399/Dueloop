@@ -1,8 +1,28 @@
-import { type NextRequest } from "next/server";
+// Request interception (Next.js 16 calls this file "proxy"; it replaced middleware.ts). Two jobs:
+// 1. Security headers per route class, with a fresh CSP nonce per request (Next.js CSP guide).
+// 2. For staff routes only: refresh the Supabase session (Supabase SSR docs) and send signed-out users to /login.
+// Public link pages and the REST API never touch the session cookie (rule 35: a GET creates no session).
+import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
+import { classHeaders, contentSecurityPolicy, routeClass } from "@/lib/security-headers";
 
 export async function proxy(request: NextRequest) {
-  return await updateSession(request);
+  const cls = routeClass(request.nextUrl.pathname);
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const csp = contentSecurityPolicy(nonce, process.env.NODE_ENV === "development");
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+
+  const response =
+    cls === "staff" || cls === "auth"
+      ? await updateSession(request, requestHeaders, cls === "staff")
+      : NextResponse.next({ request: { headers: requestHeaders } });
+
+  response.headers.set("Content-Security-Policy", csp);
+  for (const [k, v] of Object.entries(classHeaders(cls))) response.headers.set(k, v);
+  return response;
 }
 
 export const config = {

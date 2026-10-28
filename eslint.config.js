@@ -42,6 +42,46 @@ const noImportOutsideCore = {
   },
 };
 
+const webRoot = path.join(repoRoot, 'apps', 'web');
+const webTrusted = path.join(webRoot, 'lib', 'trusted');
+
+/**
+ * Rule 37: the trusted module (service-role key, direct DB pool) stays server-side. Client components, shared
+ * components and staff pages/layouts may not import it (or `pg`), directly or by relative path. Server actions,
+ * route handlers and the lib/* data layers may.
+ * @type {import('eslint').Rule.RuleModule}
+ */
+const trustedBoundary = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: { forbidden: '{{why}} may not import the trusted server module ("{{source}}"). Go through a server action or lib/ data layer.' },
+  },
+  create(context) {
+    const file = context.filename;
+    const rel = path.relative(webRoot, file).split(path.sep).join('/');
+    const src = context.sourceCode.getText();
+    const isClient = /^\s*(?:\/\/[^\n]*\n\s*)*['"]use client['"]/.test(src);
+    const isComponent = rel.startsWith('components/');
+    const isStaffView = /^app\/\(staff\)\/.*(?:page|layout|loading|error|not-found)\.tsx$/.test(rel);
+    const why = isClient ? 'A "use client" file' : isComponent ? 'A shared component' : isStaffView ? 'A staff page or layout' : null;
+    if (!why) return {};
+    /** @param {import('estree').Node & { source?: import('estree').Node | null }} node */
+    const check = (node) => {
+      const s = node.source;
+      if (!s || s.type !== 'Literal' || typeof s.value !== 'string') return;
+      const v = s.value;
+      let hit = v === 'pg' || v === '@/lib/trusted' || v.startsWith('@/lib/trusted/');
+      if (!hit && v.startsWith('.')) {
+        const r = path.relative(webTrusted, path.resolve(path.dirname(file), v));
+        hit = !r.startsWith('..') && !path.isAbsolute(r);
+      }
+      if (hit) context.report({ node: s, messageId: 'forbidden', data: { why, source: v } });
+    };
+    return { ImportDeclaration: check, ExportNamedDeclaration: check, ExportAllDeclaration: check, ImportExpression: check };
+  },
+};
+
 /** Rules shared by core and sim logic: no hidden clock, no hidden randomness. */
 const purityRules = {
   'no-restricted-syntax': [
@@ -123,6 +163,20 @@ export default defineConfig([
         { name: 'setTimeout', message: 'core has no timers.' },
         { name: 'setInterval', message: 'core has no timers.' },
         { name: 'fetch', message: 'core does no I/O.' },
+      ],
+    },
+  },
+  {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    plugins: { dueloopweb: { rules: { 'trusted-boundary': trustedBoundary } } },
+    rules: {
+      'dueloopweb/trusted-boundary': 'error',
+      // Rule 34 / issue G: customer and model text is rendered as text only.
+      'no-restricted-syntax': [
+        'error',
+        { selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']", message: 'Never render HTML from data (rule 34).' },
+        { selector: "MemberExpression[property.name=/^(innerHTML|outerHTML)$/]", message: 'Never write HTML from data (rule 34).' },
+        { selector: "CallExpression[callee.property.name='insertAdjacentHTML']", message: 'Never write HTML from data (rule 34).' },
       ],
     },
   },

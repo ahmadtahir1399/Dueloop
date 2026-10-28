@@ -44,7 +44,12 @@
     "eval:proof-live": "node packages/proofs/eval/live.ts",
     "import": "node packages/ingest/src/cli.ts",
     "import:twice": "node packages/ingest/scripts/import-twice-check.ts",
-    "web:build": "pnpm --filter @dueloop/web build"
+    "web:build": "pnpm --filter @dueloop/web build",
+    "web:test:e2e": "pnpm --filter @dueloop/web exec playwright test --project e2e",
+    "web:test:security": "pnpm --filter @dueloop/web exec playwright test --project security",
+    "web:test:a11y": "pnpm --filter @dueloop/web exec playwright test --project a11y",
+    "web:test:lowbandwidth": "pnpm --filter @dueloop/web exec playwright test --project lowbandwidth",
+    "e2e:demo": "pnpm --filter @dueloop/web exec playwright test --project demo"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
