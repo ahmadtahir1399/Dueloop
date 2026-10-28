@@ -23,13 +23,19 @@ export interface RedactionContext {
 }
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/gu;
-// 7+ digits with optional separators: phone numbers, account numbers. Amounts and dates are shorter.
-const LONG_NUMBER = /\+?\d(?:[\s().-]?\d){6,}/g;
+// 7+ digits with optional separators: phone numbers, account numbers.
+const LONG_NUMBER = /\+?\(?\d(?:[\s().-]{0,2}\d){6,}/g;
+// Dates and amounts can also be long digit runs; they are protected first (the model needs them).
+const DATE = /\b\d{4}-\d{1,2}-\d{1,2}\b|\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b/g;
+const AMOUNT = /[$€£¥₹₨]\s?\d[\d.,']*\d|\b[A-Z]{3}\s?\d[\d.,']*\d|\d[\d.,']*\d\s?(?:[$€£¥₹₨]|[A-Z]{3}\b)|\b\d{1,3}(?:[.,']\d{3})+(?:[.,]\d{1,2})?\b/g;
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Removes contact details and identifiers we know about. Amounts and dates stay (the model needs them). */
 export function redactForModel(text: string, ctx: RedactionContext): string {
-  let out = text.replace(EMAIL, '[email]').replace(LONG_NUMBER, '[number]');
+  const kept: string[] = [];
+  const protect = (m: string) => `\uE000${kept.push(m) - 1}\uE000`;
+  let out = text.replace(EMAIL, '[email]').replace(DATE, protect).replace(AMOUNT, protect).replace(LONG_NUMBER, '[number]');
+  out = out.replace(/\uE000(\d+)\uE000/g, (_m, i: string) => kept[Number(i)] ?? '');
   for (const n of ctx.invoiceNumbers.filter((x) => x.trim().length >= 2)) out = out.replace(new RegExp(escapeRe(n), 'gi'), '[invoice]');
   // Whole names and their parts of 3+ letters ("Ada Lovelace" -> "Ada", "Lovelace").
   const parts = ctx.names.flatMap((n) => [n, ...n.split(/\s+/)]).filter((p) => p.trim().length >= 3);
