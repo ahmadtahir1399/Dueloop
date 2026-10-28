@@ -27,7 +27,7 @@ import { DateTime } from 'luxon';
 import { loadContext, pickTemplate, toCtx, type WorkerContext } from './context.ts';
 import type { Job, WorkerDb } from './db.ts';
 import type { Logger } from './logger.ts';
-import type { ChannelRegistry, Clock, Failpoints, Notifier, PaymentLinks, RateLimiter, WorkerConfig } from './ports.ts';
+import type { ChannelRegistry, Clock, Failpoints, Notifier, PaymentLinks, PublicLinks, RateLimiter, WorkerConfig } from './ports.ts';
 
 export interface WorkerDeps {
   readonly db: WorkerDb;
@@ -40,6 +40,8 @@ export interface WorkerDeps {
   readonly config: WorkerConfig;
   /** Prompt 5: gateway links for the payment block. Absent = bank text only. */
   readonly payments?: PaymentLinks;
+  /** Prompt 6: our pay-page + opt-out links (take precedence over `payments` when present). */
+  readonly publicLinks?: PublicLinks;
 }
 
 export type JobOutcome =
@@ -110,6 +112,7 @@ export function buildContent(
   now: Date,
   overrides: { subject: string | null; body: string | null },
   link: string | null,
+  optOutUrl: string | null = null,
 ): Content {
   const tmpl = pickTemplate(c.templates, stepTemplate, channel, c.customer.language);
   if (!tmpl) return { ok: false, reason: 'template_missing' };
@@ -147,7 +150,7 @@ export function buildContent(
     const domain = String(account.message_id_domain ?? fromAddress.split('@')[1] ?? 'localhost');
     if (!c.customer.email || !isSafeAddress(c.customer.email) || !isSafeAddress(fromAddress)) return { ok: false, reason: 'unsafe_address' };
     // The footer goes on AFTER rendering and after any human edit, so an edit can never remove it.
-    const text = appendFooter(overrides.body ?? body.text, 'email', locale);
+    const text = appendFooter(overrides.body ?? body.text, 'email', locale, optOutUrl);
     const subjectText = sanitiseHeaderValue(overrides.subject ?? subject.text);
     return {
       ok: true,
@@ -164,6 +167,7 @@ export function buildContent(
           subject: subjectText,
           text,
           messageId: messageIdFor(key, domain),
+          ...(optOutUrl?.startsWith('https://') ? { listUnsubscribe: `${optOutUrl}/unsubscribe` } : {}),
         },
       },
     };
@@ -404,7 +408,20 @@ async function sendPath(
   // Step 4b (prompt 5): the payment link, created or reused BEFORE the claim. A crash here leaves at worst an
   // unused request, never a duplicate send; a provider failure retries, then parks (never 'unknown').
   let link: string | null = null;
-  if (deps.payments) {
+  let optOutUrl: string | null = null;
+  if (deps.publicLinks) {
+    // Prompt 6: our own links (opaque tokens, hashes stored). Composed from configuration, so not run through
+    // safePayLink (which exists for provider URLs). A failure retries, then parks; never 'unknown'.
+    const l = await deps.publicLinks.issue(job.tenantId, job.invoiceId, c.invoice.customerId, now);
+    if (!l.ok) {
+      if (job.readCount >= config.maxAttempts) return park(job, deps, log, c, key, 'public_link_unavailable');
+      await db.release(job.msgId, config.retryBaseSeconds * 2 ** Math.max(0, job.readCount - 1));
+      logger.warn('send_gate', { ...log, gate: 'public_link', outcome: 'released', reason: l.reason });
+      return 'released';
+    }
+    link = l.payUrl;
+    optOutUrl = l.optOutUrl;
+  } else if (deps.payments) {
     const p = await deps.payments.linkFor(job.tenantId, job.invoiceId);
     if (!p.ok) {
       if (job.readCount >= config.maxAttempts) return park(job, deps, log, c, key, 'payment_link_unavailable');
@@ -416,7 +433,7 @@ async function sendPath(
   }
 
   // Render BEFORE the claim (pure): a template problem can never leave a pending row behind.
-  const content = buildContent(c, key, step.templateKey, channel, now, overrides, link);
+  const content = buildContent(c, key, step.templateKey, channel, now, overrides, link, optOutUrl);
   if (!content.ok) {
     if (content.reason === 'unsafe_address') {
       await db.recordSkip({ tenantId: job.tenantId, invoiceId: job.invoiceId, customerId: c.invoice.customerId, key, stepId: step.id, channel, reason: 'unsafe_address', at: now });

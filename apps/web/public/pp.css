@@ -1,0 +1,61 @@
+/* Public pages: small, no framework, no web fonts. Tokens as CSS variables; light and dark; visible focus. */
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #5c5c5c;
+  --line: #d9d9d9;
+  --accent: #1f4fbf;
+  --accent-fg: #ffffff;
+  --ok: #17663a;
+  --warn-bg: #fff4d6;
+  --radius: 8px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --fg: #f2f2f2;
+    --muted: #b5b5b5;
+    --line: #3a3a3a;
+    --accent: #8fb0ff;
+    --accent-fg: #0b1530;
+    --ok: #7fd6a2;
+    --warn-bg: #3a3000;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
+}
+main { max-width: 34rem; margin: 0 auto; padding: 1rem; }
+h1 { font-size: 1.35rem; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
+section { border-top: 1px solid var(--line); padding: 1rem 0; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 0; }
+dt { color: var(--muted); }
+dd { margin: 0; font-variant-numeric: tabular-nums; }
+.amount { font-size: 1.6rem; font-weight: 650; }
+.muted { color: var(--muted); font-size: 0.9rem; }
+.note { background: var(--warn-bg); padding: 0.75rem; border-radius: var(--radius); }
+.ok { color: var(--ok); font-weight: 600; }
+pre { white-space: pre-wrap; word-break: break-word; font: inherit; margin: 0.5rem 0; }
+label { display: block; margin: 0.5rem 0 0.25rem; }
+input[type="date"], input[type="file"] { font: inherit; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); width: 100%; background: var(--bg); color: var(--fg); }
+button {
+  font: inherit;
+  margin-top: 0.75rem;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+button.secondary { background: transparent; color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.ref { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.05rem; letter-spacing: 0.05em; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

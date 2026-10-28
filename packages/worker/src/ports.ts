@@ -36,6 +36,14 @@ export interface PaymentLinks {
   linkFor(tenantId: string, invoiceId: string): Promise<{ readonly ok: true; readonly url: string | null } | { readonly ok: false; readonly reason: string }>;
 }
 
+/**
+ * Prompt 6 (ADR 0046): OUR pay-page and opt-out links, issued before the outbox claim. When present they replace the
+ * gateway link in the payment block; the provider checkout is created only when the customer presses Pay.
+ */
+export interface PublicLinks {
+  issue(tenantId: string, invoiceId: string, customerId: string, now: Date): Promise<{ readonly ok: true; readonly payUrl: string | null; readonly optOutUrl: string } | { readonly ok: false; readonly reason: string }>;
+}
+
 export interface RateLimiter {
   /** 0 = allowed now, otherwise milliseconds to wait. */
   tryTake(key: string): number;

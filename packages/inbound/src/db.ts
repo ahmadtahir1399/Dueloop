@@ -88,7 +88,8 @@ export interface ApplyRequest {
   /** Drafts for planned tasks, by task type (code-written, never model text). */
   readonly drafts: Readonly<Partial<Record<PlanTaskType, string>>>;
   readonly messageFields: {
-    readonly matchedBy: 'thread' | 'context_id' | 'single_open_invoice' | 'none';
+    /** 'pay_page_token': a prompt 6 pay/opt-out page action (a valid token proves possession of our message). */
+    readonly matchedBy: 'thread' | 'context_id' | 'single_open_invoice' | 'none' | 'pay_page_token';
     readonly prefilter: string;
     readonly analysis: Readonly<Record<string, unknown>> | null;
     readonly modelId: string | null;

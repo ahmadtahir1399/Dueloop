@@ -37,6 +37,8 @@ test("invoices: search is sanitised and keyset paging returns distinct rows", as
   const next = page.getByRole("link", { name: "Next page" });
   if (await next.count()) {
     await next.click();
+    await expect(page).toHaveURL(/after=/);
+    await expect(page.getByTestId("invoice-table").locator("tbody tr").first()).not.toHaveText(first[0] ?? "");
     const second = await page.getByTestId("invoice-table").locator("tbody tr").allInnerTexts();
     expect(second.filter((r) => first.includes(r))).toEqual([]);
   }
@@ -54,8 +56,7 @@ test("hostile fixtures render as text everywhere (no script, no markup)", async 
   await expect(page.locator("h1")).toContainText("X-<script>1</script>");
   await expect(page.getByText(HOSTILE.urdu)).toBeVisible();
   await expect(page.locator('[data-ai-untrusted="true"]').first()).toContainText("AI-generated, untrusted");
-  await page.goto("/inbox");
-  await page.getByTestId("inbox-table").getByRole("link").first().click();
+  await page.goto(`/inbox/${f.hostileCustomer}/email`);
   await expect(page.getByText('"><img src=x onerror=alert(1)>.pdf')).toBeVisible();
   // javascript: text is never a link.
   await expect(page.locator('a[href^="javascript:"]')).toHaveCount(0);

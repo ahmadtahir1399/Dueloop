@@ -6,11 +6,12 @@ import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
 import { AnthropicProofExtractor, DEFAULT_PROOFS_CONFIG, ProofsDb, createMediaFetcher, supabaseProofStore, type ProofExtractor, type ProofsDeps } from '@dueloop/proofs';
 import { accountProviders, createRequestFor, DEFAULT_PAYMENTS_CONFIG, NO_PAYMENT_FAILPOINTS, PaymentsDb, type PaymentsDeps } from '@dueloop/payments';
+import { checkBaseUrl, issueLinks } from '@dueloop/links';
 import pg from 'pg';
 import { localEnv } from '../../db/scripts/local-env.ts';
 import { WorkerDb } from './db.ts';
 import { createJsonLogger, type Logger } from './logger.ts';
-import { DEFAULT_CONFIG, NO_FAILPOINTS, type Clock, type Notifier, type PaymentLinks, type WorkerConfig } from './ports.ts';
+import { DEFAULT_CONFIG, NO_FAILPOINTS, type Clock, type Notifier, type PaymentLinks, type PublicLinks, type WorkerConfig } from './ports.ts';
 import type { WorkerDeps } from './process.ts';
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -78,12 +79,32 @@ export function buildDeps(env: Env, db: WorkerDb, clock: Clock, overrides: Parti
     failpoints: NO_FAILPOINTS,
     config,
     payments: paymentLinks(paymentsCore(env, db, clock, logger, notifier)),
+    ...(publicLinksFrom(env, db) ? { publicLinks: publicLinksFrom(env, db) as PublicLinks } : {}),
   };
 }
 
 function paymentsCore(env: Env, workerDb: WorkerDb, clock: Clock, logger: Logger, notifier: Notifier): PaymentsDeps {
   const db = new PaymentsDb(workerDb.pool);
   return { db, clock, logger, notifier, providers: accountProviders(env, db, clock), failpoints: NO_PAYMENT_FAILPOINTS, config: DEFAULT_PAYMENTS_CONFIG };
+}
+
+/**
+ * Prompt 6 (ADR 0046): our pay-page and opt-out links when PUBLIC_APP_URL is configured. Without it the worker
+ * keeps the prompt 5 behaviour (gateway link or bank text only) and the footer says "reply STOP" only.
+ */
+export function publicLinksFrom(env: Env, db: WorkerDb): PublicLinks | null {
+  const base = checkBaseUrl(env.PUBLIC_APP_URL);
+  if (!base) return null;
+  return {
+    async issue(tenantId, invoiceId, customerId, now) {
+      try {
+        const l = await issueLinks(db.pool, { tenantId, invoiceId, customerId, now, baseUrl: base });
+        return { ok: true, payUrl: l.payUrl, optOutUrl: l.optOutUrl };
+      } catch {
+        return { ok: false, reason: 'link_issue_failed' };
+      }
+    },
+  };
 }
 
 /** Step 6a: the reminder's gateway link (one active request per invoice, reused while valid). */

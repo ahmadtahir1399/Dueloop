@@ -98,6 +98,11 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
           subject: mail.subject,
           text: mail.text,
           messageId: mail.messageId,
+          // RFC 8058 one-click unsubscribe (nodemailer `list` option + the POST header). Must be DKIM-signed by
+          // the sending domain to be honoured by receivers (RFC 8058 section 4); that is the tenant's mail setup.
+          ...(mail.listUnsubscribe
+            ? { list: { unsubscribe: mail.listUnsubscribe }, headers: { 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } }
+            : {}),
         });
         if (info.rejected.length > 0 && info.accepted.length === 0) return { kind: 'permanent', reason: 'smtp_rejected' };
         return { kind: 'sent', providerMessageId: info.messageId };

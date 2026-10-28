@@ -7,6 +7,9 @@ import { formatMinor } from "@/lib/money";
 import { requirePermission } from "@/lib/session";
 import { loadGlobalPause } from "@/lib/shell";
 import { tenantToday } from "@/lib/time";
+import Link from "next/link";
+import { ActionForm } from "@/components/action-form";
+import { settingsAction } from "./admin-actions";
 import { KillSwitch } from "./kill-switch";
 
 const APPROVAL: Record<string, string> = {
@@ -33,6 +36,14 @@ export default async function SettingsPage() {
   return (
     <div className="grid gap-6">
       <h1 className="text-xl font-semibold">Settings</h1>
+      <nav aria-label="Settings sections" className="flex flex-wrap gap-3 text-sm">
+        <Link className="underline" href="/settings/policies">Policies</Link>
+        <Link className="underline" href="/settings/templates">Templates</Link>
+        <Link className="underline" href="/settings/holidays">Holidays</Link>
+        {can(ctx.role, "members.view") ? <Link className="underline" href="/settings/members">Members</Link> : null}
+        {can(ctx.role, "integrations.view") ? <Link className="underline" href="/settings/integrations">Integrations</Link> : null}
+        {can(ctx.role, "api_keys.manage") ? <Link className="underline" href="/settings/api-keys">API keys</Link> : null}
+      </nav>
 
       <Card>
         <CardHeader>
@@ -74,6 +85,66 @@ export default async function SettingsPage() {
           </dl>
         </CardContent>
       </Card>
+
+      {can(ctx.role, "settings.edit") ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Change settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActionForm action={settingsAction} label="Change settings" className="grid gap-3 text-sm">
+              <label className="grid gap-1">
+                Time zone (IANA name, e.g. Europe/London)
+                <Input name="timezone" defaultValue={t.timezone} required />
+              </label>
+              <div className="flex flex-wrap gap-3">
+                <label className="grid gap-1">
+                  Quiet from (hour, 0-23)
+                  <Input name="quiet_start" type="number" min={0} max={23} defaultValue={t.quiet_start_hour} required />
+                </label>
+                <label className="grid gap-1">
+                  Quiet until (hour, 0-23)
+                  <Input name="quiet_end" type="number" min={0} max={23} defaultValue={t.quiet_end_hour} required />
+                </label>
+              </div>
+              <label className="grid gap-1">
+                Approvals
+                <select name="approval_mode" defaultValue={t.approval_mode} className="h-9 rounded-md border bg-background px-2">
+                  <option value="always">{APPROVAL.always}</option>
+                  <option value="low_confidence">{APPROVAL.low_confidence}</option>
+                  <option value="never">{APPROVAL.never}</option>
+                </select>
+              </label>
+              <label className="grid gap-1">
+                Promises from customers
+                <select name="promise_acceptance" defaultValue={t.promise_acceptance} className="h-9 rounded-md border bg-background px-2">
+                  <option value="auto">{PROMISE.auto}</option>
+                  <option value="review">{PROMISE.review}</option>
+                </select>
+              </label>
+              <label className="grid gap-1">
+                Monthly message budget, in minor units of {t.currency} (0 = no limit)
+                <Input name="budget" inputMode="numeric" defaultValue={t.monthly_message_budget_minor} required />
+              </label>
+              <label className="grid gap-1">
+                Bank details shown to customers (plain text)
+                <textarea name="bank_instructions" defaultValue={t.bank_instructions ?? ""} maxLength={1000} rows={4} dir="auto" className="rounded-md border bg-background p-2" />
+              </label>
+              <label className="flex items-start gap-2">
+                <input type="checkbox" name="proof_ai_extraction" defaultChecked={t.proof_ai_extraction} />
+                <span>
+                  Let AI read payment proofs. When on, images customers send as proof are sent to the AI provider configured by the operator
+                  (Anthropic) to suggest amount and date. Suggestions are labelled untrusted and never confirm a payment. PDFs and duplicates are never
+                  sent. Off by default.
+                </span>
+              </label>
+              <Button type="submit" className="w-fit">
+                Save settings
+              </Button>
+            </ActionForm>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {can(ctx.role, "export.audit") ? (
         <Card>

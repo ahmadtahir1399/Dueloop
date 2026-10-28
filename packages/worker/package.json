@@ -19,6 +19,7 @@
     "@dueloop/core": "workspace:*",
     "@dueloop/db": "workspace:*",
     "@dueloop/inbound": "workspace:*",
+    "@dueloop/links": "workspace:*",
     "@dueloop/messaging": "workspace:*",
     "@dueloop/payments": "workspace:*",
     "@dueloop/proofs": "workspace:*",

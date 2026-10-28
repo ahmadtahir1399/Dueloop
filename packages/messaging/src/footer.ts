@@ -24,6 +24,16 @@ export function footerFor(channel: Channel, locale: string): string {
   return FOOTERS[lang]?.[channel] ?? FOOTERS.en?.[channel] ?? 'Reply STOP to stop these reminders.';
 }
 
-export function appendFooter(body: string, channel: Channel, locale: string): string {
-  return `${body.trimEnd()}${FOOTER_SEPARATOR}${footerFor(channel, locale)}`;
+/** Prompt 6: the opt-out page link line, added after the reply-STOP text when the worker issued a link. */
+const OPT_OUT_LINE: Readonly<Record<string, string>> = {
+  en: 'Or stop them here:',
+  de: 'Oder hier abbestellen:',
+  ur: 'یا یہاں بند کریں:',
+};
+
+export function appendFooter(body: string, channel: Channel, locale: string, optOutUrl: string | null = null): string {
+  const lang = locale.split('-')[0]?.toLowerCase() ?? 'en';
+  const link = optOutUrl ? `
+${OPT_OUT_LINE[lang] ?? OPT_OUT_LINE.en} ${optOutUrl}` : '';
+  return `${body.trimEnd()}${FOOTER_SEPARATOR}${footerFor(channel, locale)}${link}`;
 }
