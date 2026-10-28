@@ -153,8 +153,12 @@ export async function proofViewUrl(ctx: TenantContext, proofId: string): Promise
   const p = await proofInTenant(ctx, proofId);
   if (!p) return { ok: false, reason: "Proof not found." };
   const proofs = buildProofsDeps(env(), workerDb(), clock);
-  const url = await proofs.store.signedUrl(p.storage_path, 300);
-  return { ok: true, value: { url, mime: p.mime } };
+  try {
+    const url = await proofs.store.signedUrl(p.storage_path, 300);
+    return { ok: true, value: { url, mime: p.mime } };
+  } catch {
+    return { ok: false, reason: "The file is not available." }; // missing object: a 404, never a stack trace
+  }
 }
 
 // ---- unknown messages --------------------------------------------------------------------------------------
