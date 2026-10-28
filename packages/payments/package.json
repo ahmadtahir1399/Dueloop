@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dueloop/adapters-payments": "workspace:*",
     "@dueloop/core": "workspace:*",
     "@dueloop/ingest": "workspace:*",
     "@dueloop/messaging": "workspace:*",
@@ -17,7 +18,6 @@
     "pg": "8.23.1"
   },
   "devDependencies": {
-    "@dueloop/adapters-payments": "workspace:*",
     "@types/luxon": "3.7.6",
     "@types/pg": "8.23.1"
   }

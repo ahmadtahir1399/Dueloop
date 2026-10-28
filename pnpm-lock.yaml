@@ -444,6 +444,9 @@ importers:
 
   packages/payments:
     dependencies:
+      '@dueloop/adapters-payments':
+        specifier: workspace:*
+        version: link:../adapters-payments
       '@dueloop/core':
         specifier: workspace:*
         version: link:../core
@@ -460,9 +463,6 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
     devDependencies:
-      '@dueloop/adapters-payments':
-        specifier: workspace:*
-        version: link:../adapters-payments
       '@types/luxon':
         specifier: 3.7.6
         version: 3.7.6
@@ -488,10 +488,16 @@ importers:
       '@dueloop/inbound':
         specifier: workspace:*
         version: link:../inbound
+      '@dueloop/payments':
+        specifier: workspace:*
+        version: link:../payments
       pg:
         specifier: 8.23.1
         version: 8.23.1
     devDependencies:
+      '@dueloop/adapters-payments':
+        specifier: workspace:*
+        version: link:../adapters-payments
       '@types/pg':
         specifier: 8.23.1
         version: 8.23.1

@@ -44,6 +44,7 @@ export async function ingestPaymentWebhook(deps: PaymentsDeps, token: string, ra
     const id = await deps.db.store(account.id, account.provider, { ...e, providerEventId: e.providerEventId as string }, raw, now);
     if (id === null) duplicates++;
     else stored++;
+    await deps.failpoints.hit('after_store', { eventId: id });
   }
   deps.logger.info('payment_webhook_stored', { tenantId: account.tenantId, count: stored, duplicates });
   return { status: 200, stored, duplicates, ignored: events.length === 0 ? 1 : 0 };

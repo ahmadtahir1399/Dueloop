@@ -2,10 +2,9 @@
 // wired, and it can only ever construct NO_FAILPOINTS (tested): failpoints are unreachable in production.
 import { createSmtpChannel, smtpDefaultsFromEnv } from '@dueloop/adapters-email';
 import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail } from '@dueloop/adapters-notify';
-import { FakeGateway } from '@dueloop/adapters-payments';
 import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
-import { createRequestFor, DEFAULT_PAYMENTS_CONFIG, NO_PAYMENT_FAILPOINTS, PaymentsDb, type PaymentGateway, type PaymentsDeps, type ProviderRegistry } from '@dueloop/payments';
+import { accountProviders, createRequestFor, DEFAULT_PAYMENTS_CONFIG, NO_PAYMENT_FAILPOINTS, PaymentsDb, type PaymentsDeps } from '@dueloop/payments';
 import pg from 'pg';
 import { localEnv } from '../../db/scripts/local-env.ts';
 import { WorkerDb } from './db.ts';
@@ -81,30 +80,9 @@ export function buildDeps(env: Env, db: WorkerDb, clock: Clock, overrides: Parti
   };
 }
 
-/**
- * Gateways per payment account. The fake provider exists only when PAYMENTS_ALLOW_FAKE=true (tests, demo) and
- * never for a live-mode account; Stripe arrives with its adapter (Part B).
- */
-export function paymentProviders(env: Env, db: PaymentsDb, clock: Clock): ProviderRegistry {
-  const cache = new Map<string, PaymentGateway>();
-  return {
-    async forAccount(a) {
-      const hit = cache.get(a.id);
-      if (hit) return hit;
-      let gw: PaymentGateway | undefined;
-      if (a.provider === 'fake' && env.PAYMENTS_ALLOW_FAKE === 'true' && a.mode === 'test') {
-        const secret = await db.secret(a.id, 'webhook_secret');
-        if (secret) gw = new FakeGateway({ secret, clock });
-      }
-      if (gw) cache.set(a.id, gw);
-      return gw;
-    },
-  };
-}
-
 function paymentsCore(env: Env, workerDb: WorkerDb, clock: Clock, logger: Logger, notifier: Notifier): PaymentsDeps {
   const db = new PaymentsDb(workerDb.pool);
-  return { db, clock, logger, notifier, providers: paymentProviders(env, db, clock), failpoints: NO_PAYMENT_FAILPOINTS, config: DEFAULT_PAYMENTS_CONFIG };
+  return { db, clock, logger, notifier, providers: accountProviders(env, db, clock), failpoints: NO_PAYMENT_FAILPOINTS, config: DEFAULT_PAYMENTS_CONFIG };
 }
 
 /** Step 6a: the reminder's gateway link (one active request per invoice, reused while valid). */

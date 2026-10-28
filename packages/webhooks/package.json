@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@dueloop/inbound": "workspace:*",
+    "@dueloop/payments": "workspace:*",
     "pg": "8.23.1"
   },
   "devDependencies": {
+    "@dueloop/adapters-payments": "workspace:*",
     "@types/pg": "8.23.1"
   }
 }

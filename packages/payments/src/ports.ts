@@ -19,7 +19,7 @@ export interface Notifier {
   notify(alert: Alert): Promise<void>;
 }
 
-export const PAYMENT_FAILPOINTS = ['after_resolve', 'after_plan', 'after_apply'] as const;
+export const PAYMENT_FAILPOINTS = ['after_store', 'after_resolve', 'after_plan', 'after_apply'] as const;
 export type PaymentFailpoint = (typeof PAYMENT_FAILPOINTS)[number];
 export interface PaymentFailpoints {
   hit(name: PaymentFailpoint, context: { readonly eventId: number | null }): void | Promise<void>;
@@ -54,7 +54,7 @@ export interface PaymentsConfig {
   readonly linkMinRemainingHours: number;
 }
 
-export const DEFAULT_PAYMENTS_CONFIG: PaymentsConfig = { visibilitySeconds: 120, maxAttempts: 5, retryBaseSeconds: 30, maxReplans: 3, pollAfterMinutes: 60, linkMinRemainingHours: 24 };
+export const DEFAULT_PAYMENTS_CONFIG: PaymentsConfig = { visibilitySeconds: 120, maxAttempts: 5, retryBaseSeconds: 30, maxReplans: 10, pollAfterMinutes: 60, linkMinRemainingHours: 24 };
 
 export interface PaymentsDeps {
   readonly db: PaymentsDb;
