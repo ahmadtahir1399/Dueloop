@@ -307,3 +307,42 @@ describe('receipts', () => {
     expect(w.email.calls).toHaveLength(1);
   });
 });
+
+describe('reconcile (read-only)', () => {
+  it('reports provider payments missing from the ledger and ledger entries the provider does not know; writes nothing', async () => {
+    const { reconcile } = await import('@dueloop/payments');
+    const w = await payWorld({ count: 2 });
+    const a = await w.link(0);
+    await w.link(1);
+    const ref = w.gw.pay(a.objectId);
+    w.gw.drain(); // webhook lost, not polled yet
+    const from = new Date('2000-01-01T00:00:00Z');
+    const to = new Date('2100-01-01T00:00:00Z');
+    const snap = async () => JSON.stringify(await q(`select (select count(*) from public.receipts where tenant_id = $1) r, (select count(*) from public.payment_events where tenant_id = $1) e, (select count(*) from public.tasks where tenant_id = $1) t`, [w.tenantId]));
+    const before = await snap();
+    const r1 = await reconcile(w.pdeps(), w.tenantId, from, to);
+    expect(r1.checkedRequests).toBe(2);
+    expect(r1.findings).toEqual([{ finding: 'missing_in_ledger', invoiceId: w.invoiceIds[0], providerRef: ref, amountMinor: 125050 }]);
+    expect(await snap()).toBe(before);
+    // A gateway receipt for invoice 2 that the provider never reported (inserted raw, triggers off, then removed).
+    const c = await pool.connect();
+    try {
+      await c.query('set session_replication_role = replica');
+      await c.query(
+        `insert into public.receipts (tenant_id, invoice_id, customer_id, method, source, provider_ref, amount, currency, received_at) values ($1, $2, $3, 'fake', 'gateway', 'fpay_ghost', 10, 'GBP', now())`,
+        [w.tenantId, w.invoiceIds[1], w.customerId],
+      );
+      const r = await reconcile(w.pdeps(), w.tenantId, from, to);
+      expect(r.findings.filter((f) => f.finding === 'unknown_to_provider')).toEqual([{ finding: 'unknown_to_provider', invoiceId: w.invoiceIds[1], providerRef: 'fpay_ghost', amountMinor: 10 }]);
+      await c.query(`delete from public.receipts where tenant_id = $1 and provider_ref = 'fpay_ghost'`, [w.tenantId]);
+    } finally {
+      await c.query('set session_replication_role = origin');
+      c.release();
+    }
+    w.clock.advanceMinutes(61);
+    await w.poll();
+    await w.process();
+    const r2 = await reconcile(w.pdeps(), w.tenantId, from, to);
+    expect(r2.findings.filter((f) => f.finding === 'missing_in_ledger')).toEqual([]);
+  });
+});
