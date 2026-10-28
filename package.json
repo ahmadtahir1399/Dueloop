@@ -18,7 +18,7 @@
     "db:rls-check": "node packages/db/scripts/rls-check.ts",
     "db:types": "node packages/db/scripts/db-types.ts write",
     "db:types:check": "node packages/db/scripts/db-types.ts check",
-    "chaos": "vitest run --config vitest.db.config.ts packages/worker/test-db/chaos.test.ts packages/worker/test-db/gates.test.ts packages/inbound/test-db/chaos.test.ts",
+    "chaos": "vitest run --config vitest.db.config.ts packages/worker/test-db/chaos.test.ts packages/worker/test-db/gates.test.ts packages/inbound/test-db/chaos.test.ts packages/worker/test-db/payments-chaos.test.ts",
     "worker": "node packages/worker/src/bin/worker.ts",
     "approvals": "node packages/worker/src/bin/approvals.ts",
     "messages": "node packages/worker/src/bin/messages.ts",

@@ -1,6 +1,8 @@
 // The single webhook runtime (ADR 0023): a minimal node:http service. Raw body first, signature second,
 // parse third; tenant from the channel account (never from the URL or the payload's claims); store and
 // return 2xx fast. Responses are short fixed strings: no stack traces, no echo of input.
+// Prompt 5: /webhooks/payments/<opaque token>. The token only FINDS a payment account (its sha256 is stored);
+// it authorises nothing: the provider signature over the raw body, with that account's secret, does.
 import http from 'node:http';
 import { splitWhatsAppWebhook } from '@dueloop/inbound';
 import { tokensEqual, verifyMetaSignature } from './signature.ts';
@@ -33,6 +35,17 @@ export interface WebhookDeps {
   readonly log: (event: string, fields: Readonly<Record<string, string | number>>) => void;
   /** Chaos: runs after the raw events are stored, before the 2xx is written (a crash = the provider retries). */
   readonly afterStore?: () => void | Promise<void>;
+  /** Prompt 5: payment provider deliveries (verify -> store -> queue). Absent = the route does not exist. */
+  readonly payments?: (token: string, rawBody: string, headers: Readonly<Record<string, string>>) => Promise<{ readonly status: number }>;
+}
+
+const PAYMENTS_PATH = /^\/webhooks\/payments\/([A-Za-z0-9_-]{1,200})$/;
+const PAYMENT_REPLY: Record<number, string> = { 200: 'ok', 400: 'bad request', 401: 'unauthorized', 404: 'not found', 503: 'unavailable' };
+
+function flatHeaders(h: http.IncomingHttpHeaders): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(h)) if (typeof v === 'string') out[k.toLowerCase()] = v;
+  return out;
 }
 
 type Reply = { status: number; body: string; type?: string };
@@ -72,7 +85,23 @@ export function createWebhookHandler(deps: WebhookDeps): (req: http.IncomingMess
   const handle = async (req: http.IncomingMessage): Promise<Reply> => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/healthz') return { status: 200, body: '{"ok":true}', type: 'application/json' };
-    if (url.pathname !== '/webhooks/whatsapp') return plain(404, 'not found');
+    const pay = PAYMENTS_PATH.exec(url.pathname);
+    if (pay && deps.payments) {
+      if (!allow(req.socket.remoteAddress ?? 'unknown')) return plain(429, 'slow down');
+      if (req.method !== 'POST') return plain(405, 'method not allowed');
+      if (!/^application\/json(\s*;|$)/i.test(req.headers['content-type'] ?? '')) return plain(415, 'unsupported media type');
+      let raw: Buffer;
+      try {
+        raw = await readRaw(req, deps.config.maxBodyBytes);
+      } catch (e) {
+        return e instanceof TooLarge ? plain(413, 'too large') : plain(400, 'bad request');
+      }
+      const r = await deps.payments(pay[1] ?? '', raw.toString('utf8'), flatHeaders(req.headers));
+      deps.log('payment_webhook', { outcome: r.status });
+      return plain(r.status, PAYMENT_REPLY[r.status] ?? 'error');
+    }
+    // WhatsApp is served only when it is configured (an empty app secret must never verify anything).
+    if (url.pathname !== '/webhooks/whatsapp' || !deps.config.appSecret) return plain(404, 'not found');
     if (!allow(req.socket.remoteAddress ?? 'unknown')) return plain(429, 'slow down');
 
     if (req.method === 'GET') {
