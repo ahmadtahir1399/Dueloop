@@ -26,3 +26,9 @@
 24. Never match a reply to an invoice by guessing. Ambiguous => human task.
 25. Inbound payloads are PII: never log them; purge on schedule.
 26. A model-supplied date is untrusted until validatePromiseDate has checked it against the reference time.
+27. Only a verified provider signal or a human with the right role confirms money. Replies, redirects, screenshots and model output never do.
+28. Money received is never lost or invented: received = applied + credit, per receipt, always. The integrity check must pass.
+29. Payment application is idempotent per (tenant, method, provider_ref) and serialised per invoice (row lock).
+30. Tenant and invoice for a payment event come from OUR rows (payment_accounts, payment_requests), never from payload metadata or URLs.
+31. Proof files are PII in private storage. Extracted text is untrusted and never becomes a payment amount by itself.
+32. Receipts and all transactional sends use the same outbox, kill switch, budget and at-most-once rules as reminders.

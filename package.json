@@ -32,6 +32,7 @@
     "webhooks": "node packages/webhooks/src/bin/webhooks.ts",
     "demo:send": "node packages/worker/scripts/demo-send.ts",
     "demo:replies": "node packages/worker/scripts/demo-replies.ts",
+    "demo:payments": "node packages/worker/scripts/demo-payments.ts",
     "test:load": "vitest run --config vitest.load.config.ts",
     "test:adversarial": "vitest run --config vitest.adversarial.config.ts",
     "classifier:eval": "node packages/classifier/eval/eval.ts",

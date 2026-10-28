@@ -37,7 +37,8 @@ jobs:
           cat sim-a.txt
 
       # Supabase CLI comes from the lockfile (devDependency `supabase`), the same version as locally.
-      # supabase/config.toml disables services Phase 2 does not need (studio, storage, realtime, ...).
+      # supabase/config.toml disables services this project does not need (studio, realtime, ...). Storage is ON
+      # since Phase 5 (the private payment-proofs bucket).
       - name: Start local Supabase (migrations + seed)
         run: pnpm exec supabase start
 
@@ -77,5 +78,16 @@ jobs:
         run: |
           pnpm exec supabase db reset
           pnpm demo:replies
-      # Not in CI: pnpm test:load (5,000 invoices, slow), pnpm eval:live (costs money) and the live smoke tests
-      # (pnpm smoke:whatsapp, pnpm smoke:whatsapp-webhook). The IMAP test runs GreenMail via docker in db:test.
+
+      # Phase 5. Chaos and adversarial above include the payment and proof suites.
+      - name: Payments ledger integrity (non-zero exit on any finding)
+        run: pnpm payments:integrity
+
+      - name: Payments demo (real webhook route + pipeline with signed fixtures, CLIs, proofs, worker)
+        run: |
+          pnpm exec supabase db reset
+          pnpm demo:payments
+          pnpm payments:integrity
+      # Not in CI: pnpm test:load (5,000 invoices, slow), pnpm eval:live and pnpm eval:proof-live (cost money),
+      # and the live smoke tests (pnpm smoke:whatsapp, smoke:whatsapp-webhook, smoke:stripe; env-gated, they
+      # print NOT VERIFIED without credentials). The IMAP test runs GreenMail via docker in db:test.
