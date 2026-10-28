@@ -25,6 +25,7 @@
     "tenant": "node packages/worker/src/bin/tenant.ts",
     "demo:send": "node packages/worker/scripts/demo-send.ts",
     "test:load": "vitest run --config vitest.load.config.ts",
+    "test:adversarial": "vitest run --config vitest.adversarial.config.ts",
     "smoke:whatsapp": "node packages/adapters-whatsapp/scripts/smoke.ts",
     "import": "node packages/ingest/src/cli.ts",
     "import:twice": "node packages/ingest/scripts/import-twice-check.ts",
