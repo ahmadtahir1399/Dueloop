@@ -1,0 +1,28 @@
+{
+  "name": "@dueloop/inbound",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dueloop/classifier": "workspace:*",
+    "@dueloop/core": "workspace:*",
+    "@dueloop/db": "workspace:*",
+    "@dueloop/ingest": "workspace:*",
+    "@dueloop/messaging": "workspace:*",
+    "html-to-text": "10.0.1",
+    "luxon": "3.7.2",
+    "pg": "8.23.1",
+    "postal-mime": "4.1.4"
+  },
+  "devDependencies": {
+    "@types/html-to-text": "^9.0.4",
+    "@types/luxon": "3.7.6",
+    "@types/pg": "8.23.1"
+  }
+}
