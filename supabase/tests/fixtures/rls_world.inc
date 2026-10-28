@@ -100,6 +100,23 @@ insert into public.tenant_events (tenant_id, customer_id, type, idempotency_key)
   ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000ca', 'ReplyUnmatched', 'fixture'),
   ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000cb', 'ReplyUnmatched', 'fixture');
 
+-- Phase 5 tables (one row per tenant). The fixture payments above already created receipts (legacy trigger).
+insert into public.credits (tenant_id, receipt_id, customer_id, invoice_id, amount, currency)
+select r.tenant_id, r.id, r.customer_id, r.invoice_id, 1, r.currency from public.receipts r
+where r.tenant_id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b');
+insert into public.payment_accounts (id, tenant_id, provider, mode, webhook_token_hash) values
+  ('00000000-0000-0000-0000-0000000005aa', '00000000-0000-0000-0000-00000000000a', 'fake', 'test', repeat('a', 64)),
+  ('00000000-0000-0000-0000-0000000005bb', '00000000-0000-0000-0000-00000000000b', 'fake', 'test', repeat('b', 64));
+insert into public.payment_requests (tenant_id, invoice_id, payment_account_id, provider, provider_object_id, amount, currency, idempotency_key, created_at) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000001aa', '00000000-0000-0000-0000-0000000005aa', 'fake', 'plink_a', 100, 'GBP', 'req-a', now()),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000001bb', '00000000-0000-0000-0000-0000000005bb', 'fake', 'plink_b', 100, 'PKR', 'req-b', now());
+insert into public.payment_events (tenant_id, payment_account_id, provider, provider_event_id, kind, event, received_at, purge_after) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000005aa', 'fake', 'evt_a', 'payment_failed', '{}', now(), now() + interval '1 year'),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000005bb', 'fake', 'evt_b', 'payment_failed', '{}', now(), now() + interval '1 year');
+insert into public.payment_proofs (id, tenant_id, invoice_id, storage_path, sha256, size_bytes, mime, created_at) values
+  ('00000000-0000-0000-0000-0000000006aa', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000001aa', '00000000-0000-0000-0000-00000000000a/00000000-0000-0000-0000-0000000006aa', repeat('c', 64), 10, 'image/png', now()),
+  ('00000000-0000-0000-0000-0000000006bb', '00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000001bb', '00000000-0000-0000-0000-00000000000b/00000000-0000-0000-0000-0000000006bb', repeat('d', 64), 10, 'image/png', now());
+
 -- Runs `stmt` as `actor` (NULL = anon) and ALWAYS rolls it back (subtransaction).
 -- Returns 'ok:<rows affected>' or 'err:<sqlstate>'.
 create function pg_temp.try_as(actor uuid, stmt text) returns text

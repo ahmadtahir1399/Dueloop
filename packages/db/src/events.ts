@@ -38,9 +38,19 @@ export const INVOICE_EVENT_TYPES = [
   'DeliveryFailed',
   'RemindersBlocked',
   'RemindersResumed',
+  // Prompt 5 (payments).
+  'PromiseKept',
+  'PaymentCreditCreated',
+  'PaymentReversed',
+  'PaymentFailed',
+  'PaymentRequestCreated',
+  'PaymentRequestDeactivated',
+  'ProofRejected',
+  'ReminderAfterPayment',
+  'ReceiptSkipped',
 ] as const;
 export type InvoiceEventType = (typeof INVOICE_EVENT_TYPES)[number];
 
 // Tenant- and customer-level events (prompt 4, issue H). MUST equal the CHECK list on public.tenant_events.
-export const TENANT_EVENT_TYPES = ['OptOutRecorded', 'ReplyUnmatched', 'ReplyAmbiguous', 'DeliveryFailed', 'InboundDeadLettered', 'AutoReplyReceived'] as const;
+export const TENANT_EVENT_TYPES = ['OptOutRecorded', 'ReplyUnmatched', 'ReplyAmbiguous', 'DeliveryFailed', 'InboundDeadLettered', 'AutoReplyReceived', 'PaymentUnmatched', 'PaymentEventDeadLettered'] as const;
 export type TenantEventType = (typeof TENANT_EVENT_TYPES)[number];
