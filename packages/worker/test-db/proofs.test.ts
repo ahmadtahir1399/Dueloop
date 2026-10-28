@@ -114,7 +114,10 @@ describe('proof inbox', () => {
     await run(d, w);
     await inboundEmail(w, [{ name: 'same.jpg', mime: 'image/jpeg', bytes: img }]);
     expect((await run(d, w)).outcomes).toEqual({ stored: 1, duplicates: 1 });
-    const [first, second] = await proofs(w.tenantId);
+    // Both rows share the test clock's created_at: pick them by role, not by order.
+    const all = await proofs(w.tenantId);
+    const first = all.find((p) => p.duplicate_of === null);
+    const second = all.find((p) => p.duplicate_of !== null);
     expect(first?.hints).toMatchObject({ untrusted: true, amountMinor: 125050, dateIso: '2026-06-09', referenceValid: true, referenceMatchesInvoice: true });
     expect(second?.duplicate_of).toBe(first?.id);
     expect(second?.hints).toEqual({}); // never re-sent to the model
