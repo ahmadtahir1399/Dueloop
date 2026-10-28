@@ -16,7 +16,7 @@ const MAILPIT = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 const TENANT = 'Demo Agency';
 const ZONE = 'Europe/London';
 const bin = (name: string) => path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../src/bin/${name}.ts`);
-const env = { ...process.env, SMTP_HOST: '127.0.0.1', SMTP_PORT: '54325', SMTP_SECURE: 'false' };
+const env: NodeJS.ProcessEnv = { ...process.env, SMTP_HOST: '127.0.0.1', SMTP_PORT: '54325', SMTP_SECURE: 'false' };
 delete env.WORKER_DATABASE_URL; // the demo is local-only, whatever the shell has set
 
 function fail(msg: string): never {

@@ -56,3 +56,13 @@ jobs:
           eval "$(pnpm exec supabase status -o env | grep -E '^(API_URL|SERVICE_ROLE_KEY)=' | sed -E 's/^API_URL=/export SUPABASE_URL=/; s/^SERVICE_ROLE_KEY=/export SUPABASE_SERVICE_ROLE_KEY=/')"
           pnpm run import $ARGS --dry-run
           pnpm import:twice $ARGS
+
+      # Phase 3. Chaos runs inside db:test (packages/worker/test-db); the explicit step makes a failure obvious.
+      - name: Chaos (failpoints at every send step, SIGKILL mid-batch, kill switch mid-batch)
+        run: pnpm chaos
+
+      - name: Send demo against the local mail catcher (one email per approved reminder, second run 0 new)
+        run: |
+          pnpm exec supabase db reset
+          pnpm demo:send
+      # Not in CI: pnpm test:load (5,000 invoices, slow) and any live provider smoke test.
