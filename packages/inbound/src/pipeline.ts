@@ -377,6 +377,9 @@ export async function processInboundEvent(job: ClaimedEvent, deps: InboundDeps):
       const n = normaliseWhatsApp(ev.kind, ev.payload ?? {});
       if (!n.ok) outcome = await unprocessable(deps, ev, n.error);
       else outcome = n.value.kind === 'status' ? await handleStatus(deps, ev, n.value, log) : await handleMessage(deps, ev, n.value, log);
+    } else if (ev.payload?.tooLarge === true) {
+      // The IMAP poller did not download it (MAX_IMAP_BYTES): a human looks at it in the mailbox.
+      outcome = await unprocessable(deps, ev, 'too_large');
     } else {
       const n = await normaliseEmail(ev.rawMime ?? '');
       outcome = n.ok ? await handleMessage(deps, ev, n.message, log) : await unprocessable(deps, ev, n.error);
