@@ -57,6 +57,8 @@ const WEIGHTS: Readonly<Record<Behaviour, number>> = {
   never_pays: 22,
   claims_paid: 6,
   vague_promise: 5,
+  overpays: 4,
+  promise_late: 4,
 };
 
 function weightedBehaviour(rng: Rng): Behaviour {

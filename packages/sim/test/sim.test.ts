@@ -127,6 +127,30 @@ describe('prompt 4 reply stage: invariants hold and can fail', () => {
   });
 });
 
+describe('prompt 5 payment stage: invariants hold and can fail', () => {
+  const opts = { days: 90, invoices: 500, seed: 42, start: DEFAULT_START };
+  it('full, partial, over, late-after-promise and never: ledger balanced, zero violations', () => {
+    const r = runSimulation(opts);
+    expect(r.violations).toEqual([]);
+    expect(r.ledger.length).toBeGreaterThan(0);
+    expect(r.ledger.every((e) => e.received === e.applied + e.credit)).toBe(true);
+    expect(r.stats.overpayments).toBeGreaterThan(0);
+    expect(r.stats.partialPayments).toBeGreaterThan(0);
+    expect(r.stats.promisesPaidLate).toBeGreaterThan(0);
+    for (const inv of r.invoices) expect(inv.paidMinor).toBeLessThanOrEqual(inv.total.minor);
+    expect(r.invoices.filter((i) => i.status === 'paid').every((i) => i.paidMinor === i.total.minor)).toBe(true);
+  });
+  it('applying more than the balance -> negative_balance violations', () => {
+    expect(runSimulation({ ...opts, faults: { overApply: true } }).violations.some((v) => v.kind === 'negative_balance')).toBe(true);
+  });
+  it('never moving a fully paid invoice to paid -> reminder_after_paid violations', () => {
+    expect(runSimulation({ ...opts, faults: { skipPaidTransition: true } }).violations.some((v) => v.kind === 'reminder_after_paid')).toBe(true);
+  });
+  it('booking credit that is not the remainder -> ledger_unbalanced violations', () => {
+    expect(runSimulation({ ...opts, faults: { unbalancedCredit: true } }).violations.some((v) => v.kind === 'ledger_unbalanced')).toBe(true);
+  });
+});
+
 describe('checkSends()', () => {
   const nyc = new Map(TENANTS.filter((t) => t.id === 't-nyc').map((t) => [t.id, t])); // quiet 20->9, cap 2, holiday 2026-02-16
   const send = (iso: string, o: Partial<SendRecord> = {}): SendRecord => ({
