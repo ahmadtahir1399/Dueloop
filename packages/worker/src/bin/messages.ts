@@ -1,5 +1,5 @@
 // pnpm messages unknown [--tenant <t>]
-//                  resolve <messageId> --as sent|not_sent
+//                  resolve <messageId> --as sent|not_sent   (or: resolve --id <messageId> --as ...)
 //                  unpark <invoiceId>
 // A message in an unknown state is never resent automatically (rule 17): a human checks the provider (or the
 // customer) and records what really happened here.
@@ -7,8 +7,9 @@ import { parseArgs } from 'node:util';
 import { reconcileMessage } from '../process.ts';
 import { buildDeps, clockFrom, openDb, resolveTenant } from '../runtime.ts';
 
-const { positionals, values } = parseArgs({ allowPositionals: true, options: { tenant: { type: 'string' }, as: { type: 'string' } } });
-const [cmd, id] = positionals;
+const { positionals, values } = parseArgs({ allowPositionals: true, options: { tenant: { type: 'string' }, as: { type: 'string' }, id: { type: 'string' } } });
+const [cmd, positionalId] = positionals;
+const id = values.id ?? positionalId; // `resolve --id <id>` (spec form) or `resolve <id>`
 const db = openDb(process.env);
 
 try {
