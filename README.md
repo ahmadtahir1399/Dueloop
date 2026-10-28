@@ -1,9 +1,11 @@
 # Dueloop: invoice follow-up agent
 
-Status: **Phase 4 of 7**: the pure domain core and simulator (phase 1); the database, RLS and CSV import
-(phase 2); scheduler and sending (phase 3); and replies + promises (phase 4): a signed WhatsApp webhook, a
-read-only IMAP poller, an inbound processor whose AI classifier can only propose, human tasks, promise
-tracking and reply-aware reminder gates. Payments, the dashboard/pay page and packaging come later.
+Status: **Phase 5 of 7**: the pure domain core and simulator (phase 1); the database, RLS and CSV import
+(phase 2); scheduler and sending (phase 3); replies + promises (phase 4); and payments + reconciliation
+(phase 5): a money-in ledger (receipts = applied payments + credits, append-only), one confirmation pipeline
+for gateway webhooks, polling, manual bank transfers and confirmed proofs, payment links in reminders,
+receipts through the outbox, refunds and chargebacks as human tasks, a proof-of-payment inbox, and KPI views.
+The dashboard/pay page and packaging come later.
 
 ## What is here
 
@@ -20,7 +22,15 @@ tracking and reply-aware reminder gates. Payments, the dashboard/pay page and pa
 - `packages/classifier`: the ReplyClassifier boundary, strict schema, toProposal, versioned prompts, the Claude
   adapter and the evaluation harness (data in `data/classifier`).
 - `packages/inbound`: the inbound processor (normalise, pre-filter, match, classify, plan, apply).
-- `packages/webhooks`: the WhatsApp webhook endpoint (raw-body signature check).
+- `packages/webhooks`: the webhook runtime: WhatsApp, and payments at `/webhooks/payments/<opaque token>`
+  (raw-body signature check with that account's secret).
+- `packages/payments`: the payment confirmation pipeline (ADR 0034): ingest, resolve via our own payment
+  requests, plan (pure core), apply in one locked transaction, alerts; requests and links, polling, manual
+  recording, read-only reconcile, integrity.
+- `packages/adapters-payments`: bank transfer, a deterministic FakeGateway, and Stripe (payment links on the
+  client's own account, API version pinned, ADR 0037).
+- `packages/proofs`: the proof inbox: fetch, magic-byte validation, private storage, duplicates, optional AI
+  hints (off by default), and the human confirm / reject workflow.
 - `supabase/`: migrations, the demo seed, and pgTAP tests.
 - `docs/decisions`: architecture decision records.
 
@@ -149,3 +159,28 @@ pnpm eval:live                           # record a real model (EVAL_LIVE=1, CLA
 - The labelled set in `data/classifier` is SYNTHETIC: a regression guard, not a measure of real-world accuracy.
 - Live Meta webhook delivery needs a public HTTPS URL in front of `pnpm webhooks`; real mailboxes need app
   passwords. See `docs/decisions/0022`-`0031`.
+
+## Payments and proofs (phase 5)
+
+```bash
+pnpm payments record --tenant "Demo Agency" --invoice DA-0003 --amount 250.00 --date 2026-10-28 \
+  --bank-ref BANK-123 --user owner@demo-agency.test            # prints the plan; add --yes to record it
+pnpm payments process --once                                    # payment events, request sweep, polling
+pnpm payments reconcile --tenant "Demo Agency" --from 2026-10-01 --to 2026-10-31   # READ-ONLY
+pnpm payments:integrity                                         # ledger invariants; exit 1 on any finding
+pnpm proofs list | show <id> | confirm <id> --amount --date --bank-ref --user [--yes] | reject <id> --reason --user
+pnpm demo:payments                                              # the whole walkthrough (after pnpm db:reset)
+pnpm smoke:stripe                                               # Stripe SANDBOX round trip (STRIPE_SMOKE=1, STRIPE_TEST_API_KEY)
+pnpm eval:proof-live                                            # proof hints on SYNTHETIC images (PROOF_EVAL=1; costs money)
+```
+
+- Money is confirmed only by a verified provider signal or by an owner/accountant who types the amount, date
+  and bank reference (rule 27). Redirects, replies, screenshots and model output never confirm money.
+- Every receipt balances: received = applied + credit (rule 28). The ledger is append-only; refunds and
+  chargebacks become urgent tasks and never reopen an invoice.
+- Stripe runs on the client's OWN account with a restricted key and a webhook signing secret, both in Vault.
+  The webhook URL is `/webhooks/payments/<opaque token>`; the token only finds the account. Card data never
+  passes through Dueloop (Stripe hosts the payment page). No compliance claims are made here.
+- Proof files are PII and stay in a private bucket. AI extraction of hints is OFF by default per tenant
+  (`tenants.proof_ai_extraction`). It sends the image to a third-party model, and its output is an untrusted
+  hint that never confirms anything. See `docs/decisions/0032`-`0041`.
