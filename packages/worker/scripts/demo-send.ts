@@ -138,7 +138,11 @@ try {
   const afterSecond = second.reminders;
   console.log(`Mailpit: ${afterSecond.length} reminder email(s): ${afterSecond.length - afterFirst.length} new sends; owner alerts: ${second.alerts.length - first.alerts.length} new (de-duplicated).`);
   if (afterSecond.length !== afterFirst.length) fail('the second run sent again');
-  if (second.alerts.length !== first.alerts.length) fail('an owner alert was sent twice');
+  if (second.alerts.length !== first.alerts.length) {
+    const seen = new Set(first.alerts.map((m) => m.MessageID));
+    const extra = second.alerts.filter((m) => !seen.has(m.MessageID)).map((m) => m.MessageID.split('.').slice(0, 2).join('.'));
+    fail(`an owner alert was sent twice (new in the second pass: ${extra.join(', ')})`);
+  }
 
   console.log(`\nDEMO OK: ${afterFirst.length} approved reminder email(s), one each, Message-IDs match the outbox; second run: 0 new. Open ${MAILPIT} to read them.`);
 } catch (e) {
