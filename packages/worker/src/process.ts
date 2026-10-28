@@ -137,6 +137,7 @@ function buildContent(c: WorkerContext, key: string, stepTemplate: string, chann
       envelope: {
         tenantId: c.invoice.tenantId,
         idempotencyKey: key,
+        account,
         content: {
           kind: 'email',
           to: { address: c.customer.email, name: sanitiseDisplayName(c.customer.name) },
@@ -159,6 +160,7 @@ function buildContent(c: WorkerContext, key: string, stepTemplate: string, chann
       envelope: {
         tenantId: c.invoice.tenantId,
         idempotencyKey: key,
+        account: c.accounts.get('whatsapp') ?? {},
         content: { kind: 'whatsapp_template', to: c.customer.phone, templateName: tmpl.providerTemplateName, languageCode: tmpl.providerLanguage, parameters },
       },
     };
