@@ -27,6 +27,7 @@
     "promises": "node packages/worker/src/bin/promises.ts",
     "payments": "node packages/worker/src/bin/payments.ts",
     "payments:integrity": "node packages/worker/src/bin/payments.ts integrity",
+    "proofs": "node packages/worker/src/bin/proofs.ts",
     "inbound": "node packages/worker/src/bin/inbound.ts",
     "webhooks": "node packages/webhooks/src/bin/webhooks.ts",
     "demo:send": "node packages/worker/scripts/demo-send.ts",
@@ -39,6 +40,7 @@
     "smoke:whatsapp": "node packages/adapters-whatsapp/scripts/smoke.ts",
     "smoke:whatsapp-webhook": "node packages/webhooks/scripts/smoke.ts",
     "smoke:stripe": "node packages/adapters-payments/scripts/smoke-stripe.ts",
+    "eval:proof-live": "node packages/proofs/eval/live.ts",
     "import": "node packages/ingest/src/cli.ts",
     "import:twice": "node packages/ingest/scripts/import-twice-check.ts",
     "web:build": "pnpm --filter @dueloop/web build"

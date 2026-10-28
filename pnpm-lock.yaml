@@ -470,6 +470,37 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
 
+  packages/proofs:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: 1.3.0
+        version: 1.3.0(zod@4.6.7)
+      '@dueloop/ingest':
+        specifier: workspace:*
+        version: link:../ingest
+      '@dueloop/messaging':
+        specifier: workspace:*
+        version: link:../messaging
+      '@dueloop/payments':
+        specifier: workspace:*
+        version: link:../payments
+      '@supabase/supabase-js':
+        specifier: 2.118.0
+        version: 2.118.0(@opentelemetry/api@1.10.0)
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+      postal-mime:
+        specifier: 4.1.4
+        version: 4.1.4
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+
   packages/sim:
     dependencies:
       '@dueloop/core':
@@ -534,6 +565,9 @@ importers:
       '@dueloop/payments':
         specifier: workspace:*
         version: link:../payments
+      '@dueloop/proofs':
+        specifier: workspace:*
+        version: link:../proofs
       '@dueloop/webhooks':
         specifier: workspace:*
         version: link:../webhooks
@@ -544,6 +578,9 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
     devDependencies:
+      '@dueloop/ingest':
+        specifier: workspace:*
+        version: link:../ingest
       '@types/luxon':
         specifier: ^3.7.6
         version: 3.7.6

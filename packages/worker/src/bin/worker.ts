@@ -1,8 +1,10 @@
 // pnpm worker --once | --loop [--tenant <id|name>] [--now <iso>] [--interval <seconds>]
 import { parseArgs } from 'node:util';
 import { processBatch, sweep } from '../process.ts';
+import { processProofBatch } from '@dueloop/proofs';
+import { pollPending, processPaymentBatch, sweepRequests } from '@dueloop/payments';
 import { processReceiptBatch } from '../receipts.ts';
-import { buildDeps, clockFrom, openDb, resolveTenant } from '../runtime.ts';
+import { buildDeps, buildPaymentsDeps, buildProofsDeps, clockFrom, openDb, resolveTenant } from '../runtime.ts';
 
 const { values } = parseArgs({
   options: {
@@ -28,6 +30,8 @@ process.on('SIGTERM', () => (stopping = true));
 
 const db = openDb(process.env);
 const deps = buildDeps(process.env, db, clockFrom(values.now));
+const payments = buildPaymentsDeps(process.env, db, deps.clock);
+const proofs = buildProofsDeps(process.env, db, deps.clock);
 const filter: Record<string, string> = values.tenant ? { tenant_id: await resolveTenant(db, values.tenant) } : {};
 
 /**
@@ -57,6 +61,21 @@ async function pass(): Promise<Record<string, number>> {
     if (!progressed) await new Promise((res) => setTimeout(res, 1200));
   }
   if (waiting) totals.left_for_next_pass = waiting;
+  // Prompt 5: payment events (confirmations through the pipeline), request sweep + polling fallback, proofs.
+  for (;;) {
+    const r = await processPaymentBatch(payments, { limit: 25, filter });
+    for (const [k, n] of Object.entries(r.outcomes)) totals[`payment_${k}`] = (totals[`payment_${k}`] ?? 0) + n;
+    if (r.claimed === 0 || stopping) break;
+  }
+  const scope = filter.tenant_id ? { tenantId: filter.tenant_id } : {};
+  await sweepRequests(payments, scope);
+  const polled = await pollPending(payments, scope);
+  if (polled.stored) totals.payment_polled = polled.stored;
+  for (;;) {
+    const r = await processProofBatch(proofs, { limit: 10, filter });
+    for (const [k, n] of Object.entries(r.outcomes)) totals[`proof_${k}`] = (totals[`proof_${k}`] ?? 0) + n;
+    if (r.claimed === 0 || stopping || Object.keys(r.outcomes).every((k) => k === 'retry')) break;
+  }
   // Receipts (prompt 5): the transactional queue, same outbox rules, no decide().
   for (;;) {
     const r = await processReceiptBatch(deps, { limit: 25, filter });

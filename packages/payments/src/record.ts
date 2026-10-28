@@ -22,11 +22,13 @@ export interface ManualPaymentInput {
   readonly user: string; // id or email of the confirming member
   readonly note?: string;
   readonly decimal?: '.' | ',';
+  /** Proof confirmation (step 13f): source 'proof'. With no bank ref at all, the ref is `proof:<proof id>`. */
+  readonly proofId?: string;
 }
 
 export type ManualPlan =
   | { readonly ok: false; readonly refusal: string }
-  | { readonly ok: true; readonly invoice: InvoiceForPayment; readonly userId: string; readonly amountMinor: number; readonly paidAt: Date; readonly bankRef: string; readonly plan: PaymentPlan };
+  | { readonly ok: true; readonly invoice: InvoiceForPayment; readonly userId: string; readonly amountMinor: number; readonly paidAt: Date; readonly bankRef: string; readonly plan: PaymentPlan; readonly proofId: string | null };
 
 export async function planManualPayment(deps: PaymentsDeps, i: ManualPaymentInput): Promise<ManualPlan> {
   const { db } = deps;
@@ -49,7 +51,7 @@ export async function planManualPayment(deps: PaymentsDeps, i: ManualPaymentInpu
   const today = DateTime.fromJSDate(deps.clock.now(), { zone: inv.timezone }).startOf('day');
   if (paid > today.plus({ days: FUTURE_DATE_TOLERANCE_DAYS })) return { ok: false, refusal: `date is in the future (more than ${FUTURE_DATE_TOLERANCE_DAYS} day ahead)` };
 
-  const bankRef = i.bankRef.trim();
+  const bankRef = i.bankRef.trim() === '' && i.proofId ? `proof:${i.proofId}` : i.bankRef.trim();
   if (!BANK_REF.test(bankRef)) return { ok: false, refusal: 'bank reference is required (printable text, at most 120 characters)' };
   const prior = await db.receiptByRef(i.tenantId, 'bank_transfer', bankRef);
   if (prior) return { ok: false, refusal: prior.invoiceId === inv.id ? 'this bank reference is already recorded for this invoice' : 'this bank reference is already recorded for another invoice' };
@@ -63,7 +65,7 @@ export async function planManualPayment(deps: PaymentsDeps, i: ManualPaymentInpu
     graceDays: inv.graceDays,
   });
   if (plan.rejected) return { ok: false, refusal: plan.rejected };
-  return { ok: true, invoice: inv, userId: member.userId, amountMinor: amount.minor, paidAt: paid.toJSDate(), bankRef, plan };
+  return { ok: true, invoice: inv, userId: member.userId, amountMinor: amount.minor, paidAt: paid.toJSDate(), bankRef, plan, proofId: i.proofId ?? null };
 }
 
 export async function recordManualPayment(deps: PaymentsDeps, p: Extract<ManualPlan, { ok: true }>, note: string | null): Promise<{ outcome: 'applied' | 'duplicate'; receiptId: string; plan: PaymentPlan }> {
@@ -75,8 +77,8 @@ export async function recordManualPayment(deps: PaymentsDeps, p: Extract<ManualP
     paidAt: p.paidAt,
     bankRef: p.bankRef,
     userId: p.userId,
-    source: 'manual',
-    proofId: null,
+    source: p.proofId ? 'proof' : 'manual',
+    proofId: p.proofId,
     note,
   });
 }

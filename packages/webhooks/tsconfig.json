@@ -1,7 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // Its adversarial tests reach the worker runtime (proof storage via supabase-js .d.ts with DOM names, ADR 0011).
+    "skipLibCheck": true
   },
   "include": ["src", "test", "test-adversarial", "scripts"]
 }
