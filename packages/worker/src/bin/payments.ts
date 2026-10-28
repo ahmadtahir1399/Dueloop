@@ -2,8 +2,9 @@
 //                       --user <email|id> [--note "..."] [--decimal ,] [--yes]
 //               integrity [--tenant <t>]          exit 1 on any finding (also: pnpm payments:integrity)
 //               process --once | --loop [--tenant <t>] [--now <iso>]   drain payment events, sweep, poll
+//               reconcile --tenant <t> --from <YYYY-MM-DD> --to <YYYY-MM-DD>   READ-ONLY provider vs ledger (exit 1 on findings)
 // Never prints payer data, bank numbers or payloads: ids, amounts in minor units and codes only.
-import { planManualPayment, pollPending, processPaymentBatch, recordManualPayment, sweepRequests } from '@dueloop/payments';
+import { planManualPayment, pollPending, processPaymentBatch, reconcile, recordManualPayment, sweepRequests } from '@dueloop/payments';
 import { parseArgs } from 'node:util';
 import { buildPaymentsDeps, clockFrom, openDb, resolveTenant } from '../runtime.ts';
 
@@ -22,6 +23,8 @@ const { positionals, values } = parseArgs({
     once: { type: 'boolean', default: false },
     loop: { type: 'boolean', default: false },
     now: { type: 'string' },
+    from: { type: 'string' },
+    to: { type: 'string' },
   },
 });
 class Usage extends Error {}
@@ -30,7 +33,7 @@ const db = openDb(process.env);
 const clock = clockFrom(values.now);
 const deps = buildPaymentsDeps(process.env, db, clock);
 const out = (o: unknown) => process.stdout.write(`${JSON.stringify(o)}\n`);
-const USAGE = 'usage: pnpm payments record --tenant --invoice --amount --date --bank-ref --user [--note] [--yes] | integrity [--tenant] | process --once|--loop [--tenant]';
+const USAGE = 'usage: pnpm payments record --tenant --invoice --amount --date --bank-ref --user [--note] [--yes] | integrity [--tenant] | process --once|--loop [--tenant] | reconcile --tenant --from --to';
 
 let stopping = false;
 process.on('SIGINT', () => (stopping = true));
@@ -71,6 +74,15 @@ try {
     for (const f of findings) out({ finding: f.finding, tenantId: f.tenantId, ref: f.ref, detail: f.detail });
     out({ result: findings.length === 0 ? 'clean' : 'findings', count: findings.length });
     if (findings.length > 0) process.exitCode = 1;
+  } else if (cmd === 'reconcile') {
+    if (!values.tenant || !values.from || !values.to || !/^\d{4}-\d{2}-\d{2}$/.test(values.from) || !/^\d{4}-\d{2}-\d{2}$/.test(values.to)) throw new Usage();
+    const tenantId = await resolveTenant(db, values.tenant);
+    const to = new Date(`${values.to}T00:00:00Z`);
+    to.setUTCDate(to.getUTCDate() + 1); // inclusive end day (UTC bounds on request creation; ADR 0041 days are for KPIs)
+    const r = await reconcile(deps, tenantId, new Date(`${values.from}T00:00:00Z`), to);
+    for (const f of r.findings) out(f);
+    out({ result: r.findings.length ? 'findings' : 'clean', checkedRequests: r.checkedRequests, count: r.findings.length, readOnly: true });
+    if (r.findings.length) process.exitCode = 1;
   } else if (cmd === 'process' && values.once !== values.loop) {
     const filter: Record<string, string> = values.tenant ? { tenant_id: await resolveTenant(db, values.tenant) } : {};
     const pass = async () => {
