@@ -104,13 +104,17 @@ describe('SIGKILL mid-batch', () => {
 });
 
 describe('kill switch mid-batch (issue F, rule 18)', () => {
+  // onSend awaits a DB write inside the adapter call. Keep the adapter timeout far above any DB latency, or
+  // a slow flip turns the send ambiguous and the batch moves on before the pause commits (seen once in a
+  // full DoD run; reproduced by delaying the flip 350 ms past the harness's 300 ms default).
+  const slowDbSafe = { config: { sendTimeoutMs: 10_000 } };
   it('flip the global switch after 3 sends: zero sends after the flip; released jobs run after resuming', async () => {
     const w = await world({ count: 10, separateCustomers: true });
     w.email.onSend = async () => {
       if (w.email.calls.length === 3) await q(`update private.system_flags set enabled = true where key = 'outbound_paused'`);
     };
     try {
-      const r = await w.run();
+      const r = await w.run(slowDbSafe);
       expect(w.email.calls).toHaveLength(3);
       expect(r.outcomes).toMatchObject({ sent: 3, released: 7 });
     } finally {
@@ -128,7 +132,7 @@ describe('kill switch mid-batch (issue F, rule 18)', () => {
     w.email.onSend = async () => {
       if (w.email.calls.length === 1) await q('update public.tenants set outbound_paused = true where id = $1', [w.tenantId]);
     };
-    await w.run();
+    await w.run(slowDbSafe);
     expect(w.email.calls).toHaveLength(1);
   });
 });
