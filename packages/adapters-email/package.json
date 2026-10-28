@@ -11,6 +11,11 @@
   },
   "dependencies": {
     "@dueloop/messaging": "workspace:*",
-    "nodemailer": "10.2.1"
+    "imapflow": "2.9.1",
+    "nodemailer": "10.2.1",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
   }
 }

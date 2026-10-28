@@ -115,3 +115,5 @@ export function smtpDefaultsFromEnv(env: Readonly<Record<string, string | undefi
   if (!env.SMTP_HOST) return null;
   return { host: env.SMTP_HOST, port: Number(env.SMTP_PORT ?? 587), secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER ?? null };
 }
+export * from './imap.ts';
+export * from './imap-store.ts';
