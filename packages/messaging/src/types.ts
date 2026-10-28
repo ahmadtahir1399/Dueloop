@@ -39,6 +39,8 @@ export interface WhatsAppTemplateContent {
 export interface OutboundEnvelope {
   readonly tenantId: string;
   readonly idempotencyKey: string;
+  /** The tenant's channel_accounts.config for this channel: non-secret settings only (secrets come separately). */
+  readonly account: Readonly<Record<string, unknown>>;
   readonly content: EmailContent | WhatsAppTemplateContent;
 }
 

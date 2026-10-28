@@ -291,9 +291,17 @@ importers:
         specifier: 10.2.1
         version: 10.2.1
 
-  packages/adapters-notify: {}
+  packages/adapters-notify:
+    dependencies:
+      '@dueloop/messaging':
+        specifier: workspace:*
+        version: link:../messaging
 
-  packages/adapters-whatsapp: {}
+  packages/adapters-whatsapp:
+    dependencies:
+      '@dueloop/messaging':
+        specifier: workspace:*
+        version: link:../messaging
 
   packages/core:
     dependencies:
