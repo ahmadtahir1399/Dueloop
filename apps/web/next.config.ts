@@ -13,7 +13,25 @@ const nextConfig: NextConfig = {
   // The Playwright build uses its own folder (it is built against the LOCAL stack: NEXT_PUBLIC_ values are inlined).
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // Workspace packages are TypeScript sources (with .ts import extensions); Next compiles them.
-  transpilePackages: ["@dueloop/core", "@dueloop/db", "@dueloop/ingest", "@dueloop/authz"],
+  transpilePackages: [
+    "@dueloop/core",
+    "@dueloop/db",
+    "@dueloop/ingest",
+    "@dueloop/authz",
+    "@dueloop/messaging",
+    "@dueloop/payments",
+    "@dueloop/proofs",
+    "@dueloop/worker",
+    "@dueloop/adapters-email",
+    "@dueloop/adapters-notify",
+    "@dueloop/adapters-whatsapp",
+    "@dueloop/adapters-payments",
+    "@dueloop/classifier",
+    "@dueloop/inbound",
+    "@dueloop/webhooks",
+  ],
+  // Node-only libraries used by the server-side pipelines (never in a client bundle): required at runtime.
+  serverExternalPackages: ["pg", "nodemailer", "imapflow", "@anthropic-ai/sdk", "postal-mime", "html-to-text"],
   // No X-Powered-By header (nothing to fingerprint).
   poweredByHeader: false,
   experimental: {

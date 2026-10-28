@@ -1,9 +1,10 @@
 // Creates the e2e users (auth admin API) and their memberships, then signs each in once through the UI and saves
 // the session for the tests. Idempotent: re-running updates passwords and memberships.
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { closeDb, db } from "./db";
+import { seedStaffFixtures } from "./fixtures";
 import { BASE_URL, stack } from "./stack";
 import { authFile, E2E_PASSWORD, USERS, type E2eUser } from "./users";
 
@@ -50,6 +51,8 @@ export async function signInAndSave(user: E2eUser) {
 export default async function globalSetup() {
   mkdirSync("e2e/.auth", { recursive: true });
   await ensureUsers();
+  const f = await seedStaffFixtures();
+  writeFileSync("e2e/.auth/fixtures.json", JSON.stringify({ ...f, invoice: undefined }));
   await closeDb();
   for (const u of Object.keys(USERS) as E2eUser[]) await signInAndSave(u);
 }

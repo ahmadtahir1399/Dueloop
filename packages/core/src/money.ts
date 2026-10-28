@@ -96,3 +96,17 @@ export function parseMajor(text: string, currency: string): MoneyResult<Money> {
   if (frac.length > exp.value) return fail('invalid_format');
   return money(Number(whole + frac.padEnd(exp.value, '0')), currency);
 }
+
+/**
+ * toMajorString for minor units given as decimal digits: bigint database columns read as text (prompt 6, issue I),
+ * which may exceed Number.MAX_SAFE_INTEGER. No number conversion happens, so nothing is rounded.
+ */
+export function digitsToMajorString(digits: string, currency: string): MoneyResult<string> {
+  const exp = currencyExponent(currency);
+  if (!exp.ok) return fail(exp.error);
+  if (!/^\d{1,38}$/.test(digits)) return fail('invalid_format');
+  const d = digits.replace(/^0+(?=\d)/, '');
+  if (exp.value === 0) return ok(d);
+  const padded = d.padStart(exp.value + 1, '0');
+  return ok(`${padded.slice(0, -exp.value)}.${padded.slice(-exp.value)}`);
+}

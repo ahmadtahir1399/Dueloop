@@ -39,6 +39,12 @@ isOneToOne: false
       foreignKeyName: "approvals_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
 isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "approvals_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
       referencedRelation: "invoices"
       referencedColumns: ["tenant_id","id"]
     },{
@@ -111,6 +117,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "invoice_balances"
       referencedColumns: ["tenant_id","invoice_id"]
+    },{
+      foreignKeyName: "credits_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
     },{
       foreignKeyName: "credits_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
@@ -219,6 +231,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "invoice_balances"
       referencedColumns: ["tenant_id","invoice_id"]
+    },{
+      foreignKeyName: "dead_letters_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
     },{
       foreignKeyName: "dead_letters_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
@@ -383,6 +401,12 @@ isOneToOne: false
       foreignKeyName: "invoice_events_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
 isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "invoice_events_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
       referencedRelation: "invoices"
       referencedColumns: ["tenant_id","id"]
     },{
@@ -487,6 +511,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "invoice_balances"
       referencedColumns: ["tenant_id","invoice_id"]
+    },{
+      foreignKeyName: "message_invoices_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
     },{
       foreignKeyName: "message_invoices_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
@@ -675,6 +705,12 @@ isOneToOne: false
       foreignKeyName: "payment_proofs_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
 isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "payment_proofs_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
       referencedRelation: "invoices"
       referencedColumns: ["tenant_id","id"]
     },{
@@ -851,6 +887,12 @@ isOneToOne: false
       foreignKeyName: "promises_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
 isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "promises_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
       referencedRelation: "invoices"
       referencedColumns: ["tenant_id","id"]
     },{
@@ -975,6 +1017,12 @@ isOneToOne: false
       foreignKeyName: "tasks_tenant_id_invoice_id_fkey"
       columns: ["tenant_id","invoice_id"]
 isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "tasks_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
       referencedRelation: "invoices"
       referencedColumns: ["tenant_id","id"]
     },{
@@ -1072,13 +1120,65 @@ isOneToOne: false
                 }
           }
           Views: {
-            "invoice_balances": {
+            "inbox_threads": {
+                  Row: {
+                    "channel": string,"customer_id": string | null,"customer_name": string | null,"last_at": string | null,"messages": number | null,"tenant_id": string,"unprocessed": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "messages_tenant_id_customer_id_fkey"
+      columns: ["tenant_id","customer_id"]
+isOneToOne: false
+      referencedRelation: "customers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "messages_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "messages_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"invoice_balances": {
                   Row: {
                     "amount_paid": number | null,"amount_total": number,"balance": number | null,"currency": string,"invoice_id": string,"tenant_id": string
                   }
                   ComputedFields: never
                   Relationships: [
                     {
+      foreignKeyName: "invoices_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "invoices_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"invoice_list": {
+                  Row: {
+                    "amount_paid": number | null,"amount_total": number,"balance": number | null,"bucket": string | null,"currency": string | null,"customer_id": string,"customer_name": string,"days_past_due": number | null,"due_on": string,"id": string,"issued_on": string,"next_action_at": string,"number": string,"parked_reason": string | null,"promised_on": string | null,"search": string | null,"status": string,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "invoices_tenant_id_customer_id_fkey"
+      columns: ["tenant_id","customer_id"]
+isOneToOne: false
+      referencedRelation: "customers"
+      referencedColumns: ["tenant_id","id"]
+    },{
       foreignKeyName: "invoices_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false

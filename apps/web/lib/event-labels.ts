@@ -1,0 +1,55 @@
+// Human-readable labels for timeline events. Unknown types fall back to a neutral label built from the type name
+// (which comes from our own CHECK list, never from customers). Payload text is never shown here.
+const LABELS: Record<string, string> = {
+  InvoiceImported: "Imported",
+  InvoiceImportUpdated: "Updated by import",
+  InvoiceOverdue: "Became overdue",
+  ReminderScheduled: "Reminder scheduled",
+  ReminderSent: "Reminder sent",
+  ReminderFailed: "Reminder failed",
+  ReminderSkipped: "Reminder skipped",
+  ReminderParked: "Reminders parked",
+  ReminderAfterPayment: "Reminder went out after a payment",
+  ApprovalRequested: "Approval requested",
+  ApprovalGranted: "Approved",
+  ApprovalRejected: "Rejected",
+  ApprovalExpired: "Approval expired",
+  ApprovalSuperseded: "Approval superseded",
+  MessageStateUnknown: "Send state unknown (needs reconciling)",
+  MessageReconciled: "Send state reconciled",
+  ReplyReceived: "Reply received",
+  ReplyClassified: "Reply classified (AI)",
+  ReplyNeedsReview: "Reply needs review",
+  ReplyAmbiguous: "Reply could not be matched to one invoice",
+  ReplyUnmatched: "Reply unmatched",
+  PromiseRecorded: "Promise to pay recorded",
+  PromiseBroken: "Promise broken",
+  PromiseKept: "Promise kept",
+  PromiseSuperseded: "Promise replaced by a newer one",
+  PromiseCancelled: "Promise cancelled",
+  PaymentClaimReceived: "Customer says it is paid (not confirmed)",
+  DisputeRaised: "Dispute raised",
+  RemindersBlocked: "Reminders paused",
+  RemindersResumed: "Reminders resumed",
+  DeliveryFailed: "Delivery failed",
+  OptOutRecorded: "Customer opted out",
+  ProofSubmitted: "Proof of payment received",
+  ProofVerified: "Proof confirmed",
+  ProofRejected: "Proof rejected",
+  PaymentConfirmed: "Paid in full",
+  PartialPaymentConfirmed: "Part payment confirmed",
+  PaymentCreditCreated: "Overpayment kept as credit",
+  PaymentReversed: "Payment reversed (refund or chargeback)",
+  PaymentFailed: "Payment attempt failed",
+  PaymentRequestCreated: "Payment link created",
+  PaymentRequestDeactivated: "Payment link deactivated",
+  ReceiptSkipped: "Receipt not sent",
+  InvoiceEscalated: "Escalated",
+  InvoiceWrittenOff: "Written off",
+};
+
+export function eventLabel(type: string): string {
+  return LABELS[type] ?? `Other event (${type.replace(/[^A-Za-z]/g, "").slice(0, 40)})`;
+}
+
+export const KNOWN_EVENT_TYPES = Object.keys(LABELS);
