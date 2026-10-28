@@ -145,3 +145,46 @@ export async function seedStaffFixtures(): Promise<StaffFixtures> {
 
   return { invoice: inv, approvals, tasks, unknown, proofs, promise, hostileCustomer: hc, hostileInvoice: hi };
 }
+
+/** Objects in the OTHER tenant, owned by the "outsider" user, so the IDOR suite has real forms to tamper with. */
+export async function seedIsolationFixtures(): Promise<{ invoice: string; approval: string; task: string; message: string; promise: string; proof: string }> {
+  const B = "5eed0000-0000-4000-8000-00000000000b";
+  const q = (sql: string, p: unknown[] = []) => db().query(sql, p);
+  const inv = (await q("select id, customer_id from public.invoices where tenant_id = $1 and number = 'B-0001'", [B])).rows[0] as { id: string; customer_id: string };
+  const approval = (
+    await q(
+      `insert into public.approvals (tenant_id, invoice_id, idempotency_key, step_id, channel, requested_at)
+       values ($1, $2, $3, 's1', 'email', now()) on conflict (tenant_id, idempotency_key) do update set status = 'pending' returning id`,
+      [B, inv.id, `${inv.id}:s1:email`],
+    )
+  ).rows[0].id as string;
+  const task = (
+    await q(
+      `insert into public.tasks (tenant_id, type, status, invoice_id, customer_id, dedupe_key, created_at)
+       values ($1, 'human_review', 'open', $2, $3, 'iso-task', now()) on conflict (tenant_id, dedupe_key) do update set status = 'open', resolved_at = null returning id`,
+      [B, inv.id, inv.customer_id],
+    )
+  ).rows[0].id as string;
+  const message = (
+    await q(
+      `insert into public.messages (tenant_id, customer_id, channel, direction, idempotency_key, send_state, step_id, pending_since, purpose, attempt)
+       values ($1, $2, 'email', 'out', $3, 'unknown', 's2', now() - interval '1 hour', 'reminder', 1) returning id`,
+      [B, inv.customer_id, `${inv.id}:s2:email`],
+    )
+  ).rows[0].id as string;
+  await q("insert into public.message_invoices (tenant_id, message_id, invoice_id) values ($1, $2, $3)", [B, message, inv.id]);
+  const promise = (
+    await q(
+      `insert into public.promises (tenant_id, invoice_id, customer_id, promised_on, status, reference_at, created_at)
+       values ($1, $2, $3, current_date + 5, 'active', now(), now()) returning id`,
+      [B, inv.id, inv.customer_id],
+    )
+  ).rows[0].id as string;
+  const proof = (await q("select gen_random_uuid() as id")).rows[0].id as string;
+  await q(
+    `insert into public.payment_proofs (id, tenant_id, invoice_id, customer_id, storage_path, sha256, size_bytes, mime, created_at)
+     values ($1::uuid, $2::uuid, $3, $4, $2::text || '/' || $1::text, repeat('0', 64), 10, 'image/png', now())`,
+    [proof, B, inv.id, inv.customer_id],
+  );
+  return { invoice: inv.id, approval, task, message, promise, proof };
+}

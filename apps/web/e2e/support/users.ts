@@ -32,6 +32,7 @@ export interface FixtureIds {
   promise: string;
   hostileCustomer: string;
   hostileInvoice: string;
+  iso: { invoice: string; approval: string; task: string; message: string; promise: string; proof: string };
 }
 export async function fixtureIds(): Promise<FixtureIds> {
   const { readFileSync } = await import("node:fs");
