@@ -15,6 +15,11 @@
     stack traces.
 - **Tenant**: `metadata.phone_number_id` → `channel_accounts.external_account_id`, which is globally unique
   per channel. URLs never carry tenant ids, and the payload's own claims are never trusted.
+- **Update (prompt 5, ADR 0037).** Payment providers sign with a secret that belongs to each tenant's account,
+  so the route must know which account a delivery is for before it can verify it. It does this with
+  `/webhooks/payments/<opaque token>`: a random 256-bit value per payment account, with only its sha256 stored.
+  The token is still not a tenant id. It reveals nothing, it authorises nothing (the provider signature over
+  the raw body does), and an unknown token gets the same 404 as any other path.
 - **Storing**: each message or status item is its own `inbound_events` row, deduped on the wamid (messages)
   or wamid:status (statuses). The service returns 200 fast, including for duplicates and unknown accounts,
   because Meta retries non-2xx and a retry cannot help.

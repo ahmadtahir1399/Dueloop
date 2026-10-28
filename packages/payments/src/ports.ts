@@ -29,6 +29,8 @@ export const NO_PAYMENT_FAILPOINTS: PaymentFailpoints = Object.freeze({ hit: () 
 /** A provider plus the one call the core port does not need: switching a hosted object off (issue F). */
 export interface PaymentGateway extends PaymentProvider {
   deactivate?(providerObjectId: string): Promise<void>;
+  /** False = no hosted link in this currency (the reminder carries bank text only), e.g. Stripe minor-unit doubts. */
+  supportsCurrency?(currency: string): boolean;
 }
 
 export interface PaymentAccountRef {
