@@ -1,0 +1,1 @@
+{"recording":"recorded/reply-v1/keyword-baseline.jsonl","macroF1":0.949,"recall":{"promise_to_pay":0.957,"already_paid":1,"dispute":1,"needs_info":0.938,"payment_plan_request":1,"wrong_person":1,"abusive":0.933,"unclear":0.875,"opt_out":0.813}}
