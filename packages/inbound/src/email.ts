@@ -1,3 +1,4 @@
+import type {} from './text-codec-types.d.ts'; // type-only: DOM codec interfaces for postal-mime's declarations
 // Email normalisation (pipeline step 3): size cap BEFORE parsing, MIME via postal-mime, HTML -> text via
 // html-to-text (never rendered), quoted history stripped by a documented heuristic, attachments as metadata.
 import { convert } from 'html-to-text';
