@@ -79,11 +79,11 @@ export async function listInvoicePage(ctx: TenantContext, f: InvoiceFilters, lim
 }
 
 /** Every row for a CSV export, streamed page by page through the same keyset. */
-export async function* allInvoices(ctx: TenantContext, f: Omit<InvoiceFilters, "after">, cap: number): AsyncGenerator<InvoiceRow> {
-  let after: InvoiceFilters["after"];
+export async function* allInvoices(ctx: TenantContext, f: InvoiceFilters, cap: number): AsyncGenerator<InvoiceRow> {
+  let after: InvoiceFilters["after"]; // any "after" in f is ignored: an export always starts at the first row
   let n = 0;
   for (;;) {
-    const page = await listInvoicePage(ctx, { ...f, ...(after ? { after } : {}) }, 1000);
+    const page = await listInvoicePage(ctx, { ...f, after }, 1000);
     for (const r of page.rows) {
       if (n++ >= cap) return;
       yield r;

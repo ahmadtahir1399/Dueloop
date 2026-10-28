@@ -10,6 +10,7 @@ import {
   detectDelimiter,
   errorReportCsv,
   parseCsv,
+  parseDate,
   stageImport,
   validateFile,
   type CommitCounts,
@@ -41,6 +42,10 @@ export type PreviewResult =
       fileWarnings: string[];
       issues: RowIssue[];
       counts: CommitCounts;
+      /** Set when no date in the file proves the chosen format (every day-of-month <= 12): DMY and MDY both fit. */
+      ambiguousDates: boolean;
+      /** The first valid rows as they will be stored (amounts as minor-unit text). */
+      sample: { line: number; number: string; customer: string; amount: string; currency: string; issuedOn: string; dueOn: string }[];
     }
   | { ok: false; error: string };
 
@@ -148,8 +153,24 @@ export async function previewImport(formData: FormData): Promise<PreviewResult> 
       warnings: r.outcome.kind === "skipped" ? [] : fmt(r.outcome.warnings),
     }));
 
+  // Ambiguity: does any issued/due cell prove the chosen format? If none does, DMY vs MDY is a guess the
+  // human must confirm (the format is never inferred; this only warns).
+  const hIdx = s.header;
+  const col = (name: string | undefined) => (name ? hIdx.indexOf(name) : -1);
+  const dateCols = [col(inputs.mapping.issuedOn), col(inputs.mapping.dueOn)].filter((i) => i >= 0);
+  const proven = validation.rows.some((r) => dateCols.some((i) => {
+    const d = parseDate(r.raw[i] ?? "", inputs.options.dateFormat);
+    return d.ok && d.confirmsFormat;
+  }));
+  const sample = validation.rows
+    .flatMap((r) => (r.outcome.kind === "ok" ? [{ line: r.line, row: r.outcome.row }] : []))
+    .slice(0, 10)
+    .map(({ line, row }) => ({ line, number: row.invoiceNumber, customer: row.customer.name, amount: String(row.amountMinor), currency: row.currency, issuedOn: row.issuedOn, dueOn: row.dueOn }));
+
   return {
     ok: true,
+    ambiguousDates: inputs.options.dateFormat !== "YMD" && !proven,
+    sample,
     batchId: staged.batchId,
     rows: s.rows,
     importable: s.importable,

@@ -52,11 +52,11 @@ export async function listCustomerPage(ctx: TenantContext, f: CustomerFilters, l
 }
 
 /** Every customer for a CSV export, through the same keyset. */
-export async function* allCustomers(ctx: TenantContext, f: Omit<CustomerFilters, "after">, cap: number) {
+export async function* allCustomers(ctx: TenantContext, f: CustomerFilters, cap: number) {
   let after: CustomerFilters["after"];
   let n = 0;
   for (;;) {
-    const page = await listCustomerPage(ctx, { ...f, ...(after ? { after } : {}) }, 1000);
+    const page = await listCustomerPage(ctx, { ...f, after }, 1000);
     for (const r of page.rows) {
       if (n++ >= cap) return;
       yield r;
