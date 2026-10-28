@@ -25,6 +25,8 @@
     "tenant": "node packages/worker/src/bin/tenant.ts",
     "tasks": "node packages/worker/src/bin/tasks.ts",
     "promises": "node packages/worker/src/bin/promises.ts",
+    "payments": "node packages/worker/src/bin/payments.ts",
+    "payments:integrity": "node packages/worker/src/bin/payments.ts integrity",
     "inbound": "node packages/worker/src/bin/inbound.ts",
     "webhooks": "node packages/webhooks/src/bin/webhooks.ts",
     "demo:send": "node packages/worker/scripts/demo-send.ts",

@@ -12,6 +12,8 @@ import {
   formatAmount,
   formatDueDate,
   isSafeAddress,
+  paymentBlock,
+  safePayLink,
   jitterMinutes,
   messageIdFor,
   monthStart,
@@ -194,13 +196,34 @@ describe('default templates', () => {
     for (const t of DEFAULT_TEMPLATES) {
       expect(render(t.body, allVars).ok, `${t.templateKey}/${t.channel}`).toBe(true);
       if (t.subject) expect(render(t.subject, allVars).ok).toBe(true);
-      expect(placeholders(t.body)).toContain('reference_code');
+      // Prompt 5: reminders carry the reference code directly or inside the code-composed payment block.
+      if (t.templateKey !== 'receipt') expect(placeholders(t.body).some((v) => v === 'reference_code' || v === 'payment_block'), `${t.templateKey}/${t.channel}`).toBe(true);
     }
+  });
+  it('every email reminder uses the payment block (current balance + reference, prompt 5)', () => {
+    for (const t of DEFAULT_TEMPLATES.filter((x) => x.channel === 'email' && x.templateKey !== 'receipt')) expect(placeholders(t.body)).toContain('payment_block');
+  });
+  it('receipts state the amount received and the remaining balance', () => {
+    for (const t of DEFAULT_TEMPLATES.filter((x) => x.templateKey === 'receipt')) expect(placeholders(t.body)).toEqual(expect.arrayContaining(['amount_received', 'balance_remaining', 'invoice_number']));
   });
   it('contain no threatening or legally loaded wording', () => {
     for (const t of DEFAULT_TEMPLATES) {
       const text = `${t.subject ?? ''} ${t.body}`.toLowerCase();
       for (const w of BANNED_WORDING) expect(text, `${t.templateKey}/${t.channel} contains "${w}"`).not.toMatch(new RegExp(`\\b${w}\\b`));
     }
+  });
+});
+
+describe('payment block (prompt 5)', () => {
+  it('always has the amount and the reference code; the link only when given', () => {
+    const b = paymentBlock({ amountDue: '£12.50', referenceCode: 'REF1', bankText: '  Sort code on file  ', link: null });
+    expect(b).toBe('To pay £12.50 by bank transfer, please quote REF1.\nSort code on file');
+    const l = paymentBlock({ amountDue: '£12.50', referenceCode: 'REF1', bankText: '', link: 'https://pay.example.test/x' });
+    expect(l).toBe('Pay £12.50 online: https://pay.example.test/x\n\nTo pay £12.50 by bank transfer, please quote REF1.');
+  });
+  it('safePayLink keeps plain https links and drops everything else', () => {
+    expect(safePayLink('https://buy.stripe.com/test_abc')).toBe('https://buy.stripe.com/test_abc');
+    for (const bad of [null, '', 'http://x.test/a', 'javascript:alert(1)', 'https://u:p@x.test/', 'https://x.test:8443/a', 'https://x.test/a b', 'https://x.test/<script>', 'https://localhost/a', `https://x.test/${'a'.repeat(600)}`, 'not a url'])
+      expect(safePayLink(bad), String(bad)).toBeNull();
   });
 });

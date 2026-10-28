@@ -28,6 +28,14 @@ export interface ChannelRegistry {
   get(channel: Channel): OutboundChannel | undefined;
 }
 
+/**
+ * Prompt 5, step 6a: the gateway link for an invoice's payment block, created (or reused) BEFORE the outbox
+ * claim. ok + null url = no gateway for this tenant (bank text only). Not ok = the provider failed: retry, park.
+ */
+export interface PaymentLinks {
+  linkFor(tenantId: string, invoiceId: string): Promise<{ readonly ok: true; readonly url: string | null } | { readonly ok: false; readonly reason: string }>;
+}
+
 export interface RateLimiter {
   /** 0 = allowed now, otherwise milliseconds to wait. */
   tryTake(key: string): number;

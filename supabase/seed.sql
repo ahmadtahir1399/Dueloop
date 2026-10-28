@@ -124,9 +124,7 @@ insert into public.templates (tenant_id, template_key, channel, locale, tone, su
 
 A quick reminder that invoice {{invoice_number}} for {{amount_due}} was due on {{due_date}}. If you have already paid, thank you, and please ignore this message.
 
-To pay by bank transfer, please quote {{reference_code}}.
-{{bank_instructions}}
-{{pay_link}}
+{{payment_block}}
 
 Thank you,
 {{business_name}}$t$, null, null, null),
@@ -134,9 +132,7 @@ Thank you,
 
 Our records show invoice {{invoice_number}} for {{amount_due}} is now {{days_overdue}} days past its due date ({{due_date}}). Could you let us know when we can expect payment?
 
-Please quote {{reference_code}} with your transfer.
-{{bank_instructions}}
-{{pay_link}}
+{{payment_block}}
 
 Regards,
 {{business_name}}$t$, null, null, null),
@@ -144,12 +140,17 @@ Regards,
 
 Invoice {{invoice_number}} for {{amount_due}} remains unpaid {{days_overdue}} days after the due date of {{due_date}}. Please arrange payment or reply to agree a date.
 
-Reference: {{reference_code}}
-{{bank_instructions}}
-{{pay_link}}
+{{payment_block}}
 
 {{business_name}}$t$, null, null, null),
-  ('5eed0000-0000-4000-8000-00000000000a', 'nudge', 'whatsapp', 'en', 'neutral', null, $t$Hello {{customer_name}}, invoice {{invoice_number}} for {{amount_due}} was due on {{due_date}}. Please quote {{reference_code}} when paying. {{business_name}}$t$, 'payment_reminder', 'en', 'approved');
+  ('5eed0000-0000-4000-8000-00000000000a', 'nudge', 'whatsapp', 'en', 'neutral', null, $t$Hello {{customer_name}}, invoice {{invoice_number}} for {{amount_due}} was due on {{due_date}}. Please quote {{reference_code}} when paying. {{business_name}}$t$, 'payment_reminder', 'en', 'approved'),
+  ('5eed0000-0000-4000-8000-00000000000a', 'receipt', 'email', 'en', 'neutral', $t$Payment received: invoice {{invoice_number}}$t$, $t$Hi {{customer_name}},
+
+Thank you. We received {{amount_received}} for invoice {{invoice_number}}.
+Remaining balance: {{balance_remaining}}.
+
+{{business_name}}$t$, null, null, null),
+  ('5eed0000-0000-4000-8000-00000000000a', 'receipt', 'whatsapp', 'en', 'neutral', null, $t$Hello {{customer_name}}, we received {{amount_received}} for invoice {{invoice_number}}. Remaining balance: {{balance_remaining}}. {{business_name}}$t$, 'payment_receipt', 'en', 'approved');
 
 insert into public.channel_accounts (tenant_id, channel, config) values
   ('5eed0000-0000-4000-8000-00000000000a', 'email', '{"from_address": "billing@demo-agency.test", "from_name": "Demo Agency", "message_id_domain": "demo-agency.test"}');

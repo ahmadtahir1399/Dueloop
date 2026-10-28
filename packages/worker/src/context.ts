@@ -1,6 +1,7 @@
 // Fresh context for one invoice (protocol step 1), built with the packages/db mappers.
 // Rule C: history.sentAt = ALL outbound reminders to the CUSTOMER (weekly cap per customer), while
 //         history.sentStepIds stays per INVOICE.
+// Prompt 5: receipts are not reminders; they never count toward the weekly cap (they do count toward budget).
 // Rule E: steps that were skipped (rejected approval, no contact/consent) or failed permanently count as
 //         "sent" for sentStepIds (never proposed again) but NOT for sentAt (nothing reached the customer).
 import type { Channel, Ctx, Policy, Settings } from '@dueloop/core';
@@ -81,7 +82,7 @@ export async function loadContext(db: WorkerDb, tenantId: string, invoiceId: str
     ),
     db.pool.query(
       `select coalesce(sent_at, pending_since) as at from public.messages
-       where tenant_id = $1 and customer_id = $2 and direction = 'out' and send_state = any($3) and coalesce(sent_at, pending_since) is not null`,
+       where tenant_id = $1 and customer_id = $2 and direction = 'out' and purpose = 'reminder' and send_state = any($3) and coalesce(sent_at, pending_since) is not null`,
       [tenantId, r.customer_id, MAY_HAVE_REACHED],
     ),
     db.pool.query(`select 1 from public.invoice_events where tenant_id = $1 and invoice_id = $2 and type = 'InvoiceEscalated' limit 1`, [tenantId, invoiceId]),

@@ -2,13 +2,15 @@
 // wired, and it can only ever construct NO_FAILPOINTS (tested): failpoints are unreachable in production.
 import { createSmtpChannel, smtpDefaultsFromEnv } from '@dueloop/adapters-email';
 import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail } from '@dueloop/adapters-notify';
+import { FakeGateway } from '@dueloop/adapters-payments';
 import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
+import { createRequestFor, DEFAULT_PAYMENTS_CONFIG, NO_PAYMENT_FAILPOINTS, PaymentsDb, type PaymentGateway, type PaymentsDeps, type ProviderRegistry } from '@dueloop/payments';
 import pg from 'pg';
 import { localEnv } from '../../db/scripts/local-env.ts';
 import { WorkerDb } from './db.ts';
 import { createJsonLogger, type Logger } from './logger.ts';
-import { DEFAULT_CONFIG, NO_FAILPOINTS, type Clock, type WorkerConfig } from './ports.ts';
+import { DEFAULT_CONFIG, NO_FAILPOINTS, type Clock, type Notifier, type PaymentLinks, type WorkerConfig } from './ports.ts';
 import type { WorkerDeps } from './process.ts';
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -65,16 +67,63 @@ export function buildDeps(env: Env, db: WorkerDb, clock: Clock, overrides: Parti
   });
   const alerts = slackOrEmail(async (t) => (await db.secret(t, 'slack')) !== null, slack, emailAlerts);
   const logAlerts = { notify: async (a: { tenantId: string; kind: string; severity: string }) => logger.warn('alert', { tenantId: a.tenantId, reason: a.kind, outcome: a.severity }) };
+  const notifier = fanout(logAlerts, alerts);
   return {
     db,
     clock,
     channels: { get: (ch) => channels.get(ch) },
-    notifier: fanout(logAlerts, alerts),
+    notifier,
     limiter: new TokenBucketLimiter(() => DEFAULT_RATE_LIMIT, () => clock.now().getTime()),
     logger,
     failpoints: NO_FAILPOINTS,
     config,
+    payments: paymentLinks(paymentsCore(env, db, clock, logger, notifier)),
   };
+}
+
+/**
+ * Gateways per payment account. The fake provider exists only when PAYMENTS_ALLOW_FAKE=true (tests, demo) and
+ * never for a live-mode account; Stripe arrives with its adapter (Part B).
+ */
+export function paymentProviders(env: Env, db: PaymentsDb, clock: Clock): ProviderRegistry {
+  const cache = new Map<string, PaymentGateway>();
+  return {
+    async forAccount(a) {
+      const hit = cache.get(a.id);
+      if (hit) return hit;
+      let gw: PaymentGateway | undefined;
+      if (a.provider === 'fake' && env.PAYMENTS_ALLOW_FAKE === 'true' && a.mode === 'test') {
+        const secret = await db.secret(a.id, 'webhook_secret');
+        if (secret) gw = new FakeGateway({ secret, clock });
+      }
+      if (gw) cache.set(a.id, gw);
+      return gw;
+    },
+  };
+}
+
+function paymentsCore(env: Env, workerDb: WorkerDb, clock: Clock, logger: Logger, notifier: Notifier): PaymentsDeps {
+  const db = new PaymentsDb(workerDb.pool);
+  return { db, clock, logger, notifier, providers: paymentProviders(env, db, clock), failpoints: NO_PAYMENT_FAILPOINTS, config: DEFAULT_PAYMENTS_CONFIG };
+}
+
+/** Step 6a: the reminder's gateway link (one active request per invoice, reused while valid). */
+export function paymentLinks(p: PaymentsDeps): PaymentLinks {
+  return {
+    async linkFor(tenantId, invoiceId) {
+      try {
+        const r = await createRequestFor(p, tenantId, invoiceId);
+        return { ok: true, url: r.request?.url ?? null };
+      } catch {
+        return { ok: false, reason: 'provider_error' };
+      }
+    },
+  };
+}
+
+export function buildPaymentsDeps(env: Env, db: WorkerDb, clock: Clock): PaymentsDeps {
+  const w = buildDeps(env, db, clock); // the same logger and Slack-or-email alert routing
+  return paymentsCore(env, db, clock, w.logger, w.notifier);
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

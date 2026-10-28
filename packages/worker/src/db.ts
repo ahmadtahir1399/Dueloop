@@ -9,6 +9,15 @@ export interface Job {
   readonly tenantId: string;
 }
 
+export interface ReceiptJob {
+  readonly msgId: number;
+  readonly readCount: number;
+  readonly kind: string;
+  readonly receiptId: string;
+  readonly tenantId: string;
+  readonly invoiceId: string;
+}
+
 export interface MessageRow {
   readonly id: string;
   readonly sendState: string;
@@ -108,6 +117,16 @@ export class WorkerDb {
   async customerOptedOut(customerId: string): Promise<boolean> {
     const r = await this.pool.query<{ o: boolean }>('select opted_out as o from public.customers where id = $1', [customerId]);
     return r.rows[0]?.o ?? true;
+  }
+
+  /** Status and balance as of now (prompt 5 payment gate, issue L). */
+  async invoiceBalance(tenantId: string, invoiceId: string): Promise<{ status: string; balance: number } | null> {
+    const r = await this.pool.query<{ status: string; balance: string }>(
+      'select i.status, b.balance from public.invoices i join public.invoice_balances b on b.tenant_id = i.tenant_id and b.invoice_id = i.id where i.tenant_id = $1 and i.id = $2',
+      [tenantId, invoiceId],
+    );
+    const x = r.rows[0];
+    return x ? { status: x.status, balance: Number(x.balance) } : null;
   }
 
   // ---- prompt 4 gates ------------------------------------------------------------------------------------
@@ -375,14 +394,27 @@ export class WorkerDb {
   async resolveUnknown(messageId: string, as: 'sent' | 'not_sent', nextActionAt: Date): Promise<boolean> {
     const at = nextActionAt;
     return this.tx(async (c) => {
-      const m = await c.query<{ tenant_id: string; idempotency_key: string; step_id: string; channel: string; invoice_id: string }>(
-        `select m.tenant_id, m.idempotency_key, m.step_id, m.channel, mi.invoice_id from public.messages m
+      const m = await c.query<{ tenant_id: string; idempotency_key: string; step_id: string; channel: string; invoice_id: string; purpose: string }>(
+        `select m.tenant_id, m.idempotency_key, m.step_id, m.channel, mi.invoice_id, m.purpose from public.messages m
          join public.message_invoices mi on mi.tenant_id = m.tenant_id and mi.message_id = m.id
          where m.id = $1 and m.send_state = 'unknown' for update of m`,
         [messageId],
       );
       const row = m.rows[0];
       if (!row) return false;
+      if (row.purpose === 'receipt') {
+        // A receipt is not a reminder step: no ReminderSent, no change to the invoice's schedule. "not sent"
+        // re-queues the receipt job (a human decided; still the same key, so still at most once).
+        if (as === 'sent') await c.query(`update public.messages set send_state = 'sent', sent_at = coalesce(sent_at, pending_since) where id = $1`, [messageId]);
+        else {
+          await c.query(`update public.messages set send_state = 'retry', failed_reason = 'reconciled_not_sent' where id = $1`, [messageId]);
+          await c.query(`select pgmq.send('transactional_sends', $1::jsonb)`, [
+            JSON.stringify({ kind: 'receipt', receipt_id: row.idempotency_key.replace(/^receipt:/, ''), tenant_id: row.tenant_id, invoice_id: row.invoice_id }),
+          ]);
+        }
+        await this.appendEvent(c, row.tenant_id, row.invoice_id, { type: 'MessageReconciled', key: `${row.idempotency_key}:reconciled-${as}`, payload: { as } });
+        return true;
+      }
       if (as === 'sent') {
         await c.query(`update public.messages set send_state = 'sent', sent_at = coalesce(sent_at, pending_since) where id = $1`, [messageId]);
         await this.appendEvent(c, row.tenant_id, row.invoice_id, { type: 'ReminderSent', key: `${row.idempotency_key}:sent`, payload: { stepId: row.step_id, channel: row.channel, reconciled: true } });
@@ -393,6 +425,86 @@ export class WorkerDb {
       await this.appendEvent(c, row.tenant_id, row.invoice_id, { type: 'MessageReconciled', key: `${row.idempotency_key}:reconciled-${as}`, payload: { as } });
       await c.query('update public.invoices set next_action_at = $3, parked_reason = null, enqueued_at = null where tenant_id = $1 and id = $2', [row.tenant_id, row.invoice_id, at]);
       return true;
+    });
+  }
+
+  // ---- receipts (prompt 5, issue K): the transactional_sends queue, filled inside apply_payment -----------
+  async claimReceipts(n: number, visibilitySeconds: number, filter: Record<string, string> = {}): Promise<ReceiptJob[]> {
+    const r = await this.pool.query<{ msg_id: string; read_ct: number; message: { kind: string; receipt_id: string; tenant_id: string; invoice_id: string } }>(
+      'select msg_id, read_ct, message from pgmq.read($1::text, $2::integer, $3::integer, $4::jsonb)',
+      ['transactional_sends', visibilitySeconds, n, JSON.stringify(filter)],
+    );
+    return r.rows.map((x) => ({ msgId: Number(x.msg_id), readCount: x.read_ct, kind: x.message.kind, receiptId: x.message.receipt_id, tenantId: x.message.tenant_id, invoiceId: x.message.invoice_id }));
+  }
+  async ackReceipt(msgId: number): Promise<void> {
+    await this.pool.query(`select pgmq.archive('transactional_sends', $1::bigint)`, [msgId]);
+  }
+  async releaseReceipt(msgId: number, delaySeconds: number): Promise<void> {
+    await this.pool.query(`select pgmq.set_vt('transactional_sends', $1::bigint, $2::integer)`, [msgId, delaySeconds]);
+  }
+  async deadLetterReceipt(job: ReceiptJob, reason: string, attempts: number): Promise<void> {
+    await this.tx(async (c) => {
+      await c.query(`insert into public.dead_letters (tenant_id, source, reason, attempts, payload) values ($1, 'transactional_sends', $2, $3, $4)`, [
+        job.tenantId,
+        reason.slice(0, 200),
+        attempts,
+        JSON.stringify({ receiptId: job.receiptId }),
+      ]);
+      await c.query(`select pgmq.archive('transactional_sends', $1::bigint)`, [job.msgId]);
+    });
+  }
+  /** The receipt's amount, and the balance right AFTER it (later receipts' applied slices added back). */
+  async receiptFacts(tenantId: string, receiptId: string): Promise<{ amount: number; currency: string; balanceAfter: number } | null> {
+    const r = await this.pool.query<{ amount: string; currency: string; balance_after: string }>(
+      `select r.amount, r.currency, b.balance + coalesce((
+                select sum(p.amount) from public.payments p join public.receipts r2 on r2.tenant_id = p.tenant_id and r2.id = p.receipt_id
+                where r2.tenant_id = r.tenant_id and r2.invoice_id = r.invoice_id and r2.created_at > r.created_at), 0) as balance_after
+       from public.receipts r join public.invoice_balances b on b.tenant_id = r.tenant_id and b.invoice_id = r.invoice_id
+       where r.tenant_id = $1 and r.id = $2`,
+      [tenantId, receiptId],
+    );
+    const x = r.rows[0];
+    return x ? { amount: Number(x.amount), currency: x.currency.trim(), balanceAfter: Number(x.balance_after) } : null;
+  }
+  async claimReceiptMessage(a: { tenantId: string; invoiceId: string; customerId: string; channel: string; key: string; costMinor: number; subject: string | null; body: string; rfcMessageId: string | null; at: Date }): Promise<string | null> {
+    return this.tx(async (c) => {
+      const r = await c.query<{ id: string }>(
+        `insert into public.messages (tenant_id, customer_id, channel, direction, purpose, idempotency_key, send_state, attempt, cost_minor, template_key, subject, body, rfc_message_id, pending_since)
+         values ($1, $2, $3, 'out', 'receipt', $4, 'pending', 1, $5, 'receipt', $6, $7, $8, $9)
+         on conflict (tenant_id, idempotency_key) do nothing returning id`,
+        [a.tenantId, a.customerId, a.channel, a.key, a.costMinor, a.subject, a.body, a.rfcMessageId, a.at],
+      );
+      const id = r.rows[0]?.id ?? null;
+      if (id) await c.query('insert into public.message_invoices (tenant_id, message_id, invoice_id) values ($1, $2, $3)', [a.tenantId, id, a.invoiceId]);
+      return id;
+    });
+  }
+  async recordReceiptSent(messageId: string, providerMessageId: string | null, at: Date): Promise<void> {
+    await this.pool.query(
+      `update public.messages set send_state = 'sent', sent_at = $2, provider_message_id = coalesce($3, provider_message_id), failed_reason = null where id = $1 and send_state in ('pending', 'unknown')`,
+      [messageId, at, providerMessageId],
+    );
+  }
+  async recordReceiptFailed(messageId: string, reason: string): Promise<void> {
+    await this.pool.query(`update public.messages set send_state = 'failed_permanent', failed_reason = $2 where id = $1 and send_state = 'pending'`, [messageId, reason.slice(0, 200)]);
+  }
+  /** Stale pending receipt: unknown, never resent (rule 17). Unlike a reminder it does not park the invoice. */
+  async markReceiptUnknown(tenantId: string, invoiceId: string, messageId: string, key: string): Promise<void> {
+    await this.tx(async (c) => {
+      await c.query(`update public.messages set send_state = 'unknown', failed_reason = 'stale_pending' where id = $1 and send_state = 'pending'`, [messageId]);
+      await this.appendEvent(c, tenantId, invoiceId, { type: 'MessageStateUnknown', key: `${key}:unknown`, payload: { messageId } });
+    });
+  }
+  /** A receipt that will not be sent (opted out, no route, budget): recorded, never retried. */
+  async recordReceiptSkipped(a: { tenantId: string; invoiceId: string; customerId: string; key: string; channel: string; reason: string; receiptId: string; at: Date }): Promise<void> {
+    await this.tx(async (c) => {
+      const r = await c.query<{ id: string }>(
+        `insert into public.messages (tenant_id, customer_id, channel, direction, purpose, idempotency_key, send_state, template_key, failed_reason, pending_since)
+         values ($1, $2, $3, 'out', 'receipt', $4, 'skipped', 'receipt', $5, $6) on conflict (tenant_id, idempotency_key) do nothing returning id`,
+        [a.tenantId, a.customerId, a.channel, a.key, a.reason, a.at],
+      );
+      if (r.rows[0]) await c.query('insert into public.message_invoices (tenant_id, message_id, invoice_id) values ($1, $2, $3)', [a.tenantId, r.rows[0].id, a.invoiceId]);
+      await this.appendEvent(c, a.tenantId, a.invoiceId, { type: 'ReceiptSkipped', key: `${a.key}:skipped`, payload: { receiptId: a.receiptId, channel: a.channel, reason: a.reason } });
     });
   }
 

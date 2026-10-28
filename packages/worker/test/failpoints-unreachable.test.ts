@@ -22,6 +22,15 @@ describe('failpoints are unreachable in production', () => {
     void db.pool.end();
   });
 
+  it('the payments composition root wires the payments no-op too (prompt 5)', async () => {
+    const { buildPaymentsDeps } = await import('../src/runtime.ts');
+    const { NO_PAYMENT_FAILPOINTS } = await import('@dueloop/payments');
+    const db = new WorkerDb(new pg.Pool({ connectionString: 'postgres://unused@127.0.0.1:1/x' }));
+    expect(buildPaymentsDeps({}, db, { now: () => new Date(0) }).failpoints).toBe(NO_PAYMENT_FAILPOINTS);
+    expect(Object.isFrozen(NO_PAYMENT_FAILPOINTS)).toBe(true);
+    void db.pool.end();
+  });
+
   it('the composition root always wires the frozen no-op', () => {
     const db = new WorkerDb(new pg.Pool({ connectionString: 'postgres://unused@127.0.0.1:1/x' })); // never connects
     const deps = buildDeps({}, db, { now: () => new Date(0) });
@@ -36,7 +45,7 @@ describe('failpoints are unreachable in production', () => {
       const text = readFileSync(f, 'utf8');
       expect(text, f).not.toMatch(/from ['"][^'"]*test-db/);
       expect(text, f).not.toMatch(/crashAt\(|new FailpointCrash/);
-      for (const m of text.matchAll(/\bfailpoints\s*:\s*([A-Za-z_]+)\s*[,}\n]/g)) expect(['NO_FAILPOINTS', 'NO_INBOUND_FAILPOINTS'], f).toContain(m[1]);
+      for (const m of text.matchAll(/\bfailpoints\s*:\s*([A-Za-z_]+)\s*[,}\n]/g)) expect(['NO_FAILPOINTS', 'NO_INBOUND_FAILPOINTS', 'NO_PAYMENT_FAILPOINTS'], f).toContain(m[1]);
     }
   });
 });
