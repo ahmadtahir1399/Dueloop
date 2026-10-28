@@ -10,7 +10,7 @@ policies; the phase 4 migration implements exactly this.
 |---|---|---|---|---|---|
 | inbound_events (raw provider payloads, PII) | - | - | - | - | all |
 | messages, direction 'in' (the inbox) | R | R | R | - | all |
-| promises | R W | R W | R | - | all |
+| promises | R | R | R | - | all |
 | cancel a promise (`public.cancel_promise`) | yes | yes | no | no | CLI yes |
 | tasks | R | R | R | - | all |
 | resolve / reopen a task (`public.resolve_task`, `public.reopen_task`) | yes | yes | yes | no | CLI yes |
@@ -21,6 +21,8 @@ policies; the phase 4 migration implements exactly this.
 
 - Raw inbound payloads are readable by no client role. They are PII and are purged on schedule (rule 25).
   The inbox shows the normalised message only, and its `analysis.summary` is marked untrusted.
+- Nobody writes `promises` directly: the processor creates and supersedes them, the worker marks them
+  broken, and owner/accountant cancel through `cancel_promise` (so a promise always has a source message).
 - Nobody writes `tasks` directly. Tasks change only through `resolve_task` / `reopen_task`, which record
   who resolved them and why.
 - A collector may read the inbox and work tasks, but cannot edit promises, settings or channel accounts.

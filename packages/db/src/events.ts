@@ -30,5 +30,17 @@ export const INVOICE_EVENT_TYPES = [
   'ApprovalSuperseded',
   'MessageStateUnknown',
   'MessageReconciled',
+  // Prompt 4 (replies + promises).
+  'PromiseSuperseded',
+  'PromiseCancelled',
+  'PaymentClaimReceived',
+  'ReplyNeedsReview',
+  'DeliveryFailed',
+  'RemindersBlocked',
+  'RemindersResumed',
 ] as const;
 export type InvoiceEventType = (typeof INVOICE_EVENT_TYPES)[number];
+
+// Tenant- and customer-level events (prompt 4, issue H). MUST equal the CHECK list on public.tenant_events.
+export const TENANT_EVENT_TYPES = ['OptOutRecorded', 'ReplyUnmatched', 'ReplyAmbiguous', 'DeliveryFailed', 'InboundDeadLettered', 'AutoReplyReceived'] as const;
+export type TenantEventType = (typeof TENANT_EVENT_TYPES)[number];
