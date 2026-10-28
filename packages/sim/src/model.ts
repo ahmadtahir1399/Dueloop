@@ -12,6 +12,9 @@ export const BEHAVIOURS = [
   // Prompt 4: replies that go through planReplyOutcome and never change state on their own.
   'claims_paid',
   'vague_promise',
+  // Prompt 5: money that is more than the balance, and money that arrives after the promise deadline.
+  'overpays',
+  'promise_late',
 ] as const;
 export type Behaviour = (typeof BEHAVIOURS)[number];
 
@@ -64,6 +67,16 @@ export interface ExternalEvent {
   readonly promiseDays?: number;
 }
 
+/** Prompt 5: one confirmed receipt as the ledger recorded it (received = applied + credit). */
+export interface LedgerEntry {
+  readonly at: number;
+  readonly invoiceId: string;
+  readonly currency: string;
+  readonly received: number;
+  readonly applied: number;
+  readonly credit: number;
+}
+
 /** What the outbound gateway saw, with the state at the moment of sending. */
 export interface SendRecord {
   readonly at: number;
@@ -96,7 +109,11 @@ export type ViolationKind =
   // Prompt 4 invariants.
   | 'promised_too_early'
   | 'blocked'
-  | 'opt_out_not_final';
+  | 'opt_out_not_final'
+  // Prompt 5 invariants (checked from the ledger and the send log only).
+  | 'ledger_unbalanced'
+  | 'negative_balance'
+  | 'reminder_after_paid';
 
 export interface Violation {
   readonly kind: ViolationKind;

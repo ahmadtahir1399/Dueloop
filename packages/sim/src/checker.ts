@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import type { SendRecord, Tenant, Violation } from './model.ts';
+import type { LedgerEntry, SendRecord, SimInvoice, Tenant, Violation } from './model.ts';
 
 const WEEK_MS = 7 * 24 * 3600 * 1000;
 
@@ -62,6 +62,33 @@ export function checkSends(sends: readonly SendRecord[], tenants: ReadonlyMap<st
     if (inWindow > tenant.policy.maxMessagesPerWeek) {
       v('weekly_cap', `${s.customerId} got ${inWindow} messages in 7 days (cap ${tenant.policy.maxMessagesPerWeek})`);
     }
+  }
+  return violations;
+}
+
+/**
+ * Prompt 5 oracle, from the ledger and the send log only (never from engine state): every receipt balances
+ * (received = applied + credit), an invoice's applied money never exceeds its total (balance never negative),
+ * and no reminder goes out at or after the moment the balance reached zero.
+ */
+export function checkLedger(ledger: readonly LedgerEntry[], invoices: readonly SimInvoice[], sends: readonly SendRecord[]): Violation[] {
+  const violations: Violation[] = [];
+  const total = new Map(invoices.map((i) => [i.id, i.total.minor]));
+  const applied = new Map<string, number>();
+  const paidAt = new Map<string, number>();
+  for (const e of [...ledger].sort((a, b) => a.at - b.at)) {
+    if (e.received !== e.applied + e.credit || e.applied < 0 || e.credit < 0) {
+      violations.push({ kind: 'ledger_unbalanced', at: e.at, invoiceId: e.invoiceId, detail: `received ${e.received} != applied ${e.applied} + credit ${e.credit}` });
+    }
+    const sum = (applied.get(e.invoiceId) ?? 0) + e.applied;
+    applied.set(e.invoiceId, sum);
+    const t = total.get(e.invoiceId) ?? 0;
+    if (sum > t) violations.push({ kind: 'negative_balance', at: e.at, invoiceId: e.invoiceId, detail: `applied ${sum} > total ${t}` });
+    if (sum >= t && !paidAt.has(e.invoiceId)) paidAt.set(e.invoiceId, e.at);
+  }
+  for (const s of sends) {
+    const p = paidAt.get(s.invoiceId);
+    if (p !== undefined && s.at >= p) violations.push({ kind: 'reminder_after_paid', at: s.at, invoiceId: s.invoiceId, detail: `${s.idempotencyKey} sent after the balance reached 0` });
   }
   return violations;
 }

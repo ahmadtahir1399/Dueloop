@@ -20,6 +20,8 @@ export interface Summary {
   readonly disputes: number;
   readonly optOuts: number;
   readonly partialPayments: number;
+  readonly payments: { receipts: number; overpayments: number; onFinalInvoice: number; promisesPaidLate: number };
+  readonly credit: Readonly<Record<string, string>>;
   readonly replyTasks: number;
   readonly reminderBlocks: number;
   readonly recovered: Readonly<Record<string, string>>;
@@ -51,6 +53,13 @@ export function summarize(r: SimResult): Summary {
     disputes: r.stats.disputes,
     optOuts: r.stats.optOuts,
     partialPayments: r.stats.partialPayments,
+    payments: { receipts: r.ledger.length, overpayments: r.stats.overpayments, onFinalInvoice: r.stats.paymentsOnFinal, promisesPaidLate: r.stats.promisesPaidLate },
+    credit: Object.fromEntries(
+      sortedEntries(r.stats.creditMinor).map(([cur, minor]) => {
+        const s = toMajorString({ minor, currency: cur });
+        return [cur, s.ok ? s.value : `${minor} minor`];
+      }),
+    ),
     replyTasks: r.stats.replyTasks,
     reminderBlocks: r.stats.reminderBlocks,
     recovered: Object.fromEntries(
@@ -93,11 +102,18 @@ export function formatText(s: Summary): string {
     row('disputes', s.disputes),
     row('opt-outs', s.optOuts),
     row('partial payments', s.partialPayments),
+    row('receipts (ledger)', s.payments.receipts),
+    row('overpayments (credit)', s.payments.overpayments),
+    row('money on final invoices', s.payments.onFinalInvoice),
+    row('promises paid late', s.payments.promisesPaidLate),
     row('reply tasks (human)', s.replyTasks),
     row('reminder blocks', s.reminderBlocks),
     '',
     'Amount recovered',
     ...Object.entries(s.recovered).map(([k, v]) => row(k, v)),
+    '',
+    'Credit recorded (not applied)',
+    ...Object.entries(s.credit).map(([k, v]) => row(k, v)),
     '',
     row('max msgs/customer/7 days', s.maxMessagesToOneCustomerIn7Days.count),
     row('decide() evaluations', s.evaluations),
