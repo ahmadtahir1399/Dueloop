@@ -12,7 +12,8 @@ export const FAILPOINTS = ['after_claim', 'after_pending_insert', 'after_adapter
 export type FailpointName = (typeof FAILPOINTS)[number];
 
 export interface Failpoints {
-  hit(name: FailpointName, context: { readonly idempotencyKey: string | null }): void;
+  /** Awaited at every point, so a test can also inject state there (e.g. an opt-out arriving mid-send). */
+  hit(name: FailpointName, context: { readonly idempotencyKey: string | null }): void | Promise<void>;
 }
 
 /** Production failpoints: a no-op. The runner can only ever construct this one (tested). */

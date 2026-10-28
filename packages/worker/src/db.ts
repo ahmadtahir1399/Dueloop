@@ -110,6 +110,63 @@ export class WorkerDb {
     return r.rows[0]?.o ?? true;
   }
 
+  // ---- prompt 4 gates ------------------------------------------------------------------------------------
+  /** The latest reminder block of an OPEN task on this invoice that has not expired yet (pipeline gate L). */
+  async openBlockingTask(tenantId: string, invoiceId: string, at: Date): Promise<{ until: Date } | null> {
+    const r = await this.pool.query<{ until: Date | null }>(
+      `select max(blocks_reminders_until) as until from public.tasks
+       where tenant_id = $1 and invoice_id = $2 and status = 'open' and blocks_reminders_until > $3`,
+      [tenantId, invoiceId, at],
+    );
+    const until = r.rows[0]?.until ?? null;
+    return until ? { until } : null;
+  }
+
+  /** Expired blocks of still-open tasks, each returned exactly once (the owner is alerted once, then reminders resume). */
+  async claimExpiredBlockAlerts(tenantId: string, invoiceId: string, at: Date): Promise<{ taskId: string; type: string }[]> {
+    const r = await this.pool.query<{ id: string; type: string }>(
+      `update public.tasks set block_expiry_alerted = true
+       where tenant_id = $1 and invoice_id = $2 and status = 'open' and blocks_reminders_until <= $3 and not block_expiry_alerted
+       returning id, type`,
+      [tenantId, invoiceId, at],
+    );
+    return r.rows.map((x) => ({ taskId: x.id, type: x.type }));
+  }
+
+  /** decide()'s mark_promise_broken also ends the active promise row (issue G). */
+  async markPromiseBroken(tenantId: string, invoiceId: string, at: Date): Promise<void> {
+    await this.pool.query(
+      `update public.promises set status = 'broken', resolved_at = $3, resolved_by = 'worker' where tenant_id = $1 and invoice_id = $2 and status = 'active'`,
+      [tenantId, invoiceId, at],
+    );
+  }
+
+  /**
+   * approval_mode 'low_confidence' (issue N): approval is required when this invoice has an open human_review
+   * task, or the customer has an unresolved low-confidence/invalid reply task from the last 14 days.
+   */
+  async hasOpenLowConfidenceReview(tenantId: string, invoiceId: string, customerId: string, since: Date): Promise<boolean> {
+    const r = await this.pool.query(
+      `select 1 from public.tasks where tenant_id = $1 and status = 'open' and (
+         (invoice_id = $2 and type = 'human_review')
+         or (customer_id = $3 and reason in ('low_confidence', 'invalid_output') and created_at >= $4)
+       ) limit 1`,
+      [tenantId, invoiceId, customerId, since],
+    );
+    return r.rows.length > 0;
+  }
+
+  /**
+   * A final gate stopped a send AFTER the outbox claim but BEFORE the adapter was called: provably not sent,
+   * so the row returns to 'retry' with the attempt given back (the same key may be used later).
+   */
+  async abandonClaim(messageId: string, reason: string): Promise<void> {
+    await this.pool.query(
+      `update public.messages set send_state = 'retry', attempt = greatest(attempt - 1, 0), failed_reason = $2 where id = $1 and send_state = 'pending'`,
+      [messageId, reason.slice(0, 200)],
+    );
+  }
+
   // ---- invoice state -------------------------------------------------------------------------------------
   /** Optimistic status change: only if the invoice is still in `from` (else someone else moved it). */
   async transition(tenantId: string, invoiceId: string, from: string, to: string, event: EventSpec): Promise<boolean> {
