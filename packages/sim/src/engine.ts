@@ -1,11 +1,14 @@
 import {
+  DEFAULT_REPLY_RULES,
   decide as coreDecide,
   isFinal,
+  planReplyOutcome,
   splitInstalments,
   transition,
   type Action,
   type Ctx,
   type InvoiceEvent,
+  type Proposal,
 } from '@dueloop/core';
 import { DateTime } from 'luxon';
 import { checkSends } from './checker.ts';
@@ -22,6 +25,8 @@ export interface SimOptions {
   readonly seed: number;
   /** UTC instant the fake clock starts at. */
   readonly start: string;
+  /** Test-only faults that prove the prompt 4 invariants can fail. */
+  readonly faults?: { readonly ignoreBlocks?: boolean; readonly reviveOptOuts?: boolean };
 }
 
 export const DEFAULT_START = '2026-02-02T00:00:00Z';
@@ -36,6 +41,8 @@ export interface SimStats {
   partialPayments: number;
   externalRejected: number;
   evaluations: number;
+  replyTasks: number;
+  reminderBlocks: number;
   readonly remindersPerStep: Map<string, number>;
   readonly recoveredMinor: Map<string, number>;
 }
@@ -76,9 +83,12 @@ export function runSimulation(options: SimOptions, decide: DecideFn = coreDecide
     partialPayments: 0,
     externalRejected: 0,
     evaluations: 0,
+    replyTasks: 0,
+    reminderBlocks: 0,
     remindersPerStep: new Map(),
     recoveredMinor: new Map(),
   };
+  const optOutAt = new Map<string, number>();
   let queue: ExternalEvent[] = [...initialEvents];
   let seq = initialEvents.length;
 
@@ -134,11 +144,76 @@ export function runSimulation(options: SimOptions, decide: DecideFn = coreDecide
       case 'opts_out':
         if (n === 1) schedule({ at: later, kind: 'opt_out', invoiceId: inv.id });
         break;
+      case 'claims_paid':
+        if (n === 1) schedule({ at: later, kind: 'payment_claim', invoiceId: inv.id });
+        break;
+      case 'vague_promise':
+        if (n === 1) schedule({ at: later, kind: 'vague_promise', invoiceId: inv.id });
+        break;
       case 'early_payer':
       case 'never_pays':
         break;
     }
   };
+
+  /**
+   * Scripted reply stage (prompt 4): a reply becomes a Proposal (no LLM) and ONLY planReplyOutcome + the state
+   * machine decide what changes. Promises, disputes, payment claims and opt-outs all take this path.
+   */
+  const reply = (inv: SimInvoice, customer: Customer, tenant: Tenant, at: number, proposal: Proposal) => {
+    const plan = planReplyOutcome({
+      proposal,
+      invoice: { status: inv.status, balanceMinor: inv.total.minor - inv.paidMinor, currency: inv.total.currency },
+      reference: new Date(at),
+      timezone: tenant.settings.timezone,
+      senderTrusted: true,
+      statedAmount: { kind: 'none' },
+      activePromise: inv.promisedOn === undefined ? null : { promisedOn: inv.promisedOn },
+      renewalCount: 0,
+      rules: DEFAULT_REPLY_RULES,
+    });
+    for (const e of plan.effects) {
+      switch (e.kind) {
+        case 'transition':
+          if (apply(inv, e.event, at, 'external') && e.event === 'dispute_raised') stats.disputes++;
+          break;
+        case 'set_promise': {
+          inv.promisedOn = e.promisedOn;
+          stats.promisesMade++;
+          if (customer.behaviour === 'promise_keep') {
+            const payAt = DateTime.fromISO(e.promisedOn, { zone: tenant.settings.timezone }).set({ hour: 12 }).toMillis();
+            schedule({ at: Math.max(payAt, at + HOUR), kind: 'payment', invoiceId: inv.id });
+          }
+          wake(inv, at);
+          break;
+        }
+        case 'create_task':
+          stats.replyTasks++;
+          log(inv, at, 'task', `${e.type}${e.reason ? ` (${e.reason})` : ''}`);
+          if (e.blocksRemindersDays > 0) {
+            inv.blockedUntil = at + e.blocksRemindersDays * DAY;
+            stats.reminderBlocks++;
+            log(inv, at, 'reminders_blocked', `${e.blocksRemindersDays} days`);
+          }
+          break;
+        case 'record_opt_out':
+          if (customer.optedOut) break;
+          customer.optedOut = true;
+          optOutAt.set(customer.id, at);
+          stats.optOuts++;
+          for (const other of invoices) {
+            if (other.customerId !== customer.id) continue;
+            log(other, at, 'opted_out', `customer ${customer.id}`);
+            wake(other, at);
+          }
+          if (options.faults?.reviveOptOuts) schedule({ at: at + 10 * DAY, kind: 'opt_out', invoiceId: inv.id, promiseDays: -1 });
+          break;
+        case 'notify':
+          break;
+      }
+    }
+  };
+  const proposal = (intent: Proposal['intent'], over: Partial<Proposal> = {}): Proposal => ({ intent, confidence: 0.95, promisedDate: null, dateIsVague: false, statedAmountText: null, ...over });
 
   const handleExternal = (e: ExternalEvent, at: number) => {
     const inv = byId.get(e.invoiceId);
@@ -170,29 +245,30 @@ export function runSimulation(options: SimOptions, decide: DecideFn = coreDecide
           .plus({ days: e.promiseDays ?? 3 })
           .toFormat('yyyy-MM-dd');
         log(inv, at, 'reply', `promise to pay on ${promisedOn}`);
-        if (!apply(inv, 'promise_accepted', at, 'external')) return;
-        inv.promisedOn = promisedOn;
-        stats.promisesMade++;
-        if (customer.behaviour === 'promise_keep') {
-          const payAt = DateTime.fromISO(promisedOn, { zone: tenant.settings.timezone }).set({ hour: 12 }).toMillis();
-          schedule({ at: Math.max(payAt, at + HOUR), kind: 'payment', invoiceId: inv.id });
-        }
-        wake(inv, at);
+        reply(inv, customer, tenant, at, proposal('promise_to_pay', { promisedDate: promisedOn }));
         return;
       }
+      case 'vague_promise':
+        log(inv, at, 'reply', 'vague promise');
+        reply(inv, customer, tenant, at, proposal('promise_to_pay', { dateIsVague: true }));
+        return;
+      case 'payment_claim':
+        log(inv, at, 'reply', 'already paid');
+        reply(inv, customer, tenant, at, proposal('already_paid'));
+        return;
       case 'dispute':
         log(inv, at, 'reply', 'dispute');
-        if (apply(inv, 'dispute_raised', at, 'external')) stats.disputes++;
+        reply(inv, customer, tenant, at, proposal('dispute'));
         return;
       case 'opt_out':
-        if (customer.optedOut) return;
-        customer.optedOut = true;
-        stats.optOuts++;
-        for (const other of invoices) {
-          if (other.customerId !== customer.id) continue;
-          log(other, at, 'opted_out', `customer ${customer.id}`);
-          wake(other, at);
+        if (e.promiseDays === -1) {
+          // Fault injection only (faults.reviveOptOuts): the bug "opt-out is not final".
+          customer.optedOut = false;
+          wake(inv, at);
+          return;
         }
+        log(inv, at, 'reply', 'stop');
+        reply(inv, customer, tenant, at, proposal('opt_out'));
         return;
       case 'write_off':
         apply(inv, 'written_off', at, 'external');
@@ -206,6 +282,11 @@ export function runSimulation(options: SimOptions, decide: DecideFn = coreDecide
   const evaluate = (inv: SimInvoice, at: number) => {
     const tenant = tenantOf(inv);
     const customer = customerOf(inv);
+    // The worker's pre-decide gate (prompt 4): an unexpired block => wait for it, send nothing.
+    if (inv.blockedUntil !== null && at < inv.blockedUntil && !options.faults?.ignoreBlocks) {
+      inv.nextActionAt = inv.blockedUntil;
+      return;
+    }
     const ctx: Ctx = {
       now: new Date(at),
       invoice: {
@@ -253,6 +334,8 @@ export function runSimulation(options: SimOptions, decide: DecideFn = coreDecide
             idempotencyKey: a.idempotencyKey,
             statusAtSend: inv.status,
             optedOutAtSend: customer.optedOut,
+            promisedOnAtSend: inv.promisedOn,
+            blockedUntilAtSend: inv.blockedUntil,
           });
           if (!inv.sentStepIds.includes(a.step.id)) inv.sentStepIds.push(a.step.id);
           customer.sentAt.push(at);
@@ -285,7 +368,7 @@ export function runSimulation(options: SimOptions, decide: DecideFn = coreDecide
     }
   }
 
-  const violations = [...engineViolations, ...checkSends(sends, tenants)].sort(
+  const violations = [...engineViolations, ...checkSends(sends, tenants, optOutAt)].sort(
     (a, b) => a.at - b.at || (a.invoiceId < b.invoiceId ? -1 : a.invoiceId > b.invoiceId ? 1 : 0) || (a.kind < b.kind ? -1 : 1),
   );
   return { options, tenants, invoices, sends, timeline, stats, violations };

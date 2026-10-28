@@ -55,6 +55,8 @@ const WEIGHTS: Readonly<Record<Behaviour, number>> = {
   disputes: 7,
   opts_out: 6,
   never_pays: 22,
+  claims_paid: 6,
+  vague_promise: 5,
 };
 
 function weightedBehaviour(rng: Rng): Behaviour {
@@ -128,6 +130,7 @@ export function generateScenario(rng: Rng, invoiceCount: number, start: number):
       escalated: false,
       remindersSent: 0,
       nextActionAt: start,
+      blockedUntil: null,
     });
     if (customer.behaviour === 'early_payer') {
       const payAt = due.minus({ days: rng.int(0, 3) }).set({ hour: 12 }).toMillis();

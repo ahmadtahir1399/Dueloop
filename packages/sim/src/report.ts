@@ -20,6 +20,8 @@ export interface Summary {
   readonly disputes: number;
   readonly optOuts: number;
   readonly partialPayments: number;
+  readonly replyTasks: number;
+  readonly reminderBlocks: number;
   readonly recovered: Readonly<Record<string, string>>;
   readonly maxMessagesToOneCustomerIn7Days: { count: number; customerId: string | null };
   readonly evaluations: number;
@@ -49,6 +51,8 @@ export function summarize(r: SimResult): Summary {
     disputes: r.stats.disputes,
     optOuts: r.stats.optOuts,
     partialPayments: r.stats.partialPayments,
+    replyTasks: r.stats.replyTasks,
+    reminderBlocks: r.stats.reminderBlocks,
     recovered: Object.fromEntries(
       sortedEntries(r.stats.recoveredMinor).map(([cur, minor]) => {
         const s = toMajorString({ minor, currency: cur });
@@ -89,6 +93,8 @@ export function formatText(s: Summary): string {
     row('disputes', s.disputes),
     row('opt-outs', s.optOuts),
     row('partial payments', s.partialPayments),
+    row('reply tasks (human)', s.replyTasks),
+    row('reminder blocks', s.reminderBlocks),
     '',
     'Amount recovered',
     ...Object.entries(s.recovered).map(([k, v]) => row(k, v)),

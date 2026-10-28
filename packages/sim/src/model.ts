@@ -9,6 +9,9 @@ export const BEHAVIOURS = [
   'disputes',
   'opts_out',
   'never_pays',
+  // Prompt 4: replies that go through planReplyOutcome and never change state on their own.
+  'claims_paid',
+  'vague_promise',
 ] as const;
 export type Behaviour = (typeof BEHAVIOURS)[number];
 
@@ -46,9 +49,11 @@ export interface SimInvoice {
   remindersSent: number;
   /** Next time the scheduler evaluates this invoice (epoch ms); null = never (final). */
   nextActionAt: number | null;
+  /** Reminders blocked until (epoch ms) by an open task ("already paid", info request); null = none. */
+  blockedUntil: number | null;
 }
 
-export type ExternalKind = 'payment' | 'promise' | 'dispute' | 'opt_out' | 'write_off' | 'void';
+export type ExternalKind = 'payment' | 'promise' | 'dispute' | 'opt_out' | 'write_off' | 'void' | 'payment_claim' | 'vague_promise';
 
 export interface ExternalEvent {
   readonly at: number;
@@ -70,6 +75,8 @@ export interface SendRecord {
   readonly idempotencyKey: string;
   readonly statusAtSend: InvoiceStatus;
   readonly optedOutAtSend: boolean;
+  readonly promisedOnAtSend: string | undefined;
+  readonly blockedUntilAtSend: number | null;
 }
 
 export interface TimelineEntry {
@@ -85,7 +92,11 @@ export type ViolationKind =
   | 'no_contact_status'
   | 'duplicate_key'
   | 'weekly_cap'
-  | 'illegal_transition';
+  | 'illegal_transition'
+  // Prompt 4 invariants.
+  | 'promised_too_early'
+  | 'blocked'
+  | 'opt_out_not_final';
 
 export interface Violation {
   readonly kind: ViolationKind;
