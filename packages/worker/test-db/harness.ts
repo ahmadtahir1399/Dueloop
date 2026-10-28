@@ -43,13 +43,13 @@ export class FakeChannel implements OutboundChannel {
   next: Script[] = [];
   fallback: Script = { kind: 'sent', providerMessageId: null };
   readonly channel: Channel;
-  onSend: ((env: OutboundEnvelope) => void) | null = null;
+  onSend: ((env: OutboundEnvelope) => void | Promise<void>) | null = null;
   constructor(channel: Channel) {
     this.channel = channel;
   }
   async send(env: OutboundEnvelope): Promise<SendOutcome> {
     this.calls.push(env);
-    this.onSend?.(env);
+    await this.onSend?.(env);
     const s = this.next.shift() ?? this.fallback;
     const r = typeof s === 'function' ? s(env) : s;
     if (r === 'hang') return new Promise<SendOutcome>(() => undefined);
@@ -109,6 +109,10 @@ export interface WorldOptions {
   templates?: boolean;
   emailAccount?: boolean;
   whatsappConsent?: boolean;
+  /** N invoices due 2026-06-01 (ignored when `invoices` is given). */
+  count?: number;
+  /** Each invoice gets its own customer (so the weekly cap does not throttle a batch). */
+  separateCustomers?: boolean;
 }
 
 export async function world(o: WorldOptions = {}): Promise<World> {
@@ -166,12 +170,18 @@ export async function world(o: WorldOptions = {}): Promise<World> {
     await q(`insert into public.customer_consents (tenant_id, customer_id, channel, granted_at, source) values ($1, $2, 'whatsapp', now(), 'test')`, [tenantId, customerId]);
   }
   const invoiceIds: string[] = [];
-  for (const [i, inv] of (o.invoices ?? [{ dueOn: '2026-06-01' }]).entries()) {
+  const invoiceList: { dueOn: string; number?: string }[] = o.invoices ?? (o.count ? Array.from({ length: o.count }, () => ({ dueOn: '2026-06-01' })) : [{ dueOn: '2026-06-01' }]);
+  for (const [i, inv] of invoiceList.entries()) {
     const id = randomUUID();
+    let owner = customerId;
+    if (o.separateCustomers && i > 0) {
+      owner = randomUUID();
+      await q(`insert into public.customers (id, tenant_id, display_name, email) values ($1, $2, $3, $4)`, [owner, tenantId, `Customer ${i}`, `c${i}@customer.example`]);
+    }
     await q(
       `insert into public.invoices (id, tenant_id, customer_id, number, amount_total, currency, issued_on, due_on, reference_code, next_action_at)
        values ($1, $2, $3, $4, 125050, 'GBP', '2026-05-01', $5, $6, '2000-01-01')`,
-      [id, tenantId, customerId, inv.number ?? `T-${i + 1}`, inv.dueOn, `REF${randomUUID().replace(/-/g, '').slice(0, 9).toUpperCase()}`],
+      [id, tenantId, owner, inv.number ?? `T-${i + 1}`, inv.dueOn, `REF${randomUUID().replace(/-/g, '').slice(0, 9).toUpperCase()}`],
     );
     invoiceIds.push(id);
   }

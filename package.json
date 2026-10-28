@@ -18,6 +18,7 @@
     "db:rls-check": "node packages/db/scripts/rls-check.ts",
     "db:types": "node packages/db/scripts/db-types.ts write",
     "db:types:check": "node packages/db/scripts/db-types.ts check",
+    "chaos": "vitest run --config vitest.db.config.ts packages/worker/test-db/chaos.test.ts",
     "import": "node packages/ingest/src/cli.ts",
     "import:twice": "node packages/ingest/scripts/import-twice-check.ts",
     "web:build": "pnpm --filter @dueloop/web build"
