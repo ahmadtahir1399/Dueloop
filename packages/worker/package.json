@@ -20,11 +20,13 @@
     "@dueloop/inbound": "workspace:*",
     "@dueloop/messaging": "workspace:*",
     "@dueloop/payments": "workspace:*",
+    "@dueloop/proofs": "workspace:*",
     "@dueloop/webhooks": "workspace:*",
     "luxon": "^3.7.2",
     "pg": "8.23.1"
   },
   "devDependencies": {
+    "@dueloop/ingest": "workspace:*",
     "@types/luxon": "^3.7.6",
     "@types/pg": "8.23.1"
   }

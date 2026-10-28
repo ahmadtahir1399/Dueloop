@@ -1,7 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // supabase-js (proof storage) ships .d.ts files that name DOM types; only .d.ts checking is skipped (ADR 0011).
+    "skipLibCheck": true
   },
   "include": ["src", "test", "test-db", "test-load", "scripts"]
 }
