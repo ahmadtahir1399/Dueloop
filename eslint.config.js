@@ -93,9 +93,9 @@ export default defineConfig([
     rules: purityRules,
   },
   {
-    // The worker's composition root is the one place that constructs the system Clock; everything it
+    // Composition roots (the worker runtime and every src/bin entry point) construct the system Clock; everything they
     // wires up receives `now` through that Clock (rule 1).
-    files: ['packages/worker/src/runtime.ts', 'packages/worker/src/bin/**/*.ts'],
+    files: ['packages/worker/src/runtime.ts', 'packages/*/src/bin/**/*.ts'],
     rules: { 'no-restricted-syntax': 'off', 'no-restricted-properties': 'off' },
   },
   {
