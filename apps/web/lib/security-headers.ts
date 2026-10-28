@@ -2,10 +2,14 @@
 // Sources: Next.js 16 "Content Security Policy" guide (nonce via proxy, 'strict-dynamic', dev needs
 // 'unsafe-eval'); MDN for Referrer-Policy, X-Robots-Tag and frame-ancestors.
 
-export type RouteClass = "staff" | "public" | "api" | "auth";
+export type RouteClass = "staff" | "public" | "api" | "auth" | "file";
+
+/** Untrusted files (proof images/PDFs) are served under this CSP: no script, no plugins, no requests. */
+export const FILE_CSP = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
 
 /** Which class a path belongs to. Public link pages live under /p (pay) and /o (opt-out); the REST API under /v1. */
 export function routeClass(pathname: string): RouteClass {
+  if (/^\/proofs\/[^/]+\/file$/.test(pathname)) return "file";
   if (pathname === "/p" || pathname.startsWith("/p/") || pathname === "/o" || pathname.startsWith("/o/")) return "public";
   if (pathname === "/v1" || pathname.startsWith("/v1/")) return "api";
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) return "auth";
@@ -50,6 +54,8 @@ export function classHeaders(cls: RouteClass): Record<string, string> {
       };
     case "api":
       return { ...common, "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex" };
+    case "file":
+      return { ...common, "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex" };
     case "auth":
     case "staff":
       return {

@@ -1,144 +1,109 @@
 import Link from "next/link";
+import { AgeingChart } from "@/components/ageing-chart";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatMoney, type AgeingBucket } from "@/lib/format";
-import { isOutstanding, listInvoices } from "@/lib/invoices";
-import { requireTenant } from "@/lib/session";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { can } from "@dueloop/authz";
+import { loadOverview } from "@/lib/data/overview";
+import { formatMinor } from "@/lib/money";
+import { requirePermission } from "@/lib/session";
+import { formatDate, isPeriodKey, PERIODS, periodRange } from "@/lib/time";
 
-const BUCKETS: AgeingBucket[] = ["not_due", "1-30", "31-60", "61-90", "90+"];
-const BUCKET_LABEL: Record<AgeingBucket, string> = {
-  not_due: "Not yet due",
-  "1-30": "1-30 days",
-  "31-60": "31-60 days",
-  "61-90": "61-90 days",
-  "90+": "Over 90 days",
-};
+export default async function OverviewPage({ searchParams }: PageProps<"/">) {
+  const ctx = await requirePermission("overview.view");
+  const sp = await searchParams;
+  const period = isPeriodKey(sp.period) ? sp.period : "this_month";
+  const { from, to } = periodRange(period, ctx.tenant.timezone, new Date());
+  const o = await loadOverview(ctx, from, to);
 
-export default async function DashboardPage() {
-  const ctx = await requireTenant();
-  const invoices = await listInvoices(ctx);
-  const outstanding = invoices.filter(isOutstanding);
-  const overdue = outstanding.filter((i) => i.daysOverdue > 0);
-  const currencies = [...new Set(outstanding.map((i) => i.currency))].sort();
-
-  const sum = (xs: typeof invoices, currency: string) => xs.filter((i) => i.currency === currency).reduce((s, i) => s + i.balance, 0);
-
-  if (invoices.length === 0) {
+  if (o.invoiceCount === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No invoices yet</CardTitle>
-          <CardDescription>Import a CSV export from your accounting tool or spreadsheet to get started.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
+      <EmptyState title="No invoices yet">
+        <p>Import a CSV export from your accounting tool or spreadsheet to get started.</p>
+        {can(ctx.role, "import.run") ? (
+          <Button asChild className="mt-4">
             <Link href="/import">Import invoices</Link>
           </Button>
-        </CardContent>
-      </Card>
+        ) : null}
+      </EmptyState>
     );
   }
 
+  const money = (rows: { currency: string; v: string }[]) =>
+    rows.length === 0 ? "—" : rows.map((r) => formatMinor(r.v, r.currency)).join(" · ");
+  const sent = o.messages.reduce((s, m) => s + m.sent, 0);
+  const cost = o.messages.reduce((s, m) => s + BigInt(m.cost), 0n);
+  const rate = o.promise?.rate ? `${(Number(o.promise.rate) * 100).toFixed(0)}%` : "—";
+
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardDescription>Overdue invoices</CardDescription>
-            <CardTitle className="text-3xl">{overdue.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Overdue amount</CardDescription>
-            <CardTitle className="text-2xl">
-              {currencies.length === 0 ? "—" : currencies.map((c) => formatMoney(sum(overdue, c), c)).join(" · ")}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Outstanding (all unpaid)</CardDescription>
-            <CardTitle className="text-2xl">
-              {currencies.length === 0 ? "—" : currencies.map((c) => formatMoney(sum(outstanding, c), c)).join(" · ")}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-xl font-semibold">Overview</h1>
+        <form method="get" className="flex items-center gap-2 text-sm">
+          <label htmlFor="period">Period</label>
+          <select id="period" name="period" defaultValue={period} className="h-8 rounded-md border bg-background px-2">
+            {PERIODS.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <Button type="submit" size="sm" variant="outline">
+            Show
+          </Button>
+        </form>
+      </div>
+      <p className="text-sm text-muted-foreground" data-testid="period-range">
+        {formatDate(from)} – {formatDate(to)}, in {ctx.tenant.timezone} (the business&apos;s local days)
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Kpi label="Overdue now" testId="kpi-overdue">
+          {money(o.overdue.map((r) => ({ currency: r.currency, v: r.balance })))}
+          <span className="block text-sm font-normal text-muted-foreground">
+            {o.overdue.reduce((s, r) => s + r.invoices, 0)} invoices
+          </span>
+        </Kpi>
+        <Kpi label="Recovered in period" testId="kpi-recovered">
+          {money(o.recovered.map((r) => ({ currency: r.currency, v: r.recovered })))}
+        </Kpi>
+        <Kpi label="Promise-kept rate" testId="kpi-promise">
+          {rate}
+          <span className="block text-sm font-normal text-muted-foreground">
+            {o.promise ? `${o.promise.kept} kept, ${o.promise.broken} broken` : "No promises resolved in this period"}
+          </span>
+        </Kpi>
+        <Kpi label="Average days to pay" testId="kpi-days">
+          {o.daysToPay?.avgDaysToPay ?? "—"}
+          <span className="block text-sm font-normal text-muted-foreground">
+            {o.daysToPay ? `${o.daysToPay.invoices} invoices paid; ${o.daysToPay.avgDaysAfterDue} days after due on average` : "No invoices paid in this period"}
+          </span>
+        </Kpi>
+        <Kpi label="Messages sent and cost" testId="kpi-messages">
+          {sent}
+          <span className="block text-sm font-normal text-muted-foreground">
+            cost {formatMinor(cost.toString(), ctx.tenant.currency)}
+          </span>
+        </Kpi>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ageing</CardTitle>
-          <CardDescription>Unpaid balances by how late they are, in {ctx.tenant.timezone} time.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Bucket</TableHead>
-                <TableHead className="text-right">Invoices</TableHead>
-                {currencies.map((c) => (
-                  <TableHead key={c} className="text-right">
-                    {c}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {BUCKETS.map((b) => {
-                const rows = outstanding.filter((i) => i.bucket === b);
-                return (
-                  <TableRow key={b}>
-                    <TableCell>{BUCKET_LABEL[b]}</TableCell>
-                    <TableCell className="text-right tabular-nums">{rows.length}</TableCell>
-                    {currencies.map((c) => (
-                      <TableCell key={c} className="text-right tabular-nums">
-                        {formatMoney(sum(rows, c), c)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Most overdue</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="text-right">Days late</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[...overdue]
-                .sort((a, b) => b.daysOverdue - a.daysOverdue)
-                .slice(0, 8)
-                .map((i) => (
-                  <TableRow key={i.id}>
-                    <TableCell>
-                      <Link className="font-medium underline-offset-4 hover:underline" href={`/invoices/${i.id}`}>
-                        {i.number}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{i.customerName}</TableCell>
-                    <TableCell className="text-right tabular-nums">{i.daysOverdue}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatMoney(i.balance, i.currency)}</TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <section aria-labelledby="ageing-h" className="grid gap-3">
+        <h2 id="ageing-h" className="text-lg font-semibold">
+          Ageing of open invoices
+        </h2>
+        <AgeingChart rows={o.ageing} />
+      </section>
     </div>
+  );
+}
+
+function Kpi({ label, testId, children }: { label: string; testId: string; children: React.ReactNode }) {
+  return (
+    <Card data-testid={testId}>
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="text-2xl">{children}</CardTitle>
+      </CardHeader>
+    </Card>
   );
 }

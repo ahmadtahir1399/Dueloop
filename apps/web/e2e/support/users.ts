@@ -23,3 +23,17 @@ export const USERS: Record<E2eUser, { email: string; memberships: { tenant: stri
 };
 
 export const authFile = (u: E2eUser) => `e2e/.auth/${u}.json`;
+
+export interface FixtureIds {
+  approvals: Record<"DA-0001" | "DA-0002" | "DA-0003" | "DA-0004", string>;
+  tasks: Record<"e2e-claim" | "e2e-parity-ui" | "e2e-parity-cli", string>;
+  unknown: Record<"ui" | "cli", string>;
+  proofs: Record<"ui" | "cli", string>;
+  promise: string;
+  hostileCustomer: string;
+  hostileInvoice: string;
+}
+export async function fixtureIds(): Promise<FixtureIds> {
+  const { readFileSync } = await import("node:fs");
+  return JSON.parse(readFileSync("e2e/.auth/fixtures.json", "utf8")) as FixtureIds;
+}

@@ -99,9 +99,10 @@ async function withTimeout(p: Promise<SendOutcome>, ms: number): Promise<SendOut
   }
 }
 
-type Content = { ok: true; envelope: OutboundEnvelope; subject: string | null; body: string } | { ok: false; reason: string };
+export type Content = { ok: true; envelope: OutboundEnvelope; subject: string | null; body: string } | { ok: false; reason: string };
 
-function buildContent(
+/** The production renderer (exported for the dashboard's approval preview, prompt 6; pure, no I/O). */
+export function buildContent(
   c: WorkerContext,
   key: string,
   stepTemplate: string,
