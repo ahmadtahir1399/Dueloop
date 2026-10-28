@@ -2,6 +2,7 @@
 // same shapes the worker / processor / proof inbox write. Also the HOSTILE fixtures (issue G): customer names,
 // invoice numbers, message bodies, AI summaries, task drafts and filenames that try to inject markup or formulas.
 import { createClient } from "@supabase/supabase-js";
+import { png } from "../../../../packages/proofs/test/fixtures";
 import { db } from "./db";
 import { stack } from "./stack";
 import { DEMO_TENANT as T } from "./users";
@@ -15,11 +16,8 @@ export const HOSTILE = {
   link: "javascript:window.__pwned=1",
 };
 
-// 1x1 transparent PNG (magic bytes valid), used as a proof file.
-export const PNG_1x1 = Buffer.from(
-  "89504e470d0a1a0a0000000d4948445200000001000000010806000000" + "1f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082",
-  "hex",
-);
+// A small valid PNG from prompt 5's proof fixtures (it passes the magic-byte and structure checks).
+export const PNG_1x1 = png(4, 3);
 
 export interface StaffFixtures {
   invoice: (n: string) => string;

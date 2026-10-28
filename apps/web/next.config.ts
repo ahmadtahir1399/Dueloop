@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
     "@dueloop/db",
     "@dueloop/ingest",
     "@dueloop/authz",
+    "@dueloop/links",
     "@dueloop/messaging",
     "@dueloop/payments",
     "@dueloop/proofs",
@@ -37,6 +38,9 @@ const nextConfig: NextConfig = {
   experimental: {
     // Two root layouts (staff, public): unmatched URLs get app/global-not-found.tsx.
     globalNotFound: true,
+    // The proxy buffers request bodies up to this size and TRUNCATES above it (Next docs, proxyClientMaxBodySize).
+    // Every route enforces its own smaller cap before parsing; this only has to stay above the largest (proof 10 MB).
+    proxyClientMaxBodySize: "11mb",
     // CSV uploads go through a Server Action; the import limit is 5 MiB plus multipart overhead.
     serverActions: { bodySizeLimit: "6mb" },
   },

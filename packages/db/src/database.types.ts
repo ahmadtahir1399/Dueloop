@@ -5,7 +5,59 @@ export type Database = {
   
   "public": {
           Tables: {
-            "approvals": {
+            "api_idempotency": {
+                  Row: {
+                    "created_at": string,"expires_at": string,"idem_key": string,"request_hash": string,"response": Json | null,"status": number | null,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"expires_at": string,"idem_key": string,"request_hash": string,"response"?: Json | null,"status"?: number | null,"tenant_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"expires_at"?: string,"idem_key"?: string,"request_hash"?: string,"response"?: Json | null,"status"?: number | null,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "api_idempotency_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "api_idempotency_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"api_keys": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"last_used_at": string | null,"name": string,"prefix": string,"revoked_at": string | null,"scopes": (string)[],"secret_hash": string,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"last_used_at"?: string | null,"name": string,"prefix": string,"revoked_at"?: string | null,"scopes"?: (string)[],"secret_hash": string,"tenant_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"last_used_at"?: string | null,"name"?: string,"prefix"?: string,"revoked_at"?: string | null,"scopes"?: (string)[],"secret_hash"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "api_keys_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "api_keys_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"approvals": {
                   Row: {
                     "body_override": string | null,"channel": string,"decided_at": string | null,"decided_by": string | null,"decision_note": string | null,"id": string,"idempotency_key": string,"invoice_id": string,"requested_at": string,"status": string,"step_id": string,"subject_override": string | null,"tenant_id": string,"version": number
                   }
@@ -823,14 +875,14 @@ isOneToOne: false
                   ]
                 },"policies": {
                   Row: {
-                    "created_at": string,"escalate_after_days": number,"grace_days_after_promise": number,"id": string,"is_default": boolean,"max_messages_per_week": number,"name": string,"steps": NonNullable<Json>,"tenant_id": string
+                    "created_at": string,"escalate_after_days": number,"grace_days_after_promise": number,"id": string,"is_default": boolean,"max_messages_per_week": number,"name": string,"retired_step_ids": (string)[],"steps": NonNullable<Json>,"tenant_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"escalate_after_days"?: number,"grace_days_after_promise"?: number,"id"?: string,"is_default"?: boolean,"max_messages_per_week"?: number,"name": string,"steps": NonNullable<Json>,"tenant_id": string
+                    "created_at"?: string,"escalate_after_days"?: number,"grace_days_after_promise"?: number,"id"?: string,"is_default"?: boolean,"max_messages_per_week"?: number,"name": string,"retired_step_ids"?: (string)[],"steps": NonNullable<Json>,"tenant_id": string
                   }
                   Update: {
-                    "created_at"?: string,"escalate_after_days"?: number,"grace_days_after_promise"?: number,"id"?: string,"is_default"?: boolean,"max_messages_per_week"?: number,"name"?: string,"steps"?: NonNullable<Json>,"tenant_id"?: string
+                    "created_at"?: string,"escalate_after_days"?: number,"grace_days_after_promise"?: number,"id"?: string,"is_default"?: boolean,"max_messages_per_week"?: number,"name"?: string,"retired_step_ids"?: (string)[],"steps"?: NonNullable<Json>,"tenant_id"?: string
                   }
                   Relationships: [
                     {
@@ -912,6 +964,62 @@ isOneToOne: true
       columns: ["tenant_id","superseded_by"]
 isOneToOne: false
       referencedRelation: "promises"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"public_links": {
+                  Row: {
+                    "created_at": string,"customer_id": string,"expires_at": string,"id": string,"invoice_id": string | null,"last_used_at": string | null,"purpose": string,"revoked_at": string | null,"tenant_id": string,"token_hash": string,"uses": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"customer_id": string,"expires_at": string,"id"?: string,"invoice_id"?: string | null,"last_used_at"?: string | null,"purpose": string,"revoked_at"?: string | null,"tenant_id": string,"token_hash": string,"uses"?: number
+                  }
+                  Update: {
+                    "created_at"?: string,"customer_id"?: string,"expires_at"?: string,"id"?: string,"invoice_id"?: string | null,"last_used_at"?: string | null,"purpose"?: string,"revoked_at"?: string | null,"tenant_id"?: string,"token_hash"?: string,"uses"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "public_links_tenant_id_customer_id_fkey"
+      columns: ["tenant_id","customer_id"]
+isOneToOne: false
+      referencedRelation: "customers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "public_links_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "public_links_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "public_links_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoice_balances"
+      referencedColumns: ["tenant_id","invoice_id"]
+    },{
+      foreignKeyName: "public_links_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoice_list"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "public_links_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoices"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "public_links_tenant_id_invoice_id_fkey"
+      columns: ["tenant_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoices_due"
       referencedColumns: ["tenant_id","id"]
     }
                   ]
@@ -1248,6 +1356,9 @@ isOneToOne: false
 "commit_import_batch":
 { Args: { "p_batch_id": string,"p_dry_run"?: boolean,"p_skip_invalid_rows"?: boolean }; Returns: Json
                            },
+"create_api_key":
+{ Args: { "p_name": string,"p_tenant": string }; Returns: string
+                           },
 "create_tenant":
 { Args: { "p_currency": string,"p_name": string,"p_quiet_end_hour"?: number,"p_quiet_start_hour"?: number,"p_timezone": string }; Returns: string
                            },
@@ -1312,11 +1423,23 @@ isOneToOne: false
 "resolve_task":
 { Args: { "p_note": string,"p_task_id": string }; Returns: string
                            },
+"revoke_api_key":
+{ Args: { "p_key": string,"p_tenant": string }; Returns: undefined
+                           },
+"save_policy":
+{ Args: { "p_escalate": number,"p_grace": number,"p_max_week": number,"p_name": string,"p_policy": string,"p_steps": Json,"p_tenant": string }; Returns: Json
+                           },
+"save_tenant_settings":
+{ Args: { "p": Json,"p_tenant": string }; Returns: undefined
+                           },
 "set_member_role":
 { Args: { "p_role": string,"p_tenant": string,"p_user": string }; Returns: undefined
                            },
 "set_outbound_paused":
 { Args: { "p_paused": boolean,"p_tenant_id": string }; Returns: undefined
+                           },
+"set_template_provider_status":
+{ Args: { "p_status": string,"p_template": string,"p_tenant": string }; Returns: undefined
                            }
           }
           Enums: {

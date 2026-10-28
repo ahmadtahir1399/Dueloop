@@ -214,9 +214,15 @@ importers:
       '@dueloop/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@dueloop/inbound':
+        specifier: workspace:*
+        version: link:../../packages/inbound
       '@dueloop/ingest':
         specifier: workspace:*
         version: link:../../packages/ingest
+      '@dueloop/links':
+        specifier: workspace:*
+        version: link:../../packages/links
       '@dueloop/messaging':
         specifier: workspace:*
         version: link:../../packages/messaging
@@ -458,6 +464,12 @@ importers:
         specifier: ^3.7.6
         version: 3.7.6
 
+  packages/links:
+    dependencies:
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+
   packages/messaging:
     dependencies:
       '@dueloop/core':
@@ -588,6 +600,9 @@ importers:
       '@dueloop/inbound':
         specifier: workspace:*
         version: link:../inbound
+      '@dueloop/links':
+        specifier: workspace:*
+        version: link:../links
       '@dueloop/messaging':
         specifier: workspace:*
         version: link:../messaging

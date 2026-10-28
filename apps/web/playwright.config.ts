@@ -12,6 +12,9 @@ const env = {
   SUPABASE_DB_URL: s.dbUrl,
   PUBLIC_APP_URL: BASE_URL,
   NEXT_DIST_DIR: ".next-e2e",
+  // The FakeGateway is test/demo only (packages/payments registry); never set in production.
+  PAYMENTS_ALLOW_FAKE: "true",
+  TRUST_PROXY_HOPS: "0",
   NODE_ENV: "production",
 };
 

@@ -124,10 +124,34 @@ insert into ops values
   ('payment_proofs', 'insert', $$insert into public.payment_proofs (id, tenant_id, storage_path, sha256, size_bytes, mime, created_at) values ('00000000-0000-0000-0000-0000000006cc', '{T}', '{T}/00000000-0000-0000-0000-0000000006cc', repeat('f', 64), 1, 'image/png', now())$$),
   ('payment_proofs', 'update', $$update public.payment_proofs set hints = hints where tenant_id = '{T}'$$),
   ('payment_proofs', 'delete', $$delete from public.payment_proofs where tenant_id = '{T}'$$),
+  -- ADR 0042 / migration 0020 (prompt 6 tables)
+  ('public_links', 'select', $$select 1 from public.public_links where tenant_id = '{T}'$$),
+  ('public_links', 'insert', $$insert into public.public_links (tenant_id, purpose, customer_id, token_hash, expires_at) values ('{T}', 'opt_out', '{CUST}', repeat('9', 64), now() + interval '1 day')$$),
+  ('public_links', 'update', $$update public.public_links set uses = uses where tenant_id = '{T}'$$),
+  ('public_links', 'delete', $$delete from public.public_links where tenant_id = '{T}'$$),
+  ('api_keys', 'select', $$select 1 from public.api_keys where tenant_id = '{T}'$$),
+  ('api_keys', 'insert', $$insert into public.api_keys (tenant_id, name, prefix, secret_hash) values ('{T}', 'x', 'zzzzzzzz', repeat('1', 64))$$),
+  ('api_keys', 'update', $$update public.api_keys set name = name where tenant_id = '{T}'$$),
+  ('api_keys', 'delete', $$delete from public.api_keys where tenant_id = '{T}'$$),
+  ('api_idempotency', 'select', $$select 1 from public.api_idempotency where tenant_id = '{T}'$$),
+  ('api_idempotency', 'insert', $$insert into public.api_idempotency (tenant_id, idem_key, request_hash, expires_at) values ('{T}', 'new', repeat('2', 64), now() + interval '1 day')$$),
+  ('api_idempotency', 'update', $$update public.api_idempotency set status = status where tenant_id = '{T}'$$),
+  ('api_idempotency', 'delete', $$delete from public.api_idempotency where tenant_id = '{T}'$$),
   ('invoice_balances', 'select', $$select 1 from public.invoice_balances where tenant_id = '{T}'$$),
   ('invoices_due', 'select', $$select 1 from public.invoices_due where tenant_id = '{T}'$$);
 
 -- ADR 0008, own-tenant cells (written independently of the policies).
+-- Rows in every prompt 6 table for both tenants, so an allowed read can be told apart from an empty table.
+insert into public.public_links (tenant_id, purpose, invoice_id, customer_id, token_hash, expires_at) values
+  ('00000000-0000-0000-0000-00000000000a', 'pay', '00000000-0000-0000-0000-0000000001aa', '00000000-0000-0000-0000-0000000000ca', repeat('3', 64), now() + interval '1 day'),
+  ('00000000-0000-0000-0000-00000000000b', 'pay', '00000000-0000-0000-0000-0000000001bb', '00000000-0000-0000-0000-0000000000cb', repeat('4', 64), now() + interval '1 day');
+insert into public.api_keys (tenant_id, name, prefix, secret_hash) values
+  ('00000000-0000-0000-0000-00000000000a', 'A key', 'aaaaaaaa', repeat('5', 64)),
+  ('00000000-0000-0000-0000-00000000000b', 'B key', 'bbbbbbbb', repeat('6', 64));
+insert into public.api_idempotency (tenant_id, idem_key, request_hash, expires_at) values
+  ('00000000-0000-0000-0000-00000000000a', 'k', repeat('7', 64), now() + interval '1 day'),
+  ('00000000-0000-0000-0000-00000000000b', 'k', repeat('8', 64), now() + interval '1 day');
+
 create temp table expected (tbl text, op text, owner text, accountant text, collector text, primary key (tbl, op)) on commit drop;
 insert into expected values
   ('tenants', 'select', 'allow', 'allow', 'allow'),
@@ -245,6 +269,19 @@ insert into expected values
   ('payment_proofs', 'insert', 'deny', 'deny', 'deny'),
   ('payment_proofs', 'update', 'deny', 'deny', 'deny'),
   ('payment_proofs', 'delete', 'deny', 'deny', 'deny'),
+  -- ADR 0042 (prompt 6 tables): links and idempotency are service-only; API keys are owner-readable metadata
+  ('public_links', 'select', 'deny', 'deny', 'deny'),
+  ('public_links', 'insert', 'deny', 'deny', 'deny'),
+  ('public_links', 'update', 'deny', 'deny', 'deny'),
+  ('public_links', 'delete', 'deny', 'deny', 'deny'),
+  ('api_keys', 'select', 'allow', 'deny', 'deny'),
+  ('api_keys', 'insert', 'deny', 'deny', 'deny'),
+  ('api_keys', 'update', 'deny', 'deny', 'deny'),
+  ('api_keys', 'delete', 'deny', 'deny', 'deny'),
+  ('api_idempotency', 'select', 'deny', 'deny', 'deny'),
+  ('api_idempotency', 'insert', 'deny', 'deny', 'deny'),
+  ('api_idempotency', 'update', 'deny', 'deny', 'deny'),
+  ('api_idempotency', 'delete', 'deny', 'deny', 'deny'),
   ('invoice_balances', 'select', 'allow', 'allow', 'allow'),
   ('invoices_due', 'select', 'allow', 'allow', 'allow');
 

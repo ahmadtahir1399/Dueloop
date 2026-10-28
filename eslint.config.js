@@ -170,6 +170,11 @@ export default defineConfig([
     },
   },
   {
+    // Static browser scripts served from apps/web/public (the pay page's optional copy button).
+    files: ['apps/web/public/**/*.js'],
+    languageOptions: { globals: { ...globals.browser }, sourceType: 'script' },
+  },
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     plugins: { dueloopweb: { rules: { 'trusted-boundary': trustedBoundary } } },
     rules: {

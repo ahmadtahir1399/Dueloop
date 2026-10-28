@@ -24,6 +24,9 @@ function env() {
   // The composition root reads the same variables as the worker; the database is the trusted pool's.
   return { ...process.env, WORKER_DATABASE_URL: trustedDbUrl(), SUPABASE_URL: supabaseUrl(), SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey() };
 }
+/** The same environment the worker and CLIs read, for the shared composition root. */
+export const opsEnv = env;
+
 function workerDb() {
   return new WorkerDb(trustedPool());
 }
