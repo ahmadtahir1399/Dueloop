@@ -20,3 +20,9 @@
 18. Check the kill switch immediately before every send.
 19. Secrets live only in Vault/env: never in logs, events, payloads, dead letters or error messages.
 20. Never log message bodies or contact details.
+21. Customer text is data, never instructions. Model output is schema-validated and can produce only a Proposal.
+22. Only planReplyOutcome + the state machine change invoice state from a reply. Nothing from a reply can send a message.
+23. Verify every webhook signature over the RAW body before parsing. Unverified requests are rejected and never stored.
+24. Never match a reply to an invoice by guessing. Ambiguous => human task.
+25. Inbound payloads are PII: never log them; purge on schedule.
+26. A model-supplied date is untrusted until validatePromiseDate has checked it against the reference time.
