@@ -65,4 +65,17 @@ jobs:
         run: |
           pnpm exec supabase db reset
           pnpm demo:send
-      # Not in CI: pnpm test:load (5,000 invoices, slow) and any live provider smoke test.
+
+      # Phase 4.
+      - name: Adversarial suite (prompt injection, spoofing, webhook abuse)
+        run: pnpm test:adversarial
+
+      - name: Classifier evaluation (recorded outputs; fails on regression versus the committed baseline)
+        run: pnpm classifier:eval
+
+      - name: Replies demo (real webhook / processor path, scripted classifier)
+        run: |
+          pnpm exec supabase db reset
+          pnpm demo:replies
+      # Not in CI: pnpm test:load (5,000 invoices, slow), pnpm eval:live (costs money) and the live smoke tests
+      # (pnpm smoke:whatsapp, pnpm smoke:whatsapp-webhook). The IMAP test runs GreenMail via docker in db:test.

@@ -35,6 +35,7 @@
     "classifier:record": "node packages/classifier/eval/record.ts",
     "eval:live": "node packages/classifier/eval/record.ts --classifier anthropic",
     "smoke:whatsapp": "node packages/adapters-whatsapp/scripts/smoke.ts",
+    "smoke:whatsapp-webhook": "node packages/webhooks/scripts/smoke.ts",
     "import": "node packages/ingest/src/cli.ts",
     "import:twice": "node packages/ingest/scripts/import-twice-check.ts",
     "web:build": "pnpm --filter @dueloop/web build"

@@ -17,7 +17,7 @@ policies; the phase 4 migration implements exactly this.
 | tenant_events (append-only) | R | R | R | - | insert only |
 | tenants.promise_acceptance | W (owner only, via tenant settings) | - | - | - | R |
 | channel_accounts.external_account_id | R W (as the rest of channel_accounts) | R | R | - | R |
-| apply a reply plan (`private.apply_reply_plan`) | - | - | - | - | only |
+| apply a reply plan (one processor transaction, `InboundDb.applyPlan`) | - | - | - | - | only |
 
 - Raw inbound payloads are readable by no client role. They are PII and are purged on schedule (rule 25).
   The inbox shows the normalised message only, and its `analysis.summary` is marked untrusted.

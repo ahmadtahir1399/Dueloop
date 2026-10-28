@@ -1,9 +1,9 @@
 # Dueloop: invoice follow-up agent
 
-Status: **Phase 3 of 7**: the pure domain core and simulator (phase 1); the database, RLS and CSV import
-(phase 2); and the scheduler plus sending (phase 3): a pgmq queue, a Node worker with an at-most-once
-outbox, approvals, kill switches, pacing, and SMTP / WhatsApp / Slack adapters. Replies, promises,
-payment links and the classifier come in later phases.
+Status: **Phase 4 of 7**: the pure domain core and simulator (phase 1); the database, RLS and CSV import
+(phase 2); scheduler and sending (phase 3); and replies + promises (phase 4): a signed WhatsApp webhook, a
+read-only IMAP poller, an inbound processor whose AI classifier can only propose, human tasks, promise
+tracking and reply-aware reminder gates. Payments, the dashboard/pay page and packaging come later.
 
 ## What is here
 
@@ -16,7 +16,11 @@ payment links and the classifier come in later phases.
   and the `OutboundChannel` contract (ADR 0019).
 - `packages/worker`: the send protocol (ADR 0013), the composition root, and the ops CLIs.
 - `packages/adapters-email`, `adapters-whatsapp`, `adapters-notify`: SMTP (nodemailer), WhatsApp Cloud API
-  templates, and Slack alerts, each with contract tests.
+  templates, and Slack alerts, each with contract tests; `adapters-email` also has the read-only IMAP poller.
+- `packages/classifier`: the ReplyClassifier boundary, strict schema, toProposal, versioned prompts, the Claude
+  adapter and the evaluation harness (data in `data/classifier`).
+- `packages/inbound`: the inbound processor (normalise, pre-filter, match, classify, plan, apply).
+- `packages/webhooks`: the WhatsApp webhook endpoint (raw-body signature check).
 - `supabase/`: migrations, the demo seed, and pgTAP tests.
 - `docs/decisions`: architecture decision records.
 
@@ -123,3 +127,25 @@ pnpm test:load                           # 5,000 invoices (slow, not in CI)
   in the footer ("reply STOP"); a one-click unsubscribe link comes in phase 6.
 - Default reminder wording is polite and factual and is checked against a banned-wording list. It is **not
   legal advice**: debt-collection messaging rules differ by market, and each market needs its own review.
+
+## Replies and promises (phase 4)
+
+```bash
+pnpm webhooks                            # WhatsApp webhook (WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN)
+pnpm inbound --once                      # process stored inbound events (or --loop)
+pnpm tasks list --tenant "Demo Agency"   # human tasks; show <id>, resolve <id> --note "...", reopen <id>
+pnpm promises list --tenant "Demo Agency"
+pnpm demo:replies                        # the whole walkthrough (after pnpm db:reset)
+pnpm test:adversarial                    # injection, spoofing and webhook abuse
+pnpm classifier:eval                     # replay recorded classifier outputs; fails on regression
+pnpm eval:live                           # record a real model (EVAL_LIVE=1, CLASSIFIER_MODEL; costs money)
+```
+
+- The classifier only proposes; `planReplyOutcome` and the state machine decide, and nothing from a reply can
+  send a message. Every unclear, low-confidence, spoofable or ambiguous reply becomes a human task with, where
+  useful, a DRAFT reply for a person to send.
+- Classifier: `CLASSIFIER=anthropic` with `CLASSIFIER_MODEL` (recommended `claude-opus-5-5`) and Anthropic
+  credentials. Without it, every reply goes to a human.
+- The labelled set in `data/classifier` is SYNTHETIC: a regression guard, not a measure of real-world accuracy.
+- Live Meta webhook delivery needs a public HTTPS URL in front of `pnpm webhooks`; real mailboxes need app
+  passwords. See `docs/decisions/0022`-`0031`.
