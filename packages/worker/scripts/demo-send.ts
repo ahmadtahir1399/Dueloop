@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { DateTime } from 'luxon';
 import pg from 'pg';
 import { localEnv } from '../../db/scripts/local-env.ts';
+import { demoNow } from './demo-clock.ts';
 
 const MAILPIT = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 const TENANT = 'Demo Agency';
@@ -52,23 +53,33 @@ const mask = (address: string) => address.replace(/^(.)[^@]*@/, '$1***@');
 /** Owner alerts (no Slack webhook => email to the owner, ADR 0021) also land in Mailpit; keep them apart. */
 const isAlert = (m: Caught) => m.MessageID.startsWith('alert.');
 
-async function mailpit(): Promise<{ reminders: Caught[]; alerts: Caught[] }> {
+async function mailpitOnce(): Promise<Caught[]> {
   const res = await fetch(`${MAILPIT}/api/v1/messages?limit=500`).catch(() => null);
   if (!res?.ok) fail(`Mailpit is not reachable at ${MAILPIT}. Is [local_smtp] enabled and the stack restarted?`);
-  const all = ((await res.json()) as { messages: Caught[] }).messages;
+  return ((await res.json()) as { messages: Caught[] }).messages;
+}
+
+/** Mailpit indexes asynchronously: read until the count is the same twice in a row (a late alert would otherwise look "new"). */
+async function mailpit(): Promise<{ reminders: Caught[]; alerts: Caught[] }> {
+  let all = await mailpitOnce();
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 400));
+    const again = await mailpitOnce();
+    if (again.length === all.length) break;
+    all = again;
+  }
   return { reminders: all.filter((m) => !isAlert(m)), alerts: all.filter(isAlert) };
 }
 
 const pool = new pg.Pool({ connectionString: localEnv().dbUrl, max: 2 });
 try {
   // A send window for Demo Agency (09:00-20:00 London): now if inside it, else 10:00 on the next weekday.
-  const real = DateTime.utc().setZone(ZONE);
-  let at = real;
-  if (real.hour < 9 || real.hour >= 19 || real.weekday > 5) {
-    at = real.plus({ days: real.hour >= 19 ? 1 : 0 }).set({ hour: 10, minute: 0, second: 0, millisecond: 0 });
-    while (at.weekday > 5) at = at.plus({ days: 1 });
-  }
+  // DEMO_NOW lets demo:replies run this walkthrough on the same clock.
+  const at = process.env.DEMO_NOW ? DateTime.fromISO(process.env.DEMO_NOW).setZone(ZONE) : demoNow();
   const nowIso = at.toUTC().toISO() ?? fail('bad clock');
+  // Inside the send window the demo clock IS real time: then the CLIs use the system clock, so approvals (stamped
+  // with the database's now()) are never ahead of the worker's clock.
+  const clockArgs = at.toMillis() - Date.now() > 60_000 ? ['--now', nowIso] : [];
   console.log(`Demo clock: ${at.toFormat("ccc d LLL yyyy HH:mm")} ${ZONE} (--now ${nowIso})`);
 
   const tenantId = (await pool.query<{ id: string }>('select id from public.tenants where name = $1', [TENANT])).rows[0]?.id ?? fail('run `pnpm db:reset` first (no Demo Agency)');
@@ -77,7 +88,7 @@ try {
   await fetch(`${MAILPIT}/api/v1/messages`, { method: 'DELETE' }).catch(() => undefined);
 
   console.log('\n1) Worker pass: due invoices are decided; every proposed send needs approval.');
-  passSummary(run('worker', ['--once', '--tenant', TENANT, '--now', nowIso]));
+  passSummary(run('worker', ['--once', '--tenant', TENANT, ...clockArgs]));
 
   console.log('\n2) Pending approvals (what the owner would review):');
   process.stdout.write(run('approvals', ['list', '--tenant', TENANT]));
@@ -88,7 +99,7 @@ try {
   process.stdout.write(run('approvals', ['approve', '--all-pending', '--tenant', TENANT]));
 
   console.log('\n4) Worker pass: approved reminders are re-validated (decide() + every gate) and sent.');
-  passSummary(run('worker', ['--once', '--tenant', TENANT, '--now', nowIso]));
+  passSummary(run('worker', ['--once', '--tenant', TENANT, ...clockArgs]));
   const first = await mailpit();
   const afterFirst = first.reminders;
 
@@ -122,7 +133,7 @@ try {
   if (sentApproved !== afterFirst.length) fail(`expected one email per sent approved reminder (${sentApproved}), got ${afterFirst.length}`);
 
   console.log('\n5) Worker pass again: nothing new may be sent.');
-  passSummary(run('worker', ['--once', '--tenant', TENANT, '--now', nowIso]));
+  passSummary(run('worker', ['--once', '--tenant', TENANT, ...clockArgs]));
   const second = await mailpit();
   const afterSecond = second.reminders;
   console.log(`Mailpit: ${afterSecond.length} reminder email(s): ${afterSecond.length - afterFirst.length} new sends; owner alerts: ${second.alerts.length - first.alerts.length} new (de-duplicated).`);

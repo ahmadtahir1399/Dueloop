@@ -88,6 +88,18 @@ describe('the outcome table (demo steps)', () => {
   });
 });
 
+describe('sender resolution', () => {
+  it('a WhatsApp sender is found by its exact +digits even when libphonenumber calls the number invalid', async () => {
+    // +44 7700 900xxx is Ofcom's fictional drama range: libphonenumber's isValid() rejects it, but it is what
+    // the customer record holds and what Meta says the sender is.
+    const w = await replyWorld();
+    w.script.push(['already paid', analysis('already_paid')]);
+    await w.whatsapp('message', { from: '447700900123', id: 'wamid.s1', timestamp: '1760950000', type: 'text', text: { body: 'I already paid' } }, 'wamid.s1');
+    await w.run();
+    expect(await tasksOf(w.tenantId)).toMatchObject([{ type: 'verify_payment_claim' }]);
+  });
+});
+
 describe('matching (issue F: never guess)', () => {
   it('reply to one of three invoices WITH thread context => that invoice', async () => {
     const w = await replyWorld({ invoices: 3 });

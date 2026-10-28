@@ -93,8 +93,11 @@ async function resolveSender(deps: InboundDeps, tenantId: string, m: NormalisedM
     return { ref: e.email ?? m.from.toLowerCase().trim(), customer: e.email ? await deps.db.customerBy(tenantId, 'email', e.email) : null };
   }
   // WhatsApp sends international digits without "+"; the default country is irrelevant for those.
+  // If libphonenumber rejects the number (e.g. reserved/fictional ranges), the exact "+digits" Meta reports is
+  // still the sender; normaliseWhatsApp already guaranteed 6-15 digits.
   const p = normalisePhone(`+${m.from}`, 'GB');
-  return { ref: p.phone ?? `+${m.from}`, customer: p.phone ? await deps.db.customerBy(tenantId, 'phone_e164', p.phone) : null };
+  const e164 = p.phone ?? `+${m.from}`;
+  return { ref: e164, customer: await deps.db.customerBy(tenantId, 'phone_e164', e164) };
 }
 
 async function handleStatus(deps: InboundDeps, ev: InboundEventRow, s: NormalisedStatus, log: Log): Promise<InboundOutcome> {
