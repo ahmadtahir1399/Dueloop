@@ -73,16 +73,25 @@ function addresses(list: readonly Address[] | undefined): string[] {
 
 const textOf = (c: ArrayBuffer | Uint8Array | string) => (typeof c === 'string' ? c : new TextDecoder().decode(c));
 
-/** RFC 3464: multipart/report; report-type=delivery-status with a message/delivery-status part. */
-function deliveryReport(email: Email): DeliveryReport | null {
+/** Our own outbound Message-IDs are recognisable (messageIdFor): "<key-with-dots.dueloop@domain>". */
+const OUR_MESSAGE_ID = /<[^<>\s]{1,400}\.dueloop@[^<>\s]{1,200}>/;
+
+/**
+ * RFC 3464: multipart/report; report-type=delivery-status with a message/delivery-status part. Depending on the
+ * part layout, a parser may surface the report parts as attachments or as body text, so the fields are read
+ * from the parts when present, else from the whole raw source; the bounced message is found by its returned
+ * Message-ID header, else by the first of OUR Message-IDs anywhere in the report.
+ */
+function deliveryReport(email: Email, raw: string): DeliveryReport | null {
   const ct = (header(email.headers, 'content-type') ?? '').toLowerCase();
   const dsn = email.attachments.find((a) => a.mimeType === 'message/delivery-status' || a.mimeType === 'message/global-delivery-status');
   if (!dsn && !(ct.startsWith('multipart/report') && ct.includes('delivery-status'))) return null;
-  const body = dsn ? textOf(dsn.content) : '';
+  const body = dsn ? textOf(dsn.content) : raw;
   const action = /^\s*Action:\s*([a-z]+)/im.exec(body)?.[1]?.toLowerCase() ?? null;
   const status = /^\s*Status:\s*([245]\.\d{1,3}\.\d{1,3})/im.exec(body)?.[1] ?? null;
   const returned = email.attachments.find((a) => a.mimeType === 'message/rfc822' || a.mimeType === 'text/rfc822-headers');
-  const originalMessageId = returned ? (/^Message-ID:\s*(<[^>\s]{3,500}>)/im.exec(textOf(returned.content))?.[1] ?? null) : null;
+  const fromHeaders = returned ? (/^Message-ID:\s*(<[^>\s]{3,500}>)/im.exec(textOf(returned.content))?.[1] ?? null) : null;
+  const originalMessageId = fromHeaders ?? OUR_MESSAGE_ID.exec(raw.replace(email.messageId ?? '', ''))?.[0] ?? null;
   const known = ['failed', 'delayed', 'delivered', 'relayed', 'expanded'] as const;
   return { action: known.find((k) => k === action) ?? null, status, originalMessageId };
 }
@@ -125,7 +134,7 @@ export async function normaliseEmail(raw: string | Uint8Array): Promise<{ ok: tr
       autoSubmitted: header(email.headers, 'auto-submitted')?.trim().toLowerCase() ?? null,
       precedence: header(email.headers, 'precedence')?.trim().toLowerCase() ?? null,
       autoReplyHeader,
-      report: deliveryReport(email),
+      report: deliveryReport(email, typeof raw === 'string' ? raw : new TextDecoder().decode(raw)),
     },
   };
 }
