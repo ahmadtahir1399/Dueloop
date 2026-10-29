@@ -5,6 +5,7 @@
 // set_template_provider_status. A template that does not render (unknown/missing variables) is refused here too.
 import { revalidatePath } from "next/cache";
 import { dbErrorMessage, textField, uuidField } from "@/lib/actions";
+import { standardTemplateRows } from "@/lib/default-templates";
 import { requireTenant } from "@/lib/session";
 import { previewTemplate, type TemplatePreview } from "@/lib/template-preview";
 
@@ -13,6 +14,17 @@ export interface TemplateState {
   message?: string;
   preview?: TemplatePreview;
   draft?: { subject: string; body: string };
+}
+
+/** Adds any missing standard email templates; existing ones (and their edits) are never overwritten. */
+export async function addStandardTemplatesAction(): Promise<{ ok?: boolean; error?: string; message?: string }> {
+  const ctx = await requireTenant();
+  const { error } = await ctx.supabase
+    .from("templates")
+    .upsert(standardTemplateRows(ctx.tenant.id), { onConflict: "tenant_id,template_key,channel,locale", ignoreDuplicates: true });
+  if (error) return { error: dbErrorMessage(error) };
+  revalidatePath("/settings/templates");
+  return { ok: true, message: "Added. Read them and change the wording if you like." };
 }
 
 export async function templateAction(_prev: TemplateState, form: FormData): Promise<TemplateState> {

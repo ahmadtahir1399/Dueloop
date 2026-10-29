@@ -88,13 +88,15 @@ test("the 7-step demo, end to end", async ({ page, context }) => {
   const tenant = created?.id ?? "";
   expect(tenant).not.toBe("");
   expect(created?.timezone, "the demo clock assumes the tenant is in Europe/London").toBe("Europe/London");
-  // Setup an owner does in Settings > Integrations / Templates (onboarding creates neither; see limitations):
-  // a sending address for SMTP (Mailpit here) and the default template texts.
+  // Onboarding now adds the standard email templates; the demo also copies the seed's WhatsApp template.
+  expect((await db().query("select count(*)::int as n from public.templates where tenant_id = $1 and channel = 'email'", [tenant])).rows[0].n).toBeGreaterThanOrEqual(3);
+  // Setup an owner does in Settings > Integrations: a sending address for SMTP (Mailpit here).
   await db().query(`insert into public.channel_accounts (tenant_id, channel, config) values ($1, 'email', '{"from_address": "billing@fresh-demo.test", "from_name": "Fresh Demo Co", "message_id_domain": "fresh-demo.test"}')`, [tenant]);
   await db().query(
     `insert into public.templates (tenant_id, template_key, channel, locale, tone, subject, body, provider_template_name, provider_language, provider_status)
      select $1, template_key, channel, locale, tone, subject, body, provider_template_name, provider_language, provider_status
-     from public.templates where tenant_id = '5eed0000-0000-4000-8000-00000000000a'`,
+     from public.templates where tenant_id = '5eed0000-0000-4000-8000-00000000000a'
+     on conflict (tenant_id, template_key, channel, locale) do nothing`,
     [tenant],
   );
   const data = csv40(today);
