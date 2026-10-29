@@ -5,6 +5,8 @@
 // Accuracy is NOT measured here.
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
+import { openAIError, openAIOutputText, openAITextFormat, parseJsonOrNull } from '@dueloop/classifier';
+import OpenAI from 'openai';
 import { isValidReferenceCode, normaliseReferenceCode, parseAmount, parseDate } from '@dueloop/ingest/parsers';
 import { z } from 'zod';
 
@@ -22,7 +24,7 @@ export type ProofHintsRaw = z.infer<typeof ProofHintsRaw>;
 export type ImageMime = 'image/jpeg' | 'image/png' | 'image/webp';
 export type ExtractResult = { readonly ok: true; readonly raw: unknown; readonly modelId: string; readonly promptVersion: string } | { readonly ok: false; readonly error: string };
 
-/** Vendor-neutral. Implementations: Anthropic (live), recorded (eval replay), fake (tests). */
+/** Vendor-neutral. Implementations: Anthropic or OpenAI (live), recorded (eval replay), fake (tests). */
 export interface ProofExtractor {
   readonly promptVersion: string;
   extract(image: Buffer, mime: ImageMime, sha256: string): Promise<ExtractResult>;
@@ -159,6 +161,55 @@ export class AnthropicProofExtractor implements ProofExtractor {
       if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'rate_limited' };
       if (e instanceof Anthropic.APIError || e instanceof Anthropic.APIConnectionError) return { ok: false, error: 'unavailable' };
       return { ok: false, error: 'invalid_response' };
+    }
+  }
+}
+
+export interface OpenAIProofExtractorOptions {
+  /** An OpenAI model id with image input and structured outputs. Required (env PROOF_EXTRACTION_MODEL). */
+  readonly model: string;
+  readonly timeoutMs: number;
+  readonly maxRetries: number;
+  readonly client?: OpenAI;
+}
+
+/**
+ * OpenAI vision adapter (ADR 0053), written like OpenAIReplyClassifier from the openai 7.45.1 typings: a base64
+ * data URL in an `input_image` part, the same strict text format, `store: false` so the bank screenshot is not
+ * kept on OpenAI's side as a stored response.
+ */
+export class OpenAIProofExtractor implements ProofExtractor {
+  readonly promptVersion = PROOF_PROMPT_VERSION;
+  private readonly client: OpenAI;
+  private readonly o: OpenAIProofExtractorOptions;
+  constructor(o: OpenAIProofExtractorOptions) {
+    if (!o.model) throw new Error('PROOF_EXTRACTION_MODEL is required');
+    this.o = o;
+    this.client = o.client ?? new OpenAI();
+  }
+  async extract(image: Buffer, mime: ImageMime): Promise<ExtractResult> {
+    try {
+      const res = await this.client.responses.create(
+        {
+          model: this.o.model,
+          max_output_tokens: 2048,
+          store: false,
+          text: { format: openAITextFormat(ProofHintsRaw, 'proof_hints') },
+          input: [
+            {
+              role: 'user',
+              content: [
+                { type: 'input_image', detail: 'auto', image_url: `data:${mime};base64,${image.toString('base64')}` },
+                { type: 'input_text', text: PROMPT },
+              ],
+            },
+          ],
+        },
+        { timeout: this.o.timeoutMs, maxRetries: this.o.maxRetries },
+      );
+      return { ok: true, raw: parseJsonOrNull(openAIOutputText(res)), modelId: res.model, promptVersion: this.promptVersion };
+    } catch (e) {
+      return { ok: false, error: openAIError(e) };
     }
   }
 }

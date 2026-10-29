@@ -16,6 +16,7 @@ transfers) is for the operator and their advisers; this project makes no complia
 | IMAP server, `config:IMAP` | the inbound poller, when an email channel has IMAP configured | credentials for login; reads replies (no data is uploaded) | raw inbound payloads until `purge_after` | owners/accountants (tasks, inbox) |
 | WhatsApp Cloud API, `graph.facebook.com` | WhatsApp reminders (approved templates only); fetching media a customer sent | recipient phone number, template name and its parameters (invoice number, amount, link where the template has one); media ids | as SMTP | as SMTP |
 | Anthropic API, `api.anthropic.com` | only when a model is configured: reply classification (`CLASSIFIER=anthropic`), proof hints (`PROOF_EXTRACTION`, off by default per tenant) | classification: the customer's reply text, redacted (no names, emails, phone numbers or invoice numbers), truncated, with the reference date, time zone, currency and locale; proof hints: the proof image | the model output is stored as an untrusted proposal or hint | members who can see the reply or proof |
+| OpenAI API, `api.openai.com` | instead of Anthropic, when `CLASSIFIER=openai` or `PROOF_EXTRACTION=openai` (ADR 0053) | the same as the Anthropic row; requests set `store: false` so OpenAI does not keep the response as a stored object (OpenAI's own retention terms still apply; NOT VERIFIED here) | as the Anthropic row | as the Anthropic row |
 | Stripe API, `api.stripe.com` | creating or deactivating a payment link (tenant's own Stripe account) | amount, currency, a product name "Invoice payment <reference>", `metadata[dueloop_reference]` | payment requests and receipts (ledger kept on erasure) | owners/accountants |
 | Stripe Checkout and Payment Links, `checkout.stripe.com`, `buy.stripe.com` | the customer's browser, after "Pay now" (a redirect, not a server call) | whatever the customer enters on Stripe's page | not stored by us | - |
 | Slack, `hooks.slack.com` | owner alerts, when a tenant configured a Slack webhook | alert title and lines (counts, invoice numbers, reasons; no message bodies or contact details) | not stored by us | - |
@@ -28,4 +29,4 @@ scans the server log).
 Not runtime (never in an image): the demo's preflight checks `public.ecr.aws` reachability on a first run, and the
 demo's fake payment provider uses the unroutable `pay.fake.test`.
 
-<!-- egress: config:SUPABASE config:SMTP config:IMAP graph.facebook.com api.anthropic.com api.stripe.com checkout.stripe.com buy.stripe.com hooks.slack.com -->
+<!-- egress: config:SUPABASE config:SMTP config:IMAP graph.facebook.com api.anthropic.com api.openai.com api.stripe.com checkout.stripe.com buy.stripe.com hooks.slack.com -->

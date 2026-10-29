@@ -13,6 +13,8 @@ describe('secret patterns', () => {
     ['stripe-secret-key', j('rk', 'test', 'abcdefghijklmnopqrstuvwx')],
     ['stripe-webhook-secret', j('whsec', 'abcdefghijklmnopqrstu')],
     ['anthropic-api-key', `sk-ant-${'a'.repeat(24)}`],
+    ['openai-api-key', `sk-proj-${'a'.repeat(24)}`],
+    ['openai-api-key', `sk-${'a'.repeat(20)}${'T3Blbk'}FJ${'b'.repeat(20)}`],
     ['aws-access-key-id', `AKIA${'Q'.repeat(16)}`],
     ['github-token', `ghp_${'a'.repeat(36)}`],
     ['slack-token', `xoxb-${'1'.repeat(12)}-abc`],

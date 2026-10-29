@@ -57,3 +57,4 @@ after the fact except to add a pointer. `pnpm docs:check` fails when a file here
 | [0050](0050-test-only-code-and-a11y-method.md) | Test-only code policy; a11y and low-bandwidth method (prompt 6, issues S, step 14) |
 | [0051](0051-ops-retention-erasure.md) | Schema guard, heartbeats, retention, erasure and suppression (prompt 7 steps 2-3) |
 | [0052](0052-stale-queue-jobs.md) | Stale queue jobs are dropped before decide() (bug found in prompt 7 verification) |
+| [0053](0053-openai-provider.md) | OpenAI as a second model provider for replies and proof hints |

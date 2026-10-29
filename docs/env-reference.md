@@ -31,14 +31,15 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `PAYMENTS_ALLOW_FAKE` | no | - | worker, web, webhooks, demo, test | TESTS AND DEMO ONLY: enables the FakeGateway for test-mode accounts. Never set in production. |
 | `TRUST_PROXY_HOPS` | no | - | web | How many trusted proxies append X-Forwarded-For (0 = do not trust it). |
 | `PORT` | no | - | webhooks | Webhook runtime port. |
-| `CLASSIFIER` | no | - | processor | anthropic = classify replies with the model; unset = every reply becomes a human task. |
-| `CLASSIFIER_MODEL` | no | - | processor | Model id when CLASSIFIER=anthropic. |
+| `CLASSIFIER` | no | - | processor | anthropic or openai = classify replies with that provider model; unset = every reply becomes a human task. |
+| `CLASSIFIER_MODEL` | no | - | processor | Model id of the chosen provider (required when CLASSIFIER is set). |
 | `CLASSIFIER_TIMEOUT_MS` | no | - | processor | Classifier call timeout. |
-| `CLASSIFIER_FALLBACKS` | no | - | processor | false = no model fallback. |
-| `ANTHROPIC_API_KEY` | yes | - | processor, worker, smoke | Read by the Anthropic SDK when the classifier or proof extraction is enabled. |
-| `PROOF_EXTRACTION` | no | - | worker | anthropic = AI hints on proof images (tenants must also opt in). |
+| `CLASSIFIER_FALLBACKS` | no | - | processor | false = no model fallback (Anthropic only). |
+| `ANTHROPIC_API_KEY` | yes | - | processor, worker, smoke | Read by the Anthropic SDK when CLASSIFIER or PROOF_EXTRACTION is anthropic. |
+| `OPENAI_API_KEY` | yes | - | processor, worker | Read by the OpenAI SDK when CLASSIFIER or PROOF_EXTRACTION is openai. |
+| `PROOF_EXTRACTION` | no | - | worker | anthropic or openai = AI hints on proof images (tenants must also opt in). |
 | `PROOF_EXTRACTION_MODEL` | no | - | worker | Model id for proof hints. |
-| `PROOF_EXTRACTION_FALLBACKS` | no | - | worker | false = no model fallback. |
+| `PROOF_EXTRACTION_FALLBACKS` | no | - | worker | false = no model fallback (Anthropic only). |
 | `NEXT_DIST_DIR` | no | - | test | Build folder (the e2e build uses .next-e2e). |
 | `SENTRY_DSN` | yes | - | - | Reserved: no error-reporting vendor is wired (ErrorReporter is a no-op by default). |
 | `ALERT_STALE_SECONDS` | no | - | cli | Watchdog: a heartbeat older than this is stale. |

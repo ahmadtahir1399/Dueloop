@@ -189,8 +189,9 @@ pnpm eval:live                           # record a real model (EVAL_LIVE=1, CLA
 - The classifier only proposes; `planReplyOutcome` and the state machine decide, and nothing from a reply can
   send a message. Every unclear, low-confidence, spoofable or ambiguous reply becomes a human task with, where
   useful, a DRAFT reply for a person to send.
-- Classifier: `CLASSIFIER=anthropic` with `CLASSIFIER_MODEL` (recommended `claude-opus-5-5`) and Anthropic
-  credentials. Without it, every reply goes to a human.
+- Classifier: `CLASSIFIER=anthropic` with `CLASSIFIER_MODEL` (recommended `claude-opus-5-5`) and
+  `ANTHROPIC_API_KEY`, or `CLASSIFIER=openai` with an OpenAI model id in `CLASSIFIER_MODEL` and `OPENAI_API_KEY`
+  (ADR 0053). Without it, every reply goes to a human.
 - The labelled set in `data/classifier` is SYNTHETIC: a regression guard, not a measure of real-world accuracy.
 - Live Meta webhook delivery needs a public HTTPS URL in front of `pnpm webhooks`; real mailboxes need app
   passwords. See `docs/decisions/0022`-`0031`.

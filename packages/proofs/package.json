@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",
+    "@dueloop/classifier": "workspace:*",
     "@dueloop/ingest": "workspace:*",
     "@dueloop/messaging": "workspace:*",
     "@dueloop/payments": "workspace:*",
     "@supabase/supabase-js": "2.118.0",
+    "openai": "7.45.1",
     "pg": "8.23.1",
     "postal-mime": "4.1.4",
     "zod": "4.6.7"

@@ -8,7 +8,7 @@ security findings that are still open are repeated from docs/security-review.md.
 - Real-host deployment (a server, a TLS proxy, real DNS); hosted Supabase behaviour (extensions, Vault, Auth settings,
   platform backups); any platform other than the one Windows 10 machine this was built on (macOS, Linux desktop,
   WSL2); a second machine running the clean-clone job (the workflow exists and has not run).
-- Live providers: SMTP to real inboxes, WhatsApp Cloud API, Stripe live and test accounts, Anthropic models, Slack.
+- Live providers: SMTP to real inboxes, WhatsApp Cloud API, Stripe live and test accounts, Anthropic and OpenAI models, Slack.
   Each has a contract test with recorded or fake responses and an env-gated smoke command; none ran with credentials.
 - Accessibility beyond automated axe checks and scripted keyboard runs (no screen-reader or user testing).
 - Performance beyond one machine and one synthetic 50,000-invoice tenant (docs/measurements/perf-pages.txt).

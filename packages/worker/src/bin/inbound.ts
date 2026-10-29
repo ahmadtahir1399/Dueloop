@@ -1,6 +1,6 @@
 // pnpm inbound --once | --loop [--tenant <id|name>] [--now <iso>]
-// Drains the inbound event queue through the processor. Classifier: CLASSIFIER=anthropic + CLASSIFIER_MODEL
-// (e.g. claude-opus-5-5), otherwise every reply becomes a human task.
+// Drains the inbound event queue through the processor. Classifier: CLASSIFIER=anthropic or openai, plus
+// CLASSIFIER_MODEL (a model id of that provider); otherwise every reply becomes a human task.
 import { assertSchema, heartbeat } from '@dueloop/ops';
 import { processInboundBatch } from '@dueloop/inbound';
 import { parseArgs } from 'node:util';
