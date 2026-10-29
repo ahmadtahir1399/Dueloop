@@ -125,7 +125,14 @@ export async function integrationAction(_prev: IntegrationState, form: FormData)
       channel === "whatsapp"
         ? { channel: "whatsapp", phoneNumberId: textField(form, "phone_number_id", 64) }
         : channel === "email"
-          ? { channel: "email", fromAddress: textField(form, "from_address", 320), fromName: textField(form, "from_name", 200) }
+          ? {
+              channel: "email",
+              fromAddress: textField(form, "from_address", 320),
+              fromName: textField(form, "from_name", 200),
+              smtp: textField(form, "smtp_host", 300).trim()
+                ? { host: textField(form, "smtp_host", 300), port: textField(form, "smtp_port", 10), user: textField(form, "smtp_user", 300), secure: form.get("smtp_secure") === "on" }
+                : undefined,
+            }
           : ({ channel } as never),
     );
     if (!r.ok) return { error: r.reason };

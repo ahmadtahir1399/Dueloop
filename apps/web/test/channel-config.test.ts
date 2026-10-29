@@ -47,6 +47,19 @@ describe('channelConfigFrom', () => {
     expect(senderDomainAllowed('ceo@bank.example', '')).toBe(true);
   });
 
+  it('own SMTP server (only when the operator allows tenant hosts): host, port, user and TLS are validated', () => {
+    const base = { channel: 'email' as const, fromAddress: 'billing@shop.example', fromName: '' };
+    expect(channelConfigFrom({ ...base, smtp: { host: 'smtp.shop.example', port: '465', user: 'billing@shop.example', secure: true } })).toEqual({
+      ok: true,
+      channel: 'email',
+      config: { from_address: 'billing@shop.example', smtp_host: 'smtp.shop.example', smtp_port: 465, smtp_user: 'billing@shop.example', smtp_secure: true },
+      externalAccountId: null,
+    });
+    for (const host of ['', 'smtp shop', 'http://x.example', 'a/b', 'x'.repeat(254)]) expect(channelConfigFrom({ ...base, smtp: { host, port: '587', user: 'u', secure: false } }).ok).toBe(false);
+    for (const port of ['0', '70000', 'abc', '']) expect(channelConfigFrom({ ...base, smtp: { host: 'smtp.shop.example', port, user: 'u', secure: false } }).ok).toBe(false);
+    expect(channelConfigFrom({ ...base, smtp: { host: 'smtp.shop.example', port: '587', user: `a${String.fromCharCode(13, 10)}b`, secure: false } }).ok).toBe(false);
+  });
+
   it('refuses any other channel', () => {
     expect(channelConfigFrom({ channel: 'slack' } as never)).toEqual({ ok: false, reason: 'Choose email or WhatsApp.' });
   });

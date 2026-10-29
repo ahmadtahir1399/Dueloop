@@ -100,12 +100,16 @@ test.describe("owner", () => {
 
     await page.goto("/settings/integrations");
     const form = page.getByRole("form", { name: "Set channel credentials" });
-    await form.getByLabel("Secret").fill("smtp-password-e2e-0001");
+    // Review round 2: an email password is only offered with SMTP_ALLOW_TENANT_HOST; the WhatsApp token is the same
+    // write-only path (set_channel_secret).
+    await expect(form.getByLabel("Channel").locator("option", { hasText: "email" })).toHaveCount(0);
+    await form.getByLabel("Channel").selectOption("whatsapp");
+    await form.getByLabel("Secret").fill("wa-token-e2e-0001");
     await form.getByRole("button", { name: "Save secret" }).click();
     await expect(form.getByRole("status")).toContainText("cannot be shown again");
     await page.reload();
-    expect(await page.content()).not.toContain("smtp-password-e2e-0001");
-    await expect(page.locator('[data-channel="email"]')).toContainText("credentials set");
+    expect(await page.content()).not.toContain("wa-token-e2e-0001");
+    await expect(page.locator('[data-channel="whatsapp"]')).toContainText("credentials set");
   });
 });
 

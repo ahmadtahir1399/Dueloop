@@ -10,10 +10,14 @@ import { integrationAction } from "../admin-actions";
 // token and are shown once, to an owner, when created or rotated.
 type ChannelRow = { channel: string; config: unknown };
 
+function configValue(rows: ChannelRow[] | null, channel: string, key: string): unknown {
+  const config = rows?.find((r) => r.channel === channel)?.config;
+  return config && typeof config === "object" ? (config as Record<string, unknown>)[key] : undefined;
+}
+
 /** A non-secret value from a channel's config, as text (never rendered as HTML). */
 function configOf(rows: ChannelRow[] | null, channel: string, key: string): string {
-  const config = rows?.find((r) => r.channel === channel)?.config;
-  const v = config && typeof config === "object" ? (config as Record<string, unknown>)[key] : undefined;
+  const v = configValue(rows, channel, key);
   return typeof v === "string" ? v : "";
 }
 
@@ -32,6 +36,9 @@ export default async function IntegrationsPage() {
   ]);
   if (channels.error || payments.error) throw new Error("could not load integrations");
   const owner = can(ctx.role, "integrations.manage");
+  // The operator decides whether a business may use its own mail server (SSRF: the worker connects wherever it says).
+  const tenantSmtp = process.env.SMTP_ALLOW_TENANT_HOST === "true";
+  const whatsappWired = Boolean(process.env.WHATSAPP_GRAPH_VERSION);
   return (
     <div className="grid max-w-2xl gap-4">
       <h1 className="text-xl font-semibold">Integrations</h1>
@@ -44,6 +51,7 @@ export default async function IntegrationsPage() {
             <p key={c.channel} data-channel={c.channel}>
               {c.channel}: {c.enabled ? "enabled" : "disabled"} · {c.secret_id ? "credentials set" : "no credentials"}
               {configSummary(c.channel, c.config)}
+              {c.channel === "whatsapp" && !whatsappWired ? " · WhatsApp is not switched on for this server (WHATSAPP_GRAPH_VERSION)" : ""}
             </p>
           ))}
           {owner ? (
@@ -52,7 +60,7 @@ export default async function IntegrationsPage() {
               <label className="grid gap-1">
                 Channel
                 <select name="channel" className="h-9 rounded-md border bg-background px-2">
-                  <option value="email">email (SMTP password)</option>
+                  {tenantSmtp ? <option value="email">email (password for your own mail server)</option> : null}
                   <option value="whatsapp">whatsapp (access token)</option>
                   <option value="slack">slack (webhook URL)</option>
                 </select>
@@ -80,6 +88,27 @@ export default async function IntegrationsPage() {
                   <Input name="from_name" autoComplete="off" maxLength={100} defaultValue={configOf(channels.data, "email", "from_name")} />
                 </label>
                 <p className="text-muted-foreground">Use an address your email service has verified.</p>
+                {tenantSmtp ? (
+                  <fieldset className="grid gap-2 rounded-md border p-2">
+                    <legend className="px-1">Your own mail server (optional; empty = the server's)</legend>
+                    <label className="grid gap-1">
+                      Mail server
+                      <Input name="smtp_host" autoComplete="off" defaultValue={configOf(channels.data, "email", "smtp_host")} />
+                    </label>
+                    <label className="grid gap-1">
+                      Port
+                      <Input name="smtp_port" inputMode="numeric" autoComplete="off" defaultValue={String(configValue(channels.data, "email", "smtp_port") ?? "587")} />
+                    </label>
+                    <label className="grid gap-1">
+                      Login
+                      <Input name="smtp_user" autoComplete="off" defaultValue={configOf(channels.data, "email", "smtp_user")} />
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" name="smtp_secure" defaultChecked={configValue(channels.data, "email", "smtp_secure") === true} />
+                      TLS from the start (port 465)
+                    </label>
+                  </fieldset>
+                ) : null}
                 <Button type="submit" className="w-fit">
                   Save sender
                 </Button>

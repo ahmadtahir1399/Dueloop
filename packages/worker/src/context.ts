@@ -191,11 +191,14 @@ export function readyChannels(accounts: ReadonlyMap<Channel, Readonly<Record<str
 
 export function pickTemplate(templates: readonly TemplateRow[], key: string, channel: Channel, locale: string): TemplateRow | null {
   const lang = locale.split('-')[0]?.toLowerCase() ?? 'en';
-  const candidates = templates.filter((t) => t.templateKey === key && t.channel === channel);
-  return (
+  const byLanguage = (candidates: readonly TemplateRow[]) =>
     candidates.find((t) => t.locale.toLowerCase() === locale.toLowerCase()) ??
     candidates.find((t) => t.locale.toLowerCase() === lang) ??
     candidates.find((t) => t.locale.toLowerCase() === 'en') ??
-    null
-  );
+    null;
+  const candidates = templates.filter((t) => t.templateKey === key && t.channel === channel);
+  // WhatsApp sends only approved text: an approved template (same language order) beats an unapproved one in a
+  // closer language (review round 2). Without any, the usual match, and the router says template_unapproved.
+  if (channel === 'whatsapp') return byLanguage(candidates.filter((t) => t.providerStatus === 'approved')) ?? byLanguage(candidates);
+  return byLanguage(candidates);
 }
