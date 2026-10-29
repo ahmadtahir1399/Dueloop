@@ -8,7 +8,7 @@ import { validateSettings } from "@dueloop/core";
 import { revalidatePath } from "next/cache";
 import { type ActionState, dbErrorMessage, textField, uuidField } from "@/lib/actions";
 import { requireTenant } from "@/lib/session";
-import { connectPaymentAccount, inviteMember, rotateWebhookToken, setChannelConfig, setChannelSecret, setPaymentWebhookSecret } from "@/lib/trusted/admin";
+import { connectPaymentAccount, inviteMember, rotateWebhookToken, setChannelConfig, setChannelSecret, setPaymentWebhookSecret, disconnectPaymentAccount } from "@/lib/trusted/admin";
 
 export async function holidayAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const ctx = await requireTenant();
@@ -141,8 +141,15 @@ export async function integrationAction(_prev: IntegrationState, form: FormData)
     });
     if (!r.ok) return { error: r.reason };
     revalidatePath("/settings/integrations");
-    const later = form.get("webhook_secret") ? "" : " The account stays switched off until you add the webhook signing secret below.";
-    return { ok: true, webhookUrl: r.value, message: `Connected. Copy the webhook URL into the provider now; it is not shown again.${later}` };
+    const later = form.get("webhook_secret") ? "" : " If it shows as switched off, add the webhook signing secret below.";
+    if (r.value === null) return { ok: true, message: `Saved. The webhook URL is unchanged (use "Rotate webhook URL" if you lost it).${later}` };
+    return { ok: true, webhookUrl: r.value, message: `Connected. Copy the webhook URL into the provider now; it is not shown again. It stays switched off until you add the webhook signing secret below.` };
+  }
+  if (op === "disconnect_payment") {
+    const r = await disconnectPaymentAccount(ctx, String(form.get("provider")));
+    if (!r.ok) return { error: r.reason };
+    revalidatePath("/settings/integrations");
+    return { ok: true, message: "Switched off. No new pay links are made; payments on links already sent are still checked." };
   }
   if (op === "webhook_secret") {
     const r = await setPaymentWebhookSecret(ctx, String(form.get("provider")), textField(form, "webhook_secret", 4096));
