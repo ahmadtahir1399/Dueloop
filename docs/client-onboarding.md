@@ -7,9 +7,10 @@ running this software for them. Nothing here is legal advice.
 
 - [ ] **Email domain authentication** (the business, with their DNS provider): SPF, DKIM and DMARC records for the
       sending domain, so reminders are not marked as spam. Record which records were added and when.
-- [ ] **Sending account** (operator: SMTP host and user in the server env; owner, Settings > Integrations: the
-      SMTP password and the "Email sender" address on the authenticated domain). Send one test reminder to an
-      address the business controls.
+- [ ] **Sending account** (operator: SMTP host, user and password in the server env, and SMTP_FROM_DOMAINS when
+      several businesses share it; owner, Settings > Integrations: the "Email sender" address on the authenticated
+      domain). There is no "send a test" button: create a test customer with an address the business controls and
+      an overdue test invoice, approve its first reminder, and check it arrives.
 - [ ] **WhatsApp** (the business with Meta, only if used): business verification, a phone number for the WhatsApp
       Cloud API, and approved message templates. Template approval is Meta's decision and takes time; plan for it.
 - [ ] **Payment account** (the business, only if used): connect their own Stripe account (Settings > Integrations,

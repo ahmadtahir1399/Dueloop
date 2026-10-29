@@ -47,6 +47,9 @@ const CHANNEL_SECRETS = new Set(["email", "whatsapp", "slack"]);
 export async function setChannelSecret(ctx: TenantContext, channel: string, secret: string): Promise<AdminResult> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can set secrets." };
   if (!CHANNEL_SECRETS.has(channel) || secret.length < 8) return { ok: false, reason: "Choose a channel and paste the secret." };
+  // A business's own email password is only used with its own mail server (smtpLogin); with the operator's server
+  // it would replace SMTP_PASSWORD for the operator's user and break sending (review round 2).
+  if (channel === "email" && process.env.SMTP_ALLOW_TENANT_HOST !== "true") return { ok: false, reason: "This server sends email with its own login; no email password is needed here." };
   // The notifier only posts to Slack's incoming-webhook host; anything else would silently drop every alert.
   if (channel === "slack" && !secret.startsWith("https://hooks.slack.com/")) return { ok: false, reason: "A Slack webhook URL starts with https://hooks.slack.com/." };
   const pool = trustedPool();
@@ -67,10 +70,11 @@ export async function setChannelConfig(ctx: TenantContext, input: ChannelConfigI
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can change channel settings." };
   const v = channelConfigFrom(input);
   if (!v.ok) return { ok: false, reason: v.reason };
-  if (v.channel === "email" && !senderDomainAllowed(v.config.from_address ?? "", process.env.SMTP_FROM_DOMAINS)) {
+  if (v.channel === "email" && "smtp_host" in v.config && process.env.SMTP_ALLOW_TENANT_HOST !== "true") return { ok: false, reason: "This server does not allow your own mail server." };
+  if (v.channel === "email" && !("smtp_host" in v.config) && !senderDomainAllowed(String(v.config.from_address ?? ""), process.env.SMTP_FROM_DOMAINS)) {
     return { ok: false, reason: "This server may only send from these domains: " + (process.env.SMTP_FROM_DOMAINS ?? "") + "." };
   }
-  const owned = v.channel === "email" ? ["from_address", "from_name"] : ["phone_number_id"];
+  const owned = v.channel === "email" ? ["from_address", "from_name", "smtp_host", "smtp_port", "smtp_user", "smtp_secure"] : ["phone_number_id"];
   let confirmed: boolean | null = null;
   if (v.channel === "whatsapp" && v.externalAccountId) {
     const graphVersion = process.env.WHATSAPP_GRAPH_VERSION ?? "";
