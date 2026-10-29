@@ -17,7 +17,7 @@ function fakeFetch(status: number, body: unknown) {
 
 describe('verifyPhoneNumberId', () => {
   it('asks Meta with the tenant token and accepts only the same id', async () => {
-    const { f, calls } = fakeFetch(200, { id: '123456789', display_phone_number: '+1 555 0100' });
+    const { f, calls } = fakeFetch(200, { id: '123456789', display_phone_number: '+1 202 555 0100' });
     expect(await verifyPhoneNumberId({ graphVersion: 'v26.0', token: 'tok', phoneNumberId: '123456789', fetch: f, timeoutMs: 1000 })).toBe(true);
     expect(calls[0]).toEqual({ url: 'https://graph.facebook.com/v26.0/123456789?fields=id', auth: 'Bearer tok' });
   });
