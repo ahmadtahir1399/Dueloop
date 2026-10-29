@@ -8,7 +8,7 @@ import { validateSettings } from "@dueloop/core";
 import { revalidatePath } from "next/cache";
 import { type ActionState, dbErrorMessage, textField, uuidField } from "@/lib/actions";
 import { requireTenant } from "@/lib/session";
-import { connectPaymentAccount, inviteMember, rotateWebhookToken, setChannelSecret } from "@/lib/trusted/admin";
+import { connectPaymentAccount, inviteMember, rotateWebhookToken, setChannelConfig, setChannelSecret, setPaymentWebhookSecret } from "@/lib/trusted/admin";
 
 export async function holidayAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const ctx = await requireTenant();
@@ -118,6 +118,20 @@ export async function integrationAction(_prev: IntegrationState, form: FormData)
     const r = await setChannelSecret(ctx, channel, textField(form, "secret", 4096));
     return r.ok ? { ok: true, message: "Saved. The secret cannot be shown again." } : { error: r.reason };
   }
+  if (op === "channel_config") {
+    const channel = String(form.get("channel"));
+    const r = await setChannelConfig(
+      ctx,
+      channel === "whatsapp"
+        ? { channel: "whatsapp", phoneNumberId: textField(form, "phone_number_id", 64) }
+        : channel === "email"
+          ? { channel: "email", fromAddress: textField(form, "from_address", 320), fromName: textField(form, "from_name", 200) }
+          : ({ channel } as never),
+    );
+    if (!r.ok) return { error: r.reason };
+    revalidatePath("/settings/integrations");
+    return { ok: true, message: "Saved." };
+  }
   if (op === "connect_payment") {
     const r = await connectPaymentAccount(ctx, {
       provider: String(form.get("provider")),
@@ -127,7 +141,14 @@ export async function integrationAction(_prev: IntegrationState, form: FormData)
     });
     if (!r.ok) return { error: r.reason };
     revalidatePath("/settings/integrations");
-    return { ok: true, webhookUrl: r.value, message: "Connected. Copy the webhook URL into the provider now; it is not shown again." };
+    const later = form.get("webhook_secret") ? "" : " The account stays switched off until you add the webhook signing secret below.";
+    return { ok: true, webhookUrl: r.value, message: `Connected. Copy the webhook URL into the provider now; it is not shown again.${later}` };
+  }
+  if (op === "webhook_secret") {
+    const r = await setPaymentWebhookSecret(ctx, String(form.get("provider")), textField(form, "webhook_secret", 4096));
+    if (!r.ok) return { error: r.reason };
+    revalidatePath("/settings/integrations");
+    return { ok: true, message: "Saved. The account is switched on. The secret cannot be shown again." };
   }
   if (op === "rotate_webhook") {
     const r = await rotateWebhookToken(ctx);

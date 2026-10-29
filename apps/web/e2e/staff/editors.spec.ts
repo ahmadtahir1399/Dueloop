@@ -108,3 +108,89 @@ test.describe("owner", () => {
     await expect(page.locator('[data-channel="email"]')).toContainText("credentials set");
   });
 });
+
+// Found while writing docs/guides/getting-your-keys.html: nothing in the UI could set the email sender address or
+// the WhatsApp phone number id, so a new tenant could not send without database access.
+test.describe("owner: channel settings", () => {
+  test.use({ storageState: authFile("owner") });
+
+  test("the sender address and the WhatsApp phone number id can be set from Settings > Integrations", async ({ page }) => {
+    const before = (await db().query("select channel, config, external_account_id from public.channel_accounts where tenant_id = $1 and channel in ('email', 'whatsapp')", [DEMO_TENANT])).rows;
+    try {
+      await page.goto("/settings/integrations");
+      const sender = page.getByRole("form", { name: "Email sender" });
+      await sender.getByLabel("Sender email address").fill("billing@nodot");
+      await sender.getByRole("button", { name: "Save sender" }).click();
+      await expect(sender.getByRole("alert")).toContainText("one plain email address");
+      await sender.getByLabel("Sender email address").fill("accounts@demo-agency.test");
+      await sender.getByLabel(/Sender name/).fill("Demo Accounts");
+      await sender.getByRole("button", { name: "Save sender" }).click();
+      await expect(sender.getByRole("status")).toContainText("Saved");
+      const email = (await db().query("select config from public.channel_accounts where tenant_id = $1 and channel = 'email'", [DEMO_TENANT])).rows[0];
+      expect(email.config).toMatchObject({ from_address: "accounts@demo-agency.test", from_name: "Demo Accounts" });
+
+      const wa = page.getByRole("form", { name: "WhatsApp number" });
+      await wa.getByLabel(/Phone number ID/).fill("+44 7700 900123");
+      await wa.getByRole("button", { name: "Save WhatsApp number" }).click();
+      await expect(wa.getByRole("alert")).toContainText("digits only");
+      await wa.getByLabel(/Phone number ID/).fill("990011223344556");
+      await wa.getByRole("button", { name: "Save WhatsApp number" }).click();
+      await expect(wa.getByRole("status")).toContainText("Saved");
+      const row = (await db().query("select config, external_account_id from public.channel_accounts where tenant_id = $1 and channel = 'whatsapp'", [DEMO_TENANT])).rows[0];
+      expect(row.config).toMatchObject({ phone_number_id: "990011223344556" });
+      expect(row.external_account_id).toBe("990011223344556");
+    } finally {
+      for (const r of before) await db().query("update public.channel_accounts set config = $3, external_account_id = $4 where tenant_id = $1 and channel = $2", [DEMO_TENANT, r.channel, r.config, r.external_account_id]);
+      if (!before.some((r) => r.channel === "whatsapp")) await db().query("delete from public.channel_accounts where tenant_id = $1 and channel = 'whatsapp'", [DEMO_TENANT]);
+    }
+  });
+});
+
+// Stripe shows the signing secret only after the webhook endpoint exists, and the app showed the webhook URL only
+// after connecting WITH that secret. Now: connect with the API key, get the URL, add the secret afterwards. Until
+// then the account is switched off, so no pay link is created that could never be confirmed.
+test.describe("owner: two-step payment connect", () => {
+  test.use({ storageState: authFile("owner") });
+
+  test("connect without the signing secret stays off; adding the secret switches it on", async ({ page }) => {
+    const before = (await db().query("select id from public.payment_accounts where tenant_id = $1 and provider = 'stripe'", [DEMO_TENANT])).rows;
+    test.skip(before.length > 0, "the demo tenant already has a Stripe account");
+    try {
+      await page.goto("/settings/integrations");
+      const connect = page.getByRole("form", { name: "Connect a payment account" });
+      await connect.getByLabel("API key").fill("rk_test_e2e_two_step_0001");
+      await connect.getByRole("button", { name: "Connect" }).click();
+      await expect(connect.getByRole("status")).toContainText("switched off until you add the webhook signing secret");
+      await expect(connect.getByTestId("secret-once")).toContainText("/webhooks/payments/");
+      let acc = (await db().query("select enabled, webhook_secret_id, api_key_secret_id from public.payment_accounts where tenant_id = $1 and provider = 'stripe'", [DEMO_TENANT])).rows[0];
+      expect(acc).toMatchObject({ enabled: false, webhook_secret_id: null });
+      expect(acc.api_key_secret_id).not.toBeNull();
+
+      await page.reload();
+      await expect(page.locator('[data-provider="stripe"]')).toContainText("waiting for the webhook signing secret");
+      const finish = page.getByRole("form", { name: "Webhook signing secret" });
+      await finish.getByLabel("Signing secret").fill("whsec_e2e_two_step_0001");
+      await finish.getByRole("button", { name: "Save signing secret" }).click();
+      await expect(finish.getByRole("status")).toContainText("Saved");
+      acc = (await db().query("select enabled, webhook_secret_id from public.payment_accounts where tenant_id = $1 and provider = 'stripe'", [DEMO_TENANT])).rows[0];
+      expect(acc.enabled).toBe(true);
+      expect(acc.webhook_secret_id).not.toBeNull();
+      await page.reload();
+      expect(await page.content()).not.toContain("whsec_e2e_two_step_0001");
+      await expect(page.locator('[data-provider="stripe"]')).toContainText("connected");
+    } finally {
+      await db().query("delete from public.payment_accounts where tenant_id = $1 and provider = 'stripe'", [DEMO_TENANT]);
+    }
+  });
+});
+
+test.describe("accountant: channel settings", () => {
+  test.use({ storageState: authFile("accountant") });
+
+  test("an accountant sees no channel settings forms", async ({ page }) => {
+    await page.goto("/settings/integrations");
+    await expect(page.getByRole("heading", { name: "Integrations" })).toBeVisible();
+    await expect(page.getByRole("form", { name: "Email sender" })).toHaveCount(0);
+    await expect(page.getByRole("form", { name: "WhatsApp number" })).toHaveCount(0);
+  });
+});
