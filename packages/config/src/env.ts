@@ -40,6 +40,7 @@ export const ENV: readonly EnvVar[] = [
   { name: 'SMTP_PORT', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Default SMTP port.', example: '54325', pattern: /^\d{1,5}$/ },
   { name: 'SMTP_SECURE', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'true for implicit TLS.', example: 'false', pattern: /^(true|false)$/ },
   { name: 'SMTP_PASSWORD', secret: true, requiredBy: [], usedBy: ['worker', 'cli'], description: 'Operator SMTP password for SMTP_HOST/SMTP_USER. Used only when a tenant saved no SMTP password of its own; never sent to a tenant-chosen host.', example: '' },
+  { name: 'SMTP_FROM_DOMAINS', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Comma-separated sender domains the operator SMTP host may send for (e.g. yourbusiness.example). Set it when several businesses share one server. Unset = any.', example: '' },
   { name: 'SMTP_USER', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Default SMTP user. Its password: SMTP_PASSWORD (operator) or the tenant one saved in Settings (Vault), which wins.', example: '' },
   { name: 'SMTP_ALLOW_TENANT_HOST', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Let tenant channel config choose the SMTP host.', example: 'false', pattern: /^(true|false)$/ },
   { name: 'WHATSAPP_GRAPH_VERSION', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Meta Graph API version; unset = no WhatsApp sending.', example: '' },

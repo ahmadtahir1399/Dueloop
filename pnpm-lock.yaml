@@ -205,6 +205,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@dueloop/adapters-whatsapp':
+        specifier: workspace:*
+        version: link:../../packages/adapters-whatsapp
       '@dueloop/authz':
         specifier: workspace:*
         version: link:../../packages/authz

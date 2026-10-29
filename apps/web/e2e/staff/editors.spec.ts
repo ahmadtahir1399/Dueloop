@@ -135,10 +135,12 @@ test.describe("owner: channel settings", () => {
       await expect(wa.getByRole("alert")).toContainText("digits only");
       await wa.getByLabel(/Phone number ID/).fill("990011223344556");
       await wa.getByRole("button", { name: "Save WhatsApp number" }).click();
-      await expect(wa.getByRole("status")).toContainText("Saved");
+      // No WHATSAPP_GRAPH_VERSION / token here, so Meta cannot confirm it: saved for sending, NOT for routing
+      // replies (review round 2: otherwise a business could claim another business's number).
+      await expect(wa.getByRole("status")).toContainText("only after Meta confirms");
       const row = (await db().query("select config, external_account_id from public.channel_accounts where tenant_id = $1 and channel = 'whatsapp'", [DEMO_TENANT])).rows[0];
       expect(row.config).toMatchObject({ phone_number_id: "990011223344556" });
-      expect(row.external_account_id).toBe("990011223344556");
+      expect(row.external_account_id).toBeNull();
     } finally {
       for (const r of before) await db().query("update public.channel_accounts set config = $3, external_account_id = $4 where tenant_id = $1 and channel = $2", [DEMO_TENANT, r.channel, r.config, r.external_account_id]);
       if (!before.some((r) => r.channel === "whatsapp")) await db().query("delete from public.channel_accounts where tenant_id = $1 and channel = 'whatsapp'", [DEMO_TENANT]);

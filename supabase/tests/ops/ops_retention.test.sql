@@ -21,7 +21,7 @@ from unnest(array['anon', 'authenticated']) r,
 -- 8
 
 -- ---- behaviour ----
-select is(private.schema_version(), '0025', 'schema_version() is the newest applied migration');
+select is(private.schema_version(), '0026', 'schema_version() is the newest applied migration');
 select isnt(private.contact_hash('00000000-0000-0000-0000-00000000000a', 'x@example.com'),
             private.contact_hash('00000000-0000-0000-0000-00000000000b', 'x@example.com'), 'the contact hash is salted per tenant');
 insert into public.customers (tenant_id, display_name, email, opted_out)

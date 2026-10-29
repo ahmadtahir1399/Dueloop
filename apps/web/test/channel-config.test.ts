@@ -2,7 +2,7 @@
 // password and the WhatsApp token but had no way to set the sender address or the WhatsApp phone number id, so a
 // new tenant could not send email or WhatsApp without someone editing the database.
 import { describe, expect, it } from 'vitest';
-import { channelConfigFrom } from '../lib/channel-config.ts';
+import { channelConfigFrom, senderDomainAllowed } from '../lib/channel-config.ts';
 
 describe('channelConfigFrom', () => {
   it('email: a safe sender address and a cleaned display name', () => {
@@ -38,6 +38,13 @@ describe('channelConfigFrom', () => {
 
   it.each(['', '12ab', '+44 7700 900123', '1'.repeat(33), '12.5'])('whatsapp: refuses %j', (phoneNumberId) => {
     expect(channelConfigFrom({ channel: 'whatsapp', phoneNumberId })).toEqual({ ok: false, reason: 'The phone number ID is the number Meta shows (digits only), not the phone number.' });
+  });
+
+  it('SMTP_FROM_DOMAINS (operator relay) limits the sender domain; unset or empty = any', () => {
+    expect(senderDomainAllowed('billing@shop.example', 'shop.example, other.example')).toBe(true);
+    expect(senderDomainAllowed('ceo@bank.example', 'shop.example')).toBe(false);
+    expect(senderDomainAllowed('ceo@bank.example', undefined)).toBe(true);
+    expect(senderDomainAllowed('ceo@bank.example', '')).toBe(true);
   });
 
   it('refuses any other channel', () => {
