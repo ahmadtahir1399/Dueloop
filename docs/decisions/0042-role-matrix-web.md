@@ -14,6 +14,7 @@ table; `packages/authz/test/matrix.test.ts` fails unless the table below is byte
 | `overview.view` | yes | yes | yes |
 | `invoices.view` | yes | yes | yes |
 | `customers.view` | yes | yes | yes |
+| `consents.manage` | yes | yes | no |
 | `inbox.view` | yes | yes | yes |
 | `approvals.view` | yes | yes | yes |
 | `approvals.decide` | yes | yes | no |

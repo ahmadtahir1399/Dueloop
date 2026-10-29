@@ -22,6 +22,7 @@ export const PERMISSIONS = [
   { id: 'overview.view', label: 'See the overview and KPIs', roles: ALL, enforcedBy: 'RLS (security_invoker KPI functions)' },
   { id: 'invoices.view', label: 'See invoices, timelines and balances', roles: ALL, enforcedBy: 'RLS' },
   { id: 'customers.view', label: 'See customers, consents and opt-out state', roles: ALL, enforcedBy: 'RLS' },
+  { id: 'consents.manage', label: 'Record or withdraw a customer consent', roles: OA, enforcedBy: 'RLS (customer_consents I U)' },
   { id: 'inbox.view', label: 'See the inbox (inbound messages)', roles: ALL, enforcedBy: 'RLS' },
   { id: 'approvals.view', label: 'See approvals', roles: ALL, enforcedBy: 'RLS' },
   { id: 'approvals.decide', label: 'Approve, reject or edit an approval', roles: OA, enforcedBy: 'decide_approval / edit_approval' },
