@@ -66,6 +66,8 @@ export const ENV: readonly EnvVar[] = [
   { name: 'HEALTH_MAX_AGE', secret: false, requiredBy: [], usedBy: ['worker', 'processor'], description: 'Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300).', example: '300', pattern: /^\d{1,5}$/ },
   { name: 'DEMO_WEB_PORT', secret: false, requiredBy: [], usedBy: ['demo'], description: 'pnpm demo: port of the demo web app (default 3000).', example: '3000', pattern: /^\d{1,5}$/ },
   { name: 'DEMO_WEBHOOKS_PORT', secret: false, requiredBy: [], usedBy: ['demo'], description: 'pnpm demo: port of the demo webhooks service (default 8787).', example: '8787', pattern: /^\d{1,5}$/ },
+  { name: 'DEMO_RECORD', secret: false, requiredBy: [], usedBy: ['demo', 'test'], description: 'Set to 1 by pnpm demo:record: the e2e demo records video and keeps page DOMs for the leak check.', example: '' },
+  { name: 'DEMO_RECORD_DOM', secret: false, requiredBy: [], usedBy: ['demo', 'test'], description: 'Set by pnpm demo:record: where the e2e demo writes the page DOMs it showed.', example: '' },
   { name: 'DEMO_MODE', secret: false, requiredBy: [], usedBy: ['demo'], description: 'Set by `pnpm demo` only; demo:control refuses without it.', example: '' },
   { name: 'DEMO_NOW', secret: false, requiredBy: [], usedBy: ['demo'], description: 'Demo clock passed to child processes.', example: '' },
   { name: 'NOW_ISO', secret: false, requiredBy: [], usedBy: ['demo'], description: 'Demo/script clock.', example: '' },
