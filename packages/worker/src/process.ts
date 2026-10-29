@@ -24,7 +24,7 @@ import {
   type SendOutcome,
 } from '@dueloop/messaging';
 import { DateTime } from 'luxon';
-import { loadContext, pickTemplate, toCtx, type WorkerContext } from './context.ts';
+import { loadContext, pickTemplate, readyChannels, toCtx, type WorkerContext } from './context.ts';
 import type { Job, WorkerDb } from './db.ts';
 import type { Logger } from './logger.ts';
 import type { ChannelRegistry, Clock, Failpoints, Notifier, PaymentLinks, PublicLinks, RateLimiter, WorkerConfig } from './ports.ts';
@@ -368,7 +368,7 @@ async function sendPath(
     stepChannel: channel,
     customer: { email: c.customer.email, phoneE164: c.customer.phone },
     consents: c.consents,
-    accounts: [...c.accounts.keys()].filter((ch) => deps.channels.get(ch) !== undefined),
+    accounts: readyChannels(c.accounts, (ch) => deps.channels.get(ch) !== undefined),
     template: { found: tmpl !== null, providerStatus: tmpl?.providerStatus ?? null },
     budgetMinor: c.tenant.budgetMinor,
     spentThisMonthMinor: Number(spent.rows[0]?.s ?? 0),

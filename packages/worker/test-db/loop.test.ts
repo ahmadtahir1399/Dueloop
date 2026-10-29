@@ -168,6 +168,16 @@ describe('gates park with ONE alert', () => {
     expect((await invoice(w.invoiceIds[0] ?? ''))?.parked_reason).toBe('account_missing');
   });
 
+  it('an email account without a sender address parks with an alert (it used to skip the step silently)', async () => {
+    // Saving only the SMTP password creates the account with config {} (found in review round 2).
+    const w = await world({ emailConfig: {} });
+    expect((await w.run()).outcomes).toEqual({ parked: 1 });
+    expect((await invoice(w.invoiceIds[0] ?? ''))?.parked_reason).toBe('account_missing');
+    expect(w.email.calls).toHaveLength(0);
+    expect(w.notifier.alerts.filter((a) => a.kind === 'parked')).toHaveLength(1);
+    expect((await q(`select count(*)::int as n from public.messages where tenant_id = $1 and send_state = 'skipped'`, [w.tenantId]))[0]?.n).toBe(0);
+  });
+
   it('issue H: WhatsApp with budget 0 parks (paid channel blocked); email is never budgeted', async () => {
     const steps = [{ id: 's1', daysAfterDue: 1, channel: 'whatsapp' as const, templateKey: 'wa' }];
     const w = await world({ steps, budgetMinor: 0, whatsappConsent: true });

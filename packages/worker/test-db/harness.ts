@@ -108,6 +108,8 @@ export interface WorldOptions {
   holidays?: string[];
   templates?: boolean;
   emailAccount?: boolean;
+  /** Replaces the email account's config (e.g. {} for "password saved, no sender address yet"). */
+  emailConfig?: Record<string, unknown>;
   whatsappConsent?: boolean;
   /** N invoices due 2026-06-01 (ignored when `invoices` is given). */
   count?: number;
@@ -154,7 +156,7 @@ export async function world(o: WorldOptions = {}): Promise<World> {
   if (o.emailAccount !== false) {
     await q(`insert into public.channel_accounts (tenant_id, channel, config) values ($1, 'email', $2)`, [
       tenantId,
-      JSON.stringify({ from_address: 'billing@test-co.example', from_name: 'Test Co', message_id_domain: 'test-co.example' }),
+      JSON.stringify(o.emailConfig ?? { from_address: 'billing@test-co.example', from_name: 'Test Co', message_id_domain: 'test-co.example' }),
     ]);
   }
   await q(`insert into public.channel_accounts (tenant_id, channel, config) values ($1, 'whatsapp', '{"phone_number_id": "1"}')`, [tenantId]);

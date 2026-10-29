@@ -6,6 +6,7 @@
 //         "sent" for sentStepIds (never proposed again) but NOT for sentAt (nothing reached the customer).
 import type { Channel, Ctx, Policy, Settings } from '@dueloop/core';
 import { invoiceRowToCtxInvoice, policyRowToPolicy, tenantToSettings } from '@dueloop/db';
+import { isSafeAddress } from '@dueloop/messaging';
 import type { WorkerDb } from './db.ts';
 
 export interface TemplateRow {
@@ -171,6 +172,23 @@ export function toCtx(c: WorkerContext, now: Date): Ctx {
 }
 
 /** Template for (key, channel) in the customer's locale: exact tag, then language, then English. */
+/**
+ * Channels whose account is READY to send: an email account needs a safe sender address, a WhatsApp account its
+ * phone number id; and an adapter must be wired. Anything else routes as account_missing, which parks the invoice
+ * with an alert (and "Resume reminders" once fixed) instead of failing later as a silent skip (review round 2:
+ * saving only the SMTP password created an account with config {}).
+ */
+export function readyChannels(accounts: ReadonlyMap<Channel, Readonly<Record<string, unknown>>>, wired: (ch: Channel) => boolean): Channel[] {
+  return [...accounts.entries()]
+    .filter(([ch, config]) => {
+      if (!wired(ch)) return false;
+      if (ch === 'email') return isSafeAddress(String(config.from_address ?? ''));
+      if (ch === 'whatsapp') return /^\d{1,32}$/.test(String(config.phone_number_id ?? ''));
+      return true;
+    })
+    .map(([ch]) => ch);
+}
+
 export function pickTemplate(templates: readonly TemplateRow[], key: string, channel: Channel, locale: string): TemplateRow | null {
   const lang = locale.split('-')[0]?.toLowerCase() ?? 'en';
   const candidates = templates.filter((t) => t.templateKey === key && t.channel === channel);
