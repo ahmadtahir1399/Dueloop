@@ -1,45 +1,76 @@
-# Dueloop: invoice follow-up agent
+# invoice-followup-agent
 
-Status: **Phase 5 of 7**: the pure domain core and simulator (phase 1); the database, RLS and CSV import
-(phase 2); scheduler and sending (phase 3); replies + promises (phase 4); and payments + reconciliation
-(phase 5): a money-in ledger (receipts = applied payments + credits, append-only), one confirmation pipeline
-for gateway webhooks, polling, manual bank transfers and confirmed proofs, payment links in reminders,
-receipts through the outbox, refunds and chargebacks as human tasks, a proof-of-payment inbox, and KPI views.
-The dashboard/pay page and packaging come later.
+Working name, TODO(project-name): the owner has not chosen a name; no trademark check has been done. Packages use the
+code name `dueloop`.
 
-## What is here
+Software that follows up unpaid invoices for a small business: it sends polite reminders by email or WhatsApp on a
+schedule the business controls, reads the replies, records promises and disputes, takes payments through the
+business's own payment account and keeps a ledger of money received. A human approves what the system proposes;
+the system never decides that money arrived because a customer said so.
 
-- `packages/core`: domain types, the invoice state machine, `decide()`, the send-window calculation, money
-  helpers and port interfaces. Pure; may import only `luxon` (lint-enforced).
-- `packages/sim`: deterministic simulator with an invariant checker.
-- `packages/db`: generated database types, pure row -> core mappers, `rls-check` and `db-types` scripts.
-- `packages/ingest`: CSV validation (pure), staging and commit through the database, and the import CLI.
-- `packages/messaging`: template rendering (fail-closed), footer, header sanitising, budget, router, pacing,
-  and the `OutboundChannel` contract (ADR 0019).
-- `packages/worker`: the send protocol (ADR 0013), the composition root, and the ops CLIs.
-- `packages/adapters-email`, `adapters-whatsapp`, `adapters-notify`: SMTP (nodemailer), WhatsApp Cloud API
-  templates, and Slack alerts, each with contract tests; `adapters-email` also has the read-only IMAP poller.
-- `packages/classifier`: the ReplyClassifier boundary, strict schema, toProposal, versioned prompts, the Claude
-  adapter and the evaluation harness (data in `data/classifier`).
-- `packages/inbound`: the inbound processor (normalise, pre-filter, match, classify, plan, apply).
-- `packages/webhooks`: the webhook runtime: WhatsApp, and payments at `/webhooks/payments/<opaque token>`
-  (raw-body signature check with that account's secret).
-- `packages/payments`: the payment confirmation pipeline (ADR 0034): ingest, resolve via our own payment
-  requests, plan (pure core), apply in one locked transaction, alerts; requests and links, polling, manual
-  recording, read-only reconcile, integrity.
-- `packages/adapters-payments`: bank transfer, a deterministic FakeGateway, and Stripe (payment links on the
-  client's own account, API version pinned, ADR 0037).
-- `packages/proofs`: the proof inbox: fetch, magic-byte validation, private storage, duplicates, optional AI
-  hints (off by default), and the human confirm / reject workflow.
-- `supabase/`: migrations, the demo seed, and pgTAP tests.
-- `docs/decisions`: architecture decision records.
+**Status:** all seven build phases are done in this repository. It has run only on one developer machine and in local
+containers. It has not run on a real server, against a hosted Supabase project or with live providers (see
+[docs/limitations.md](docs/limitations.md)). There is no licence yet (below).
 
-- `apps/web`: Next.js 16 + shadcn/ui web app. It covers sign in and sign up, creating a business, a
-  dashboard with ageing buckets, invoices with a timeline, customers, and the CSV import wizard (mapping,
-  dry-run preview, commit, error report). It runs as the signed-in user under RLS and never uses the
-  service-role key.
+## Quickstart (local demo, synthetic data)
 
-## Web app
+Needs Node 24 (`.nvmrc`), pnpm via corepack, and Docker running.
+
+```bash verified
+pnpm install --frozen-lockfile
+pnpm demo --non-interactive
+pnpm demo:selftest
+pnpm demo:stop
+```
+
+`pnpm demo` without `--non-interactive` prints the dashboard URL, per-run logins and the guided script
+([docs/demo-script.md](docs/demo-script.md)).
+
+## What is built
+
+The original build guide's feature catalogue is not in this repository, so this table lists what prompts 1-7 built,
+each with the test or document that backs it.
+
+| Area | Status | Backed by |
+|---|---|---|
+| Pure domain core (state machine, decide(), money, send windows) and simulator | built | `packages/core/test`, `pnpm sim` |
+| CSV import (mapping, dry run, error report, idempotent commit) | built | `packages/ingest/test*`, e2e `import-export.spec.ts` |
+| Multi-tenant database, RLS, role matrix (owner, accountant, collector) | built | `pnpm db:test`, `pnpm db:rls-check`, `pnpm db:catalog-audit`, ADR 0042 |
+| Email reminders (SMTP), approvals, kill switch, quiet hours, budgets | built | `packages/worker/test-db`, `pnpm chaos`, `pnpm demo:send` |
+| WhatsApp reminders (approved templates) | built; live NOT VERIFIED | adapter contract tests; `pnpm smoke:whatsapp` needs credentials |
+| SMS reminders | not built | - |
+| Replies: IMAP poller, WhatsApp inbound, classification, promises, disputes, tasks | built; live model NOT VERIFIED | `packages/inbound/test*`, `pnpm test:adversarial`, `pnpm demo:replies` |
+| Payments: payment links (Stripe, FakeGateway), bank transfers, proofs, receipts, ledger, reconciliation | built; live Stripe NOT VERIFIED | `packages/worker/test-db/payments*`, `pnpm payments:integrity`, `pnpm demo:payments` |
+| Staff dashboard, public pay and opt-out pages, REST API | built | e2e suites (`pnpm web:test:e2e`, `pnpm web:test:security`, `pnpm e2e:demo`), [docs/api.md](docs/api.md) |
+| Operations: health/ready, schema guard, heartbeats, watchdog, retention, erasure, backup drill | built | `packages/ops/test*`, `pnpm backup:drill`, [docs/runbook.md](docs/runbook.md) |
+| Containers and self-hosting | built; real host NOT VERIFIED | `pnpm images:smoke`, [docs/self-hosting.md](docs/self-hosting.md) |
+| One-command demo | built | `pnpm demo:selftest`, `.github/workflows/clean-clone.yml` (not yet run) |
+| Pilot measurement (KPI snapshots and report) | built | `pnpm pilot:snapshot`, `pnpm pilot:report`, [docs/pilot-playbook.md](docs/pilot-playbook.md) |
+| Dashboard translations / right-to-left, white-label, billing, hosted service | not built (out of scope) | - |
+
+## Documentation
+
+[Architecture](docs/architecture.md) · [Self-hosting](docs/self-hosting.md) · [Environment](docs/env-reference.md) ·
+[Runbook](docs/runbook.md) · [Data handling](docs/data-handling.md) · [Security review](docs/security-review.md) ·
+[Threat model](docs/threat-model.md) · [Limitations](docs/limitations.md) · [Demo script](docs/demo-script.md) ·
+[API](docs/api.md) · [Decisions](docs/decisions/README.md) · [Release process](docs/release.md) ·
+[Pilot playbook](docs/pilot-playbook.md) · [Client onboarding](docs/client-onboarding.md)
+
+`pnpm verify:all` runs every suite (lint, types, unit, database, chaos, adversarial, web, images, backup drill, the
+demo) and writes `.reports/verify-all.json`.
+
+## Not legal advice
+
+This software helps a business ask its customers to pay. It does not make that lawful in any country, it is not
+legal advice, and it makes no compliance claim. Consent, debt-collection rules, data-protection duties and contracts
+with providers are for the operator and their advisers. TODO(disclaimer): the build guide's Section 2.4 wording
+was not available here; the owner may replace this paragraph with it. <!-- claims-ok: disclaimer -->
+
+No warranty: until a licence is chosen, nothing in this repository is offered under any terms.
+
+## Developing
+
+### Web app
 
 ```bash
 pnpm dev
@@ -53,13 +84,13 @@ pnpm dev
   Authentication -> URL Configuration -> Redirect URLs in the Supabase dashboard so the link comes back
   to the app.
 
-## Requirements
+### Requirements
 
 - Node.js >= 24.12 (`.nvmrc`) and pnpm (pinned in `package.json` `packageManager`).
 - Docker, running. The Supabase CLI is a dev dependency, so `pnpm exec supabase` is always the pinned
   version.
 
-## Commands
+### Commands
 
 ```bash
 pnpm install
@@ -88,7 +119,7 @@ pnpm db:types:check
 The demo seed creates "Demo Agency" (40 invoices, 12 overdue) with tenant id
 `5eed0000-0000-4000-8000-00000000000a`, and an isolated second tenant.
 
-## Importing invoices
+### Importing invoices
 
 The CLI uses the service role and reads it from the environment only. Export the local values first (they
 are printed by `supabase status`; never commit them):
@@ -108,7 +139,7 @@ pnpm run import --tenant 5eed0000-0000-4000-8000-00000000000a --file packages/in
 - Mapping and options formats are in `packages/ingest/src/types.ts`; see the files in
   `packages/ingest/fixtures/mappings` and `options`.
 
-## Sending (phase 3)
+### Sending (phase 3)
 
 ```bash
 pnpm worker --once                       # one pass: enqueue due work, sweep, drain the queue
@@ -138,7 +169,7 @@ pnpm test:load                           # 5,000 invoices (slow, not in CI)
 - Default reminder wording is polite and factual and is checked against a banned-wording list. It is **not
   legal advice**: debt-collection messaging rules differ by market, and each market needs its own review.
 
-## Replies and promises (phase 4)
+### Replies and promises (phase 4)
 
 ```bash
 pnpm webhooks                            # WhatsApp webhook (WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN)
@@ -160,7 +191,7 @@ pnpm eval:live                           # record a real model (EVAL_LIVE=1, CLA
 - Live Meta webhook delivery needs a public HTTPS URL in front of `pnpm webhooks`; real mailboxes need app
   passwords. See `docs/decisions/0022`-`0031`.
 
-## Payments and proofs (phase 5)
+### Payments and proofs (phase 5)
 
 ```bash
 pnpm payments record --tenant "Demo Agency" --invoice DA-0003 --amount 250.00 --date 2026-10-28 \
