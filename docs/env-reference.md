@@ -47,6 +47,8 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `NEXT_OUTPUT` | no | - | web | Build-time only: `standalone` makes next build emit the traced server the web image runs (set by the Dockerfile). |
 | `DUELOOP_SERVICE` | no | - | worker, webhooks, processor | Which service a services-image container runs (worker \| processor \| webhooks); picks the container healthcheck. |
 | `HEALTH_MAX_AGE` | no | - | worker, processor | Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300). |
+| `DEMO_WEB_PORT` | no | - | demo | pnpm demo: port of the demo web app (default 3000). |
+| `DEMO_WEBHOOKS_PORT` | no | - | demo | pnpm demo: port of the demo webhooks service (default 8787). |
 | `DEMO_MODE` | no | - | demo | Set by `pnpm demo` only; demo:control refuses without it. |
 | `DEMO_NOW` | no | - | demo | Demo clock passed to child processes. |
 | `NOW_ISO` | no | - | demo | Demo/script clock. |

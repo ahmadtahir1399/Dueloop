@@ -37,6 +37,9 @@ packages/sim/*
 !packages/sim/package.json
 packages/repo-tools/*
 !packages/repo-tools/package.json
+# Demo code (rule 41): never in an image.
+packages/demo/*
+!packages/demo/package.json
 
 # Docs are not runtime.
 docs

@@ -71,7 +71,7 @@ function scanImage(image: string): string[] {
   const forbidden = [/\/scripts\/(?!local-env\.ts$)/, /seed\.sql$/, /\/e2e\//, /\/(test|test-db|test-load|test-adversarial|fixtures|eval)\//, /\/demo-[^/]*$/, /(^|\/)\.env(\.|$)/, /\.pem$/, /playwright\.config/];
   for (const f of files) for (const re of forbidden) if (re.test(f)) findings.push(`${image}: file ${f}`);
   // DEMO_MODE as a NAME is fine (the env schema documents it); code that READS it must not ship.
-  const markers = String.raw`process\.env\.DEMO_MODE|e2e-demo-steps|demo-clock|local-e2e-only|KeywordBaselineClassifier|__pwned`;
+  const markers = String.raw`process\.env\.DEMO_MODE|e2e-demo-steps|demo-clock|local-e2e-only|KeywordBaselineClassifier|__pwned|demo\.owner@|fpay_demo_`;
   const grep = sh('docker', ['run', '--rm', '--entrypoint', 'sh', image, '-c', `grep -rlE '${markers}' /app --exclude-dir=node_modules || true`]);
   for (const f of grep.out.split('\n').filter(Boolean)) findings.push(`${image}: marker in ${f}`);
   // Secrets in layer commands or the image config (env, labels).

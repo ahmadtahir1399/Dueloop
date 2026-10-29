@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ENV, envExample, validateEnv } from '../src/env.ts';
 
 const root = path.resolve(import.meta.dirname, '../../..');
-const SKIP = new Set(['node_modules', '.next', '.next-e2e', 'test-results', 'dist', '.git', '.demo']);
+const SKIP = new Set(['node_modules', '.next', '.next-e2e', '.next-demo', 'test-results', 'dist', '.git', '.demo']);
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!existsSync(dir)) return out;

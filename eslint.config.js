@@ -116,6 +116,7 @@ export default defineConfig([
     'packages/db/src/database.types.ts',
     'apps/web/.next/**',
     'apps/web/.next-e2e/**',
+    'apps/web/.next-demo/**',
     'apps/web/test-results/**',
     'apps/web/playwright-report/**',
     'apps/web/next-env.d.ts',
