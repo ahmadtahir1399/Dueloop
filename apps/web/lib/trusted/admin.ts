@@ -46,6 +46,8 @@ const CHANNEL_SECRETS = new Set(["email", "whatsapp", "slack"]);
 export async function setChannelSecret(ctx: TenantContext, channel: string, secret: string): Promise<AdminResult> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can set secrets." };
   if (!CHANNEL_SECRETS.has(channel) || secret.length < 8) return { ok: false, reason: "Choose a channel and paste the secret." };
+  // The notifier only posts to Slack's incoming-webhook host; anything else would silently drop every alert.
+  if (channel === "slack" && !secret.startsWith("https://hooks.slack.com/")) return { ok: false, reason: "A Slack webhook URL starts with https://hooks.slack.com/." };
   const pool = trustedPool();
   await pool.query("insert into public.channel_accounts (tenant_id, channel) values ($1, $2) on conflict (tenant_id, channel) do nothing", [ctx.tenant.id, channel]);
   await pool.query("select private.set_channel_secret($1, $2, $3)", [ctx.tenant.id, channel, secret]);
@@ -92,7 +94,10 @@ function webhookUrl(token: string): string | null {
 export async function connectPaymentAccount(ctx: TenantContext, i: { provider: string; mode: string; apiKey: string; webhookSecret: string }): Promise<AdminResult<string>> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can connect payment accounts." };
   if (!["stripe", "fake"].includes(i.provider) || !["test", "live"].includes(i.mode)) return { ok: false, reason: "Choose a provider and a mode." };
-  if (i.provider === "fake" && i.mode !== "test") return { ok: false, reason: "The fake gateway exists for tests only." };
+  if (i.provider === "fake" && (i.mode !== "test" || process.env.PAYMENTS_ALLOW_FAKE !== "true")) return { ok: false, reason: "The fake gateway exists for tests only." };
+  // The same rule StripeGateway enforces later (a mismatch would only show up as a broken pay page).
+  if (i.provider === "stripe" && !new RegExp(`^(rk|sk)_${i.mode}_`).test(i.apiKey)) return { ok: false, reason: `Use a Stripe ${i.mode} key (it starts with rk_${i.mode}_ or sk_${i.mode}_).` };
+  if (i.provider === "stripe" && i.webhookSecret !== "" && !i.webhookSecret.startsWith("whsec_")) return { ok: false, reason: "A Stripe signing secret starts with whsec_." };
   if (i.apiKey.length < 8) return { ok: false, reason: "Paste the API key." };
   if (i.webhookSecret !== "" && i.webhookSecret.length < 8) return { ok: false, reason: "The webhook signing secret looks too short." };
   const token = randomBytes(32).toString("base64url");
@@ -118,6 +123,7 @@ export async function connectPaymentAccount(ctx: TenantContext, i: { provider: s
 export async function setPaymentWebhookSecret(ctx: TenantContext, provider: string, secret: string): Promise<AdminResult> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can set the webhook signing secret." };
   if (secret.length < 8) return { ok: false, reason: "Paste the webhook signing secret." };
+  if (provider === "stripe" && !secret.startsWith("whsec_")) return { ok: false, reason: "A Stripe signing secret starts with whsec_." };
   const pool = trustedPool();
   const r = await pool.query<{ id: string }>("select id from public.payment_accounts where tenant_id = $1 and provider = $2", [ctx.tenant.id, provider]);
   const id = r.rows[0]?.id;
@@ -127,12 +133,13 @@ export async function setPaymentWebhookSecret(ctx: TenantContext, provider: stri
   return { ok: true, value: null };
 }
 
-export async function rotateWebhookToken(ctx: TenantContext): Promise<AdminResult<string>> {
+export async function rotateWebhookToken(ctx: TenantContext, provider: string): Promise<AdminResult<string>> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can rotate the webhook URL." };
   const token = randomBytes(32).toString("base64url");
   const url = webhookUrl(token);
   if (!url) return { ok: false, reason: "The server has no public URL configured (PUBLIC_APP_URL)." };
-  const r = await trustedPool().query("update public.payment_accounts set webhook_token_hash = $2 where tenant_id = $1", [ctx.tenant.id, createHash("sha256").update(token).digest("hex")]);
+  // One account per call: the token hash is unique, so writing it to every account of the tenant failed.
+  const r = await trustedPool().query("update public.payment_accounts set webhook_token_hash = $3 where tenant_id = $1 and provider = $2", [ctx.tenant.id, provider, createHash("sha256").update(token).digest("hex")]);
   if ((r.rowCount ?? 0) === 0) return { ok: false, reason: "No payment account is connected." };
   return { ok: true, value: url };
 }

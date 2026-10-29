@@ -45,7 +45,7 @@ security findings that are still open are repeated from docs/security-review.md.
 Raised in earlier reports and not yet answered. Each runs today with the default described.
 
 From prompt 3 (sending): whether "one reminder per invoice per local day" is per invoice (implemented); budget 0
-meaning "blocks paid channels" (implemented) or "unlimited"; approval expiry of 7 days; the kill-switch read point
+meaning "blocks paid channels" (implemented, and the Settings page now says so) or "unlimited"; approval expiry of 7 days; the kill-switch read point
 (just before the outbox claim); an in-process rate limiter (a shared one is needed before running several workers);
 WhatsApp generic errors 1 / 131000 treated as ambiguous (parked, not retried); no automatic channel fallback; alert
 routing (Slack if configured, else email to owners only).

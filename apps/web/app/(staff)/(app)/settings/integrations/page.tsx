@@ -117,7 +117,7 @@ export default async function IntegrationsPage() {
                   Provider
                   <select name="provider" className="h-9 rounded-md border bg-background px-2">
                     <option value="stripe">Stripe</option>
-                    <option value="fake">Fake gateway (tests only)</option>
+                    {process.env.PAYMENTS_ALLOW_FAKE === "true" ? <option value="fake">Fake gateway (tests only)</option> : null}
                   </select>
                 </label>
                 <label className="grid gap-1">
@@ -163,6 +163,16 @@ export default async function IntegrationsPage() {
               ) : null}
               <SecretOnceForm action={integrationAction} label="Rotate the webhook URL">
                 <input type="hidden" name="op" value="rotate_webhook" />
+                <label className="grid gap-1">
+                  Payment account
+                  <select name="provider" className="h-9 rounded-md border bg-background px-2">
+                    {(payments.data ?? []).map((p) => (
+                      <option key={p.provider} value={p.provider}>
+                        {p.provider} ({p.mode})
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <Button type="submit" variant="outline" className="w-fit">
                   Rotate webhook URL
                 </Button>
