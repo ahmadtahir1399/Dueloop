@@ -230,6 +230,40 @@ test.describe("accountant: standard templates", () => {
   });
 });
 
+// WhatsApp templates must be approved by Meta, and nothing in the UI could add one (setup-flow review, round 1).
+// An accountant adds it; it starts "pending" (enforced by migration 0024) until an owner confirms Meta approved it.
+test.describe("WhatsApp template: add, then an owner approves", () => {
+  test("accountant adds a template, it is pending; the owner marks it approved", async ({ browser }) => {
+    await db().query("delete from public.templates where tenant_id = $1 and template_key = 'firm' and channel = 'whatsapp'", [DEMO_TENANT]);
+    try {
+      const acc = await browser.newContext({ storageState: authFile("accountant") });
+      const page = await acc.newPage();
+      await page.goto("/settings/templates");
+      const form = page.getByRole("form", { name: "New WhatsApp template" });
+      await form.getByLabel("Template key").fill("firm");
+      await form.getByLabel("Tone").selectOption("firm");
+      await form.getByLabel("Name at Meta").fill("invoice_firm_v1");
+      await form.getByLabel("Language code at Meta").fill("en");
+      await form.getByLabel(/Text/).fill("Hello {{customer_name}}, invoice {{invoice_number}} is still open. {{business_name}}");
+      await form.getByRole("button", { name: "Add WhatsApp template" }).click();
+      await expect(page.locator('[data-template="firm:whatsapp"]')).toBeVisible();
+      const row = (await db().query("select provider_status, provider_template_name from public.templates where tenant_id = $1 and template_key = 'firm' and channel = 'whatsapp'", [DEMO_TENANT])).rows[0];
+      expect(row).toEqual({ provider_status: "pending", provider_template_name: "invoice_firm_v1" });
+      await expect(page.locator('[data-template="firm:whatsapp"]').getByRole("button", { name: "Meta approved this text" })).toHaveCount(0);
+      await acc.close();
+
+      const own = await browser.newContext({ storageState: authFile("owner") });
+      const op = await own.newPage();
+      await op.goto("/settings/templates");
+      await op.locator('[data-template="firm:whatsapp"]').getByRole("button", { name: "Meta approved this text" }).click();
+      await expect(op.locator('[data-template="firm:whatsapp"]').getByTestId("wa-status")).toContainText("approved");
+      await own.close();
+    } finally {
+      await db().query("delete from public.templates where tenant_id = $1 and template_key = 'firm' and channel = 'whatsapp'", [DEMO_TENANT]);
+    }
+  });
+});
+
 test.describe("accountant: channel settings", () => {
   test.use({ storageState: authFile("accountant") });
 
