@@ -21,6 +21,7 @@
     "@dueloop/inbound": "workspace:*",
     "@dueloop/links": "workspace:*",
     "@dueloop/messaging": "workspace:*",
+    "@dueloop/ops": "workspace:*",
     "@dueloop/payments": "workspace:*",
     "@dueloop/proofs": "workspace:*",
     "@dueloop/webhooks": "workspace:*",

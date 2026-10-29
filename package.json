@@ -49,7 +49,18 @@
     "web:test:security": "supabase db reset && pnpm --filter @dueloop/web exec playwright test --project security",
     "web:test:a11y": "supabase db reset && pnpm --filter @dueloop/web exec playwright test --project a11y",
     "web:test:lowbandwidth": "supabase db reset && pnpm --filter @dueloop/web exec playwright test --project lowbandwidth",
-    "e2e:demo": "supabase db reset && pnpm --filter @dueloop/web exec playwright test --project demo"
+    "e2e:demo": "supabase db reset && pnpm --filter @dueloop/web exec playwright test --project demo",
+    "perf:seed": "node packages/db/scripts/perf-seed.ts",
+    "perf:pages": "supabase db reset && node packages/db/scripts/perf-seed.ts --invoices 50000 && pnpm --filter @dueloop/web exec playwright test --project perf",
+    "env:example": "node packages/config/scripts/env-example.ts",
+    "env:check": "node packages/config/scripts/env-example.ts --check",
+    "ops:status": "node packages/ops/src/bin/ops.ts status",
+    "ops:watchdog": "node packages/ops/src/bin/ops.ts watchdog",
+    "doctor": "node packages/ops/src/bin/ops.ts doctor",
+    "retention:run": "node packages/ops/src/bin/data.ts retention run",
+    "customer": "node packages/ops/src/bin/data.ts customer",
+    "verify:all": "node packages/repo-tools/src/bin/verify-all.ts",
+    "repo:audit": "node packages/repo-tools/src/bin/repo-audit.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

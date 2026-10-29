@@ -4,12 +4,16 @@
 // Public link pages and the REST API never touch the session cookie (rule 35: a GET creates no session).
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
-import { classHeaders, contentSecurityPolicy, FILE_CSP, routeClass } from "@/lib/security-headers";
+import { classHeaders, contentSecurityPolicy, FILE_CSP, publicFormAction, routeClass } from "@/lib/security-headers";
 
 export async function proxy(request: NextRequest) {
   const cls = routeClass(request.nextUrl.pathname);
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = contentSecurityPolicy(nonce, process.env.NODE_ENV === "development");
+  const csp = contentSecurityPolicy(
+    nonce,
+    process.env.NODE_ENV === "development",
+    cls === "public" ? publicFormAction(process.env.PAYMENTS_ALLOW_FAKE === "true") : "'self'",
+  );
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

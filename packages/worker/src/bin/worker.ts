@@ -1,4 +1,5 @@
 // pnpm worker --once | --loop [--tenant <id|name>] [--now <iso>] [--interval <seconds>]
+import { assertSchema, heartbeat } from '@dueloop/ops';
 import { parseArgs } from 'node:util';
 import { processBatch, sweep } from '../process.ts';
 import { processProofBatch } from '@dueloop/proofs';
@@ -29,6 +30,14 @@ process.on('SIGINT', () => (stopping = true));
 process.on('SIGTERM', () => (stopping = true));
 
 const db = openDb(process.env);
+// Rule 45: refuse to start on a schema mismatch, with a precise reason (no values).
+try {
+  await assertSchema(db.pool);
+} catch (e) {
+  console.error(e instanceof Error ? e.message : 'schema check failed');
+  await db.pool.end();
+  process.exit(1);
+}
 const deps = buildDeps(process.env, db, clockFrom(values.now));
 const payments = buildPaymentsDeps(process.env, db, deps.clock);
 const proofs = buildProofsDeps(process.env, db, deps.clock);
@@ -90,13 +99,25 @@ const report = (totals: Record<string, number>) => process.stdout.write(`${JSON.
 `);
 
 
+/** One pass plus a heartbeat (ok = the pass finished without throwing). */
+async function beat(): Promise<void> {
+  try {
+    const totals = await pass();
+    report(totals);
+    await heartbeat(db.pool, 'worker', true, { sent: totals.sent ?? 0 }, new Date()).catch(() => undefined);
+  } catch (e) {
+    await heartbeat(db.pool, 'worker', false, { error: 'pass_failed' }, new Date()).catch(() => undefined);
+    throw e;
+  }
+}
+
 try {
   if (values.once) {
-    report(await pass());
+    await beat();
   } else {
     const ms = Math.max(5, Number(values.interval)) * 1000;
     while (!stopping) {
-      report(await pass());
+      await beat();
       for (let waited = 0; waited < ms && !stopping; waited += 250) await new Promise((r) => setTimeout(r, 250));
     }
   }

@@ -36,9 +36,11 @@ export default defineConfig({
     { name: "a11y", testDir: "./e2e/a11y", use: { ...devices["Desktop Chrome"] } },
     { name: "lowbandwidth", testDir: "./e2e/lowbandwidth", use: { ...devices["Pixel 7"] } },
     { name: "demo", testDir: "./e2e/demo", use: { ...devices["Desktop Chrome"] }, timeout: 600_000 },
+    { name: "perf", testDir: "./e2e/perf", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    command: `pnpm exec next build && pnpm exec next start -p ${WEB_PORT}`,
+    // The server log goes to a file the security suite scans for secrets, tokens and contact details.
+    command: `pnpm exec next build && pnpm exec next start -p ${WEB_PORT} > .next-e2e/server.log 2>&1`,
     url: `${BASE_URL}/login`,
     timeout: 300_000,
     reuseExistingServer: false,

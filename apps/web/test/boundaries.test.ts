@@ -56,3 +56,16 @@ describe('header classes', () => {
     expect(contentSecurityPolicy('abc', true)).toContain("'unsafe-eval'");
   });
 });
+
+describe('public CSP lets the Pay form redirect to the payment provider (regression: form-action blocked checkout)', () => {
+  it('form-action on public pages includes the provider checkout origins', async () => {
+    const { publicFormAction } = await import('../lib/security-headers.ts');
+    const fa = publicFormAction(false);
+    expect(fa).toContain("'self'");
+    expect(fa).toContain('https://checkout.stripe.com');
+    expect(fa).toContain('https://buy.stripe.com');
+    expect(fa).not.toContain('pay.fake.test');
+    expect(publicFormAction(true)).toContain('https://pay.fake.test');
+    expect(contentSecurityPolicy('n', false, publicFormAction(false))).toContain(`form-action ${publicFormAction(false)}`);
+  });
+});

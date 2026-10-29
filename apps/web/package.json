@@ -15,6 +15,7 @@
     "@dueloop/ingest": "workspace:*",
     "@dueloop/links": "workspace:*",
     "@dueloop/messaging": "workspace:*",
+    "@dueloop/ops": "workspace:*",
     "@dueloop/payments": "workspace:*",
     "@dueloop/proofs": "workspace:*",
     "@dueloop/worker": "workspace:*",
@@ -38,6 +39,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@dueloop/adapters-email": "workspace:*",
+    "@dueloop/adapters-payments": "workspace:*",
+    "@dueloop/webhooks": "workspace:*",
     "@playwright/test": "1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/luxon": "^3.7.6",

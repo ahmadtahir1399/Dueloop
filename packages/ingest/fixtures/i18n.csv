@@ -1,6 +1,6 @@
 invoice_no,customer,email,phone,amount,currency,issued,due,customer_id,status
-I-1,Müller & Söhne,mueller@example.de,,100.00,EUR,2026-09-01,2026-10-01,,Open
-I-2,شركة الأمل للتجارة,amal@example.ae,+971 50 123 4567,250.000,KWD,2026-09-01,2026-10-01,,Open
-I-3,عمران ٹریڈرز,imran@example.pk,0321 7654321,"1,50,000",PKR,2026-09-01,2026-10-01,,Open
+I-1,Müller & Söhne,mueller@de.example,,100.00,EUR,2026-09-01,2026-10-01,,Open
+I-2,شركة الأمل للتجارة,amal@ae.example,+971 50 123 4567,250.000,KWD,2026-09-01,2026-10-01,,Open
+I-3,عمران ٹریڈرز,imran@pk.example,0321 7654321,"1,50,000",PKR,2026-09-01,2026-10-01,,Open
 I-4,Café 😀 Ltd,cafe@example.com,,99,JPY,2026-09-01,2026-10-01,,Open
-I-5,Zoë Ørsted,zoe@example.dk,,10.50,EUR,2026-09-01,2026-10-01,,Open
+I-5,Zoë Ørsted,zoe@dk.example,,10.50,EUR,2026-09-01,2026-10-01,,Open

@@ -154,7 +154,7 @@ describe('contacts', () => {
     expect(new Set(forms)).toEqual(new Set(['+923001234567']));
   });
   it('a US national number uses the default country; garbage is invalid, not a crash', () => {
-    expect(normalisePhone('(415) 555-2671', 'US')).toEqual({ phone: '+14155552671', invalid: false });
+    expect(normalisePhone('(415) 555-0171', 'US')).toEqual({ phone: '+14155550171', invalid: false });
     expect(normalisePhone('12345', 'DE')).toEqual({ phone: null, invalid: true });
     expect(normalisePhone('call me', 'US')).toEqual({ phone: null, invalid: true });
   });

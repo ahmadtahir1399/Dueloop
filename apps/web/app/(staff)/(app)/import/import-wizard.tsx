@@ -170,7 +170,7 @@ export function ImportWizard({ defaultCurrency }: { defaultCurrency: string }) {
           <CardDescription>UTF-8 CSV, up to 5 MB and 10,000 rows. Re-importing the same file changes nothing.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Input type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0] ?? null)} disabled={pending} />
+          <Input type="file" aria-label="CSV file to import" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0] ?? null)} disabled={pending} />
         </CardContent>
       </Card>
 

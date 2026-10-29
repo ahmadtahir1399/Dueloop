@@ -33,7 +33,7 @@ describe('public link tokens (issue A)', () => {
   it('URLs are built only from a clean configured base', () => {
     expect(checkBaseUrl('https://pay.example.com/')).toBe('https://pay.example.com');
     expect(checkBaseUrl('http://localhost:3100')).toBe('http://localhost:3100');
-    for (const bad of [undefined, '', 'ftp://x', 'https://u:p@x.com', 'https://x.com/?a=1', 'javascript:alert(1)', 'not a url']) expect(checkBaseUrl(bad)).toBeNull();
+    for (const bad of [undefined, '', 'ftp://x', 'https://u:p@x.example', 'https://x.com/?a=1', 'javascript:alert(1)', 'not a url']) expect(checkBaseUrl(bad)).toBeNull();
     expect(urlFor('https://x.com', 'pay', 'T')).toBe('https://x.com/p/T');
     expect(urlFor('https://x.com', 'opt_out', 'T')).toBe('https://x.com/o/T');
   });

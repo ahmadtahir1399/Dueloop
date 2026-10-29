@@ -105,14 +105,14 @@ describe('header sanitising (issue J)', () => {
     expect(sanitiseHeaderValue('شركة الأمل 😀')).toBe('شركة الأمل 😀');
   });
   it('display names lose address-breaking characters', () => {
-    expect(sanitiseDisplayName('"Bob" <evil@x.com>\r\nBcc: y')).toBe('Bob evil@x.com Bcc: y');
+    expect(sanitiseDisplayName('"Bob" <evil@x.example>\r\nBcc: y')).toBe('Bob evil@x.example Bcc: y');
   });
   it('property: no sanitised value ever contains CR or LF', () => {
     fc.assert(fc.property(fc.string(), (s) => !/[\r\n]/.test(sanitiseHeaderValue(s)) && !/[\r\n]/.test(sanitiseDisplayName(s))));
   });
   it('rejects unsafe addresses', () => {
     expect(isSafeAddress('a@example.com')).toBe(true);
-    expect(isSafeAddress('a@example.com\r\nBcc: b@x.com')).toBe(false);
+    expect(isSafeAddress('a@example.com\r\nBcc: b@x.example')).toBe(false);
     expect(isSafeAddress('a@example.com, b@example.com')).toBe(false);
   });
   it('Message-IDs are stable per key and well-formed', () => {

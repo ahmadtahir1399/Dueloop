@@ -49,7 +49,7 @@ insert into public.customers (id, tenant_id, display_name, email, phone_e164, la
   ('5eed0000-0000-4000-8000-000000000c05', '5eed0000-0000-4000-8000-00000000000a', 'Gamma & Co', null, '+447700900105', 'en', 'sms', false),
   ('5eed0000-0000-4000-8000-000000000c06', '5eed0000-0000-4000-8000-00000000000a', 'Delta Design', 'hello@delta.example', '+447700900106', 'en', 'email', false),
   ('5eed0000-0000-4000-8000-000000000c07', '5eed0000-0000-4000-8000-00000000000a', 'Opted Out Ltd', 'stop@optedout.example', null, 'en', 'email', true),
-  ('5eed0000-0000-4000-8000-000000000c08', '5eed0000-0000-4000-8000-00000000000a', 'شركة الأمل', 'amal@example.ae', '+971501234567', 'ar', 'whatsapp', false);
+  ('5eed0000-0000-4000-8000-000000000c08', '5eed0000-0000-4000-8000-00000000000a', 'شركة الأمل', 'amal@ae.example', '+971501234567', 'ar', 'whatsapp', false);
 
 -- 40 invoices for A. All start open (the trigger requires it) and then move along legal transitions.
 with plan(n, customer, days_from_today, minor, kind) as (
