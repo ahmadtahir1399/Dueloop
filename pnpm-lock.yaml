@@ -531,6 +531,12 @@ importers:
       '@dueloop/config':
         specifier: workspace:*
         version: link:../config
+      '@dueloop/core':
+        specifier: workspace:*
+        version: link:../core
+      '@dueloop/ingest':
+        specifier: workspace:*
+        version: link:../ingest
       nodemailer:
         specifier: 10.2.1
         version: 10.2.1

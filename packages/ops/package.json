@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@dueloop/config": "workspace:*",
-    "pg": "8.23.1",
-    "nodemailer": "10.2.1"
+    "@dueloop/core": "workspace:*",
+    "@dueloop/ingest": "workspace:*",
+    "nodemailer": "10.2.1",
+    "pg": "8.23.1"
   }
 }
