@@ -33,11 +33,16 @@ describe('core <-> database drift', () => {
     expect(await checkValues('public.invoices', 'status')).toEqual([...INVOICE_STATUSES].sort());
   });
 
-  it.each([
-    ['public.customers', 'preferred_channel'],
-    ['public.messages', 'channel'],
-  ])('%s.%s CHECK equals core CHANNELS', async (table, column) => {
-    expect(await checkValues(table, column)).toEqual([...CHANNELS].sort());
+  it('customers.preferred_channel CHECK equals core CHANNELS', async () => {
+    expect(await checkValues('public.customers', 'preferred_channel')).toEqual([...CHANNELS].sort());
+  });
+
+  it("messages.channel CHECK equals core CHANNELS plus the inbound-only 'web' channel (pay-page actions, migration 0020)", async () => {
+    expect(await checkValues('public.messages', 'channel')).toEqual([...CHANNELS, 'web'].sort());
+    const rows = await query<{ def: string }>(
+      `select pg_get_constraintdef(oid) as def from pg_constraint where conrelid = 'public.messages'::regclass and conname = 'messages_web_inbound_only'`,
+    );
+    expect(rows[0]?.def).toMatch(/channel <> 'web'.*direction = 'in'/);
   });
 
   it('invoice_events.type CHECK equals the packages/db event type union', async () => {
