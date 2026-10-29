@@ -167,7 +167,7 @@ test.describe("owner: two-step payment connect", () => {
       expect(acc.api_key_secret_id).not.toBeNull();
 
       await page.reload();
-      await expect(page.locator('[data-provider="stripe"]')).toContainText("waiting for the webhook signing secret");
+      await expect(page.locator('[data-provider="stripe"]')).toContainText("switched off");
       const finish = page.getByRole("form", { name: "Webhook signing secret" });
       await finish.getByLabel("Signing secret").fill("whsec_e2e_two_step_0001");
       await finish.getByRole("button", { name: "Save signing secret" }).click();
@@ -178,6 +178,33 @@ test.describe("owner: two-step payment connect", () => {
       await page.reload();
       expect(await page.content()).not.toContain("whsec_e2e_two_step_0001");
       await expect(page.locator('[data-provider="stripe"]')).toContainText("connected");
+
+      // Review round 2: reconnecting (new key, same mode) keeps the webhook URL Stripe already has and stays on.
+      const hash = async () => (await db().query("select webhook_token_hash, enabled, mode from public.payment_accounts where tenant_id = $1 and provider = 'stripe'", [DEMO_TENANT])).rows[0];
+      const before = await hash();
+      const again = page.getByRole("form", { name: "Connect a payment account" });
+      await again.getByLabel("API key").fill("rk_test_e2e_two_step_0002");
+      await again.getByRole("button", { name: "Connect" }).click();
+      await expect(again.getByRole("status")).toContainText("webhook URL is unchanged");
+      await expect(again.getByTestId("secret-once")).toHaveCount(0);
+      expect(await hash()).toEqual(before);
+
+      // Switching test -> live needs the live signing secret first: switched off until then.
+      await page.reload();
+      const live = page.getByRole("form", { name: "Connect a payment account" });
+      await live.getByLabel("Mode").selectOption("live");
+      await live.getByLabel("API key").fill("rk_live_e2e_two_step_0003");
+      await live.getByRole("button", { name: "Connect" }).click();
+      await expect(live.getByRole("status")).toContainText("switched off");
+      expect(await hash()).toMatchObject({ enabled: false, mode: "live", webhook_token_hash: before.webhook_token_hash });
+
+      // An owner can switch an account off.
+      await page.getByRole("form", { name: "Webhook signing secret" }).getByLabel("Signing secret").fill("whsec_e2e_two_step_live");
+      await page.getByRole("form", { name: "Webhook signing secret" }).getByRole("button", { name: "Save signing secret" }).click();
+      await expect.poll(async () => (await hash()).enabled).toBe(true);
+      await page.reload();
+      await page.getByRole("form", { name: "Disconnect stripe" }).getByRole("button", { name: "Disconnect" }).click();
+      await expect.poll(async () => (await hash()).enabled).toBe(false);
     } finally {
       await db().query("delete from public.payment_accounts where tenant_id = $1 and provider = 'stripe'", [DEMO_TENANT]);
     }

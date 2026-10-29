@@ -12,11 +12,11 @@ type Env = Readonly<Record<string, string | undefined>>;
  * Accounts whose secrets are missing get no gateway (their events are rejected; their links are not created).
  */
 export function accountProviders(env: Env, db: PaymentsDb, clock: Clock): ProviderRegistry {
-  const cache = new Map<string, PaymentGateway>();
+  // No cache (review round 2): secrets are updated in place in Vault and the mode can change, so a gateway cached
+  // per account id kept a wrong signing secret or key until the process restarted. Two Vault reads per payment
+  // event or link are cheap.
   return {
     async forAccount(a) {
-      const hit = cache.get(a.id);
-      if (hit) return hit;
       let gw: PaymentGateway | undefined;
       if (a.provider === 'fake' && env.PAYMENTS_ALLOW_FAKE === 'true' && a.mode === 'test') {
         const secret = await db.secret(a.id, 'webhook_secret');
@@ -30,7 +30,6 @@ export function accountProviders(env: Env, db: PaymentsDb, clock: Clock): Provid
           gw = undefined; // key/mode mismatch: no gateway rather than a wrong-mode one
         }
       }
-      if (gw) cache.set(a.id, gw);
       return gw;
     },
   };

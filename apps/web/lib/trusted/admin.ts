@@ -81,17 +81,21 @@ export async function setChannelConfig(ctx: TenantContext, input: ChannelConfigI
 }
 
 function webhookUrl(token: string): string | null {
-  const base = checkBaseUrl(process.env.WEBHOOKS_PUBLIC_URL ?? process.env.PUBLIC_APP_URL);
+  // `||`, not `??`: an empty WEBHOOKS_PUBLIC_URL= line (as in .env.example) must fall back too (review round 2).
+  const base = checkBaseUrl(process.env.WEBHOOKS_PUBLIC_URL || process.env.PUBLIC_APP_URL);
   return base ? `${base}/webhooks/payments/${token}` : null;
 }
 
 /**
- * Connects (or replaces the secrets of) the tenant's payment account and returns the webhook URL ONCE.
+ * Connects the tenant's payment account, or replaces its secrets. A NEW account gets a webhook URL, returned ONCE.
+ * Reconnecting keeps the existing URL (the provider already has it; only its hash is stored, so it cannot be shown
+ * again) and returns null: "Rotate the webhook URL" makes a new one.
  * The signing secret may come later (setPaymentWebhookSecret): providers such as Stripe issue it only after the
- * endpoint (with this URL) exists. Without a signing secret the account stays DISABLED: no payment link is
- * created (a payment we could not verify would never close the invoice) and its webhooks are rejected.
+ * endpoint (with this URL) exists. The account is ENABLED only with a signing secret for its current mode: no
+ * payment link is created before (a payment we could not verify would never close the invoice), and its webhooks
+ * are rejected. A mode change (test <-> live) therefore switches it off until the new mode's secret is saved.
  */
-export async function connectPaymentAccount(ctx: TenantContext, i: { provider: string; mode: string; apiKey: string; webhookSecret: string }): Promise<AdminResult<string>> {
+export async function connectPaymentAccount(ctx: TenantContext, i: { provider: string; mode: string; apiKey: string; webhookSecret: string }): Promise<AdminResult<string | null>> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can connect payment accounts." };
   if (!["stripe", "fake"].includes(i.provider) || !["test", "live"].includes(i.mode)) return { ok: false, reason: "Choose a provider and a mode." };
   if (i.provider === "fake" && (i.mode !== "test" || process.env.PAYMENTS_ALLOW_FAKE !== "true")) return { ok: false, reason: "The fake gateway exists for tests only." };
@@ -105,18 +109,44 @@ export async function connectPaymentAccount(ctx: TenantContext, i: { provider: s
   if (!url) return { ok: false, reason: "The server has no public URL configured (PUBLIC_APP_URL)." };
   const hash = createHash("sha256").update(token).digest("hex");
   const pool = trustedPool();
-  const r = await pool.query<{ id: string }>(
-    `insert into public.payment_accounts (tenant_id, provider, mode, webhook_token_hash, enabled) values ($1, $2, $3, $4, $5)
-     on conflict (tenant_id, provider) do update set mode = excluded.mode, webhook_token_hash = excluded.webhook_token_hash,
-       enabled = excluded.enabled or public.payment_accounts.webhook_secret_id is not null
-     returning id`,
-    [ctx.tenant.id, i.provider, i.mode, hash, i.webhookSecret !== ""],
-  );
-  const id = r.rows[0]?.id;
-  if (!id) return { ok: false, reason: "Could not save the account." };
-  await pool.query("select private.set_payment_secret($1, 'api_key', $2)", [id, i.apiKey]);
-  if (i.webhookSecret !== "") await pool.query("select private.set_payment_secret($1, 'webhook_secret', $2)", [id, i.webhookSecret]);
-  return { ok: true, value: url };
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const prev = (await client.query<{ id: string; mode: string; enabled: boolean }>("select id, mode, enabled from public.payment_accounts where tenant_id = $1 and provider = $2 for update", [ctx.tenant.id, i.provider])).rows[0];
+    let id: string;
+    if (!prev) {
+      const r = await client.query<{ id: string }>(
+        "insert into public.payment_accounts (tenant_id, provider, mode, webhook_token_hash, enabled) values ($1, $2, $3, $4, false) returning id",
+        [ctx.tenant.id, i.provider, i.mode, hash],
+      );
+      id = r.rows[0]?.id ?? "";
+    } else {
+      id = prev.id;
+      // Same mode and no new secret (e.g. a new API key): keep the state. A mode change needs that mode's secret.
+      await client.query("update public.payment_accounts set mode = $3, enabled = $4 where tenant_id = $1 and id = $2", [ctx.tenant.id, id, i.mode, prev.mode === i.mode && prev.enabled]);
+    }
+    await client.query("select private.set_payment_secret($1, 'api_key', $2)", [id, i.apiKey]);
+    if (i.webhookSecret !== "") {
+      await client.query("select private.set_payment_secret($1, 'webhook_secret', $2)", [id, i.webhookSecret]);
+      await client.query("update public.payment_accounts set enabled = true where tenant_id = $1 and id = $2", [ctx.tenant.id, id]);
+    }
+    await client.query("commit");
+    return { ok: true, value: prev ? null : url };
+  } catch (e) {
+    await client.query("rollback").catch(() => undefined);
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/** Switches a payment account off (no new pay links; its webhooks are rejected). Links already sent are still
+ * confirmed by polling the provider (db.account does not filter on enabled). Connecting again switches it back on. */
+export async function disconnectPaymentAccount(ctx: TenantContext, provider: string): Promise<AdminResult> {
+  if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can disconnect payment accounts." };
+  const r = await trustedPool().query("update public.payment_accounts set enabled = false where tenant_id = $1 and provider = $2", [ctx.tenant.id, provider]);
+  if ((r.rowCount ?? 0) === 0) return { ok: false, reason: "No such payment account." };
+  return { ok: true, value: null };
 }
 
 /** Second step of connecting: stores the provider's webhook signing secret and switches the account on. */

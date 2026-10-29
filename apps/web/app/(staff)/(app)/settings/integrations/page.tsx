@@ -105,9 +105,20 @@ export default async function IntegrationsPage() {
         </CardHeader>
         <CardContent className="grid gap-2 text-sm">
           {(payments.data ?? []).map((p) => (
-            <p key={p.provider} data-provider={p.provider}>
-              {p.provider} ({p.mode}): {p.enabled ? "connected" : "switched off, waiting for the webhook signing secret"}
-            </p>
+            <div key={p.provider} className="flex flex-wrap items-center gap-2">
+              <p data-provider={p.provider}>
+                {p.provider} ({p.mode}): {p.enabled ? "connected" : "switched off (add the webhook signing secret, or connect again)"}
+              </p>
+              {owner && p.enabled ? (
+                <SecretOnceForm action={integrationAction} label={`Disconnect ${p.provider}`}>
+                  <input type="hidden" name="op" value="disconnect_payment" />
+                  <input type="hidden" name="provider" value={p.provider} />
+                  <Button type="submit" size="sm" variant="outline" className="w-fit">
+                    Disconnect
+                  </Button>
+                </SecretOnceForm>
+              ) : null}
+            </div>
           ))}
           {owner ? (
             <>
@@ -161,6 +172,7 @@ export default async function IntegrationsPage() {
                   </Button>
                 </SecretOnceForm>
               ) : null}
+              {(payments.data ?? []).length > 0 ? (
               <SecretOnceForm action={integrationAction} label="Rotate the webhook URL">
                 <input type="hidden" name="op" value="rotate_webhook" />
                 <label className="grid gap-1">
@@ -177,6 +189,7 @@ export default async function IntegrationsPage() {
                   Rotate webhook URL
                 </Button>
               </SecretOnceForm>
+              ) : null}
             </>
           ) : (
             <p className="text-muted-foreground">Only an owner can connect accounts or see webhook URLs.</p>
