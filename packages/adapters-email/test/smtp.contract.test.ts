@@ -75,7 +75,9 @@ const envelope = (port: number): OutboundEnvelope => ({
   },
 });
 
-const channel = createSmtpChannel({ defaults: null, timeoutMs: 400, allowTenantHost: true });
+// The scripted server listens on 127.0.0.1, which a business-chosen host may never be (SSRF, review round 3), so
+// these protocol tests allow it explicitly; the refusal itself is tested at the end.
+const channel = createSmtpChannel({ defaults: null, timeoutMs: 400, allowTenantHost: true, tenantAddressAllowed: () => true });
 
 describe('SMTP adapter contract', () => {
   it('250 after the body -> sent, with our own Message-ID on the wire', async () => {
@@ -130,5 +132,14 @@ describe('SMTP adapter contract', () => {
     const s = await smtp({ rcpt: '550 5.1.1 <ada@customer.example> unknown' });
     const r = await channel.send(envelope(s.port), null);
     expect(JSON.stringify(r)).not.toContain('@');
+  });
+});
+
+describe('a business-chosen SMTP host may not be internal (SSRF, review round 3)', () => {
+  it('a tenant host that resolves to a private or loopback address is refused before connecting', async () => {
+    const s = await smtp();
+    const strict = createSmtpChannel({ defaults: null, timeoutMs: 400, allowTenantHost: true });
+    expect(await strict.send(envelope(s.port), null)).toEqual({ kind: 'not_sent_retryable', reason: 'smtp_host_refused' });
+    expect(s.received).toHaveLength(0);
   });
 });

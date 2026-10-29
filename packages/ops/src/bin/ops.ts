@@ -51,7 +51,7 @@ try {
       // services refuse mail without a login.
       const user = process.env.SMTP_USER;
       const t = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), secure: process.env.SMTP_SECURE === 'true', auth: user ? { user, pass: process.env.SMTP_PASSWORD ?? '' } : undefined, requireTLS: Boolean(user) && process.env.SMTP_SECURE !== 'true' });
-      await t.sendMail({ from: process.env.OPS_ALERT_FROM ?? 'dueloop-watchdog@localhost', to: process.env.OPS_ALERT_EMAIL, subject: `[dueloop] ${fresh.length} ops finding(s)`, text: fresh.map((f) => `${f.severity}: ${f.message}`).join('\n') });
+      await t.sendMail({ from: process.env.OPS_ALERT_FROM || 'dueloop-watchdog@localhost', to: process.env.OPS_ALERT_EMAIL, subject: `[dueloop] ${fresh.length} ops finding(s)`, text: fresh.map((f) => `${f.severity}: ${f.message}`).join('\n') });
     }
     if (findings.some((f) => f.severity === 'critical')) process.exitCode = 1;
   } else if (cmd === 'alive') {

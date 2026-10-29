@@ -87,8 +87,13 @@ export async function setChannelConfig(ctx: TenantContext, input: ChannelConfigI
       `insert into public.channel_accounts (tenant_id, channel, config, external_account_id) values ($1, $2, $3::jsonb, $4)
        on conflict (tenant_id, channel) do update
          set config = (public.channel_accounts.config - $5::text[]) || excluded.config,
-             external_account_id = case when $6 then excluded.external_account_id else public.channel_accounts.external_account_id end`,
-      [ctx.tenant.id, v.channel, JSON.stringify(v.config), external ?? null, owned, external !== undefined],
+             external_account_id = case
+               when not $6 then public.channel_accounts.external_account_id
+               -- Not confirmed now (Meta down, token missing) but the SAME number already routes here: keep it, or
+               -- customer replies (STOP included) would be dropped (review round 3).
+               when excluded.external_account_id is null and public.channel_accounts.external_account_id = $7 then public.channel_accounts.external_account_id
+               else excluded.external_account_id end`,
+      [ctx.tenant.id, v.channel, JSON.stringify(v.config), external ?? null, owned, external !== undefined, v.externalAccountId],
     );
   } catch (e) {
     // channel_accounts_external_unique: Meta confirmed the number for THIS token, yet another account routes it.
@@ -152,6 +157,8 @@ export async function connectPaymentAccount(ctx: TenantContext, i: { provider: s
     return { ok: true, value: prev ? null : url };
   } catch (e) {
     await client.query("rollback").catch(() => undefined);
+    // Two owners connecting the same provider at once: the second insert hits unique (tenant_id, provider).
+    if ((e as { code?: string }).code === "23505") return { ok: false, reason: "Someone saved this account at the same moment. Please try again." };
     throw e;
   } finally {
     client.release();
@@ -159,7 +166,8 @@ export async function connectPaymentAccount(ctx: TenantContext, i: { provider: s
 }
 
 /** Switches a payment account off (no new pay links; its webhooks are rejected). Links already sent are still
- * confirmed by polling the provider (db.account does not filter on enabled). Connecting again switches it back on. */
+ * confirmed by polling the provider (db.account does not filter on enabled). Saving the signing secret again
+ * ("Webhook signing secret") switches it back on. */
 export async function disconnectPaymentAccount(ctx: TenantContext, provider: string): Promise<AdminResult> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can disconnect payment accounts." };
   const r = await trustedPool().query("update public.payment_accounts set enabled = false where tenant_id = $1 and provider = $2", [ctx.tenant.id, provider]);

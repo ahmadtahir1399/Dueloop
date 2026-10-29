@@ -599,7 +599,8 @@ async function park(job: Job, deps: WorkerDeps, log: Record<string, string | num
   await alertOnce(
     deps,
     { tenantId: job.tenantId, dedupeKey: `park:${job.invoiceId}:${reason}`, kind: 'parked', severity: 'warning', title: `Reminders for invoice ${c.invoice.number} are on hold`, lines: [`reason: ${reason}`, 'Fix the cause, then press "Resume reminders" on the invoice page (or: pnpm messages unpark <invoice id>).'] },
-    'once',
+    // Once per day, not once ever: after "Resume reminders" the same invoice can park again (review round 3).
+    dayPeriod(deps.clock.now()),
   );
   await deps.db.ack(job.msgId);
   deps.logger.warn('send_gate', { ...log, gate: reason, outcome: 'parked' });
@@ -616,7 +617,7 @@ async function alertUnknown(deps: WorkerDeps, tenantId: string, invoiceNumber: s
 
 async function deadLetter(job: Job, deps: WorkerDeps, log: Record<string, string | number>, c: WorkerContext, key: string, attempts: number, reason: string): Promise<void> {
   await deps.db.deadLetter(job.msgId, reason, attempts);
-  await alertOnce(deps, { tenantId: job.tenantId, dedupeKey: `dead:${key}`, kind: 'dead_letter', severity: 'critical', title: `Reminder for invoice ${c.invoice.number} failed ${attempts} times`, lines: [`reason: ${reason}`] }, 'once');
+  await alertOnce(deps, { tenantId: job.tenantId, dedupeKey: `dead:${key}`, kind: 'dead_letter', severity: 'critical', title: `Reminder for invoice ${c.invoice.number} failed ${attempts} times`, lines: [`reason: ${reason}`] }, dayPeriod(deps.clock.now()));
   deps.logger.error('dead_letter', { ...log, reason, attempt: attempts });
 }
 

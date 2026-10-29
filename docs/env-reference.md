@@ -24,7 +24,7 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `SMTP_SECURE` | no | - | worker, web | true for implicit TLS. |
 | `SMTP_PASSWORD` | yes | - | worker, cli | Operator SMTP password for SMTP_HOST/SMTP_USER. Used only when a tenant saved no SMTP password of its own; never sent to a tenant-chosen host. |
 | `SMTP_FROM_DOMAINS` | no | - | worker, web | Comma-separated sender domains the operator SMTP host may send for (e.g. yourbusiness.example). Set it when several businesses share one server. Unset = any. |
-| `SMTP_USER` | no | - | worker, web | Default SMTP user. Its password: SMTP_PASSWORD (operator) or the tenant one saved in Settings (Vault), which wins. |
+| `SMTP_USER` | no | - | worker, web | Default SMTP user (operator mail server); its password is SMTP_PASSWORD. A business uses its own login and password only with its own server (SMTP_ALLOW_TENANT_HOST). |
 | `SMTP_ALLOW_TENANT_HOST` | no | - | worker, web | true = a business may use its own mail server (Email sender form) and its own email password. The worker then connects where a business says (SSRF): only for vetted deployments. |
 | `WHATSAPP_GRAPH_VERSION` | no | - | worker, web | Meta Graph API version; unset = no WhatsApp sending. |
 | `WHATSAPP_APP_SECRET` | yes | - | webhooks | Meta app secret for webhook signatures; unset = WhatsApp webhook disabled. |

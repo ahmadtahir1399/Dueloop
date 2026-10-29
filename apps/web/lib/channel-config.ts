@@ -43,7 +43,7 @@ export function channelConfigFrom(i: ChannelConfigInput): ChannelConfigResult {
       const host = i.smtp.host.trim();
       const port = Number(i.smtp.port);
       const user = i.smtp.user.trim();
-      if (!HOSTNAME.test(host)) return { ok: false, reason: "The mail server is a host name like smtp.yourbusiness.example." };
+      if (!HOSTNAME.test(host) || /^[\d.]+$/.test(host)) return { ok: false, reason: "The mail server is a host name like smtp.yourbusiness.example." };
       if (!/^\d{1,5}$/.test(i.smtp.port.trim()) || port < 1 || port > 65535) return { ok: false, reason: "The port is a number like 587 or 465." };
       if (user.length < 1 || user.length > 254 || CONTROL.test(user)) return { ok: false, reason: "Enter the mail server login (often your email address)." };
       Object.assign(config, { smtp_host: host, smtp_port: port, smtp_user: user, smtp_secure: i.smtp.secure });
