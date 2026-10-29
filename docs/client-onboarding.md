@@ -7,8 +7,9 @@ running this software for them. Nothing here is legal advice.
 
 - [ ] **Email domain authentication** (the business, with their DNS provider): SPF, DKIM and DMARC records for the
       sending domain, so reminders are not marked as spam. Record which records were added and when.
-- [ ] **Sending account** (operator, Settings > Integrations): SMTP host and credentials, from-address on the
-      authenticated domain. Send one test reminder to an address the business controls.
+- [ ] **Sending account** (operator: SMTP host and user in the server env; owner, Settings > Integrations: the
+      SMTP password and the "Email sender" address on the authenticated domain). Send one test reminder to an
+      address the business controls.
 - [ ] **WhatsApp** (the business with Meta, only if used): business verification, a phone number for the WhatsApp
       Cloud API, and approved message templates. Template approval is Meta's decision and takes time; plan for it.
 - [ ] **Payment account** (the business, only if used): connect their own Stripe account (Settings > Integrations,
@@ -22,7 +23,9 @@ running this software for them. Nothing here is legal advice.
 - [ ] **Time zone and holidays:** the tenant's IANA time zone and their public holidays (Settings > Holidays), so
       reminders respect local quiet hours.
 - [ ] **Opt-in evidence:** for each channel, how the business obtained permission to contact their customers that
-      way. Customers without a recorded consent for a channel are skipped on that channel.
+      way. Record it on each customer's page ("Record consent"). WhatsApp steps are skipped for customers without
+      a recorded WhatsApp consent; email does not require one.
+- [ ] **Monthly budget for WhatsApp:** Settings, above 0 if WhatsApp is used (0 blocks WhatsApp and SMS).
 
 ## Policy and approvals
 
