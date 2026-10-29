@@ -5,6 +5,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { checkBaseUrl } from "@dueloop/links";
 import { createClient } from "@supabase/supabase-js";
+import { channelConfigFrom, type ChannelConfigInput } from "@/lib/channel-config";
 import type { TenantContext } from "@/lib/session";
 import { trustedPool } from "./db";
 import { serviceRoleKey, supabaseUrl } from "./env";
@@ -51,33 +52,79 @@ export async function setChannelSecret(ctx: TenantContext, channel: string, secr
   return { ok: true, value: null };
 }
 
+/**
+ * Non-secret channel settings (sender address, WhatsApp phone number id). Before this, nothing in the UI could set
+ * them, so a new tenant could not send. Replaces only the keys this form owns; other config keys are kept.
+ */
+export async function setChannelConfig(ctx: TenantContext, input: ChannelConfigInput): Promise<AdminResult> {
+  if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can change channel settings." };
+  const v = channelConfigFrom(input);
+  if (!v.ok) return { ok: false, reason: v.reason };
+  const owned = v.channel === "email" ? ["from_address", "from_name"] : ["phone_number_id"];
+  try {
+    await trustedPool().query(
+      `insert into public.channel_accounts (tenant_id, channel, config, external_account_id) values ($1, $2, $3::jsonb, $4)
+       on conflict (tenant_id, channel) do update
+         set config = (public.channel_accounts.config - $5::text[]) || excluded.config,
+             external_account_id = coalesce(excluded.external_account_id, public.channel_accounts.external_account_id)`,
+      [ctx.tenant.id, v.channel, JSON.stringify(v.config), v.externalAccountId, owned],
+    );
+  } catch (e) {
+    // channel_accounts_external_unique: the same WhatsApp number is already connected (possibly to another
+    // tenant). Say only that it cannot be used here.
+    if ((e as { code?: string }).code === "23505") return { ok: false, reason: "This phone number ID cannot be used here." };
+    throw e;
+  }
+  return { ok: true, value: null };
+}
+
 function webhookUrl(token: string): string | null {
   const base = checkBaseUrl(process.env.WEBHOOKS_PUBLIC_URL ?? process.env.PUBLIC_APP_URL);
   return base ? `${base}/webhooks/payments/${token}` : null;
 }
 
-/** Connects (or replaces the secrets of) the tenant's payment account and returns the webhook URL ONCE. */
+/**
+ * Connects (or replaces the secrets of) the tenant's payment account and returns the webhook URL ONCE.
+ * The signing secret may come later (setPaymentWebhookSecret): providers such as Stripe issue it only after the
+ * endpoint (with this URL) exists. Without a signing secret the account stays DISABLED: no payment link is
+ * created (a payment we could not verify would never close the invoice) and its webhooks are rejected.
+ */
 export async function connectPaymentAccount(ctx: TenantContext, i: { provider: string; mode: string; apiKey: string; webhookSecret: string }): Promise<AdminResult<string>> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can connect payment accounts." };
   if (!["stripe", "fake"].includes(i.provider) || !["test", "live"].includes(i.mode)) return { ok: false, reason: "Choose a provider and a mode." };
   if (i.provider === "fake" && i.mode !== "test") return { ok: false, reason: "The fake gateway exists for tests only." };
-  if (i.apiKey.length < 8 || i.webhookSecret.length < 8) return { ok: false, reason: "Paste the API key and the webhook signing secret." };
+  if (i.apiKey.length < 8) return { ok: false, reason: "Paste the API key." };
+  if (i.webhookSecret !== "" && i.webhookSecret.length < 8) return { ok: false, reason: "The webhook signing secret looks too short." };
   const token = randomBytes(32).toString("base64url");
   const url = webhookUrl(token);
   if (!url) return { ok: false, reason: "The server has no public URL configured (PUBLIC_APP_URL)." };
   const hash = createHash("sha256").update(token).digest("hex");
   const pool = trustedPool();
   const r = await pool.query<{ id: string }>(
-    `insert into public.payment_accounts (tenant_id, provider, mode, webhook_token_hash) values ($1, $2, $3, $4)
-     on conflict (tenant_id, provider) do update set mode = excluded.mode, webhook_token_hash = excluded.webhook_token_hash, enabled = true
+    `insert into public.payment_accounts (tenant_id, provider, mode, webhook_token_hash, enabled) values ($1, $2, $3, $4, $5)
+     on conflict (tenant_id, provider) do update set mode = excluded.mode, webhook_token_hash = excluded.webhook_token_hash,
+       enabled = excluded.enabled or public.payment_accounts.webhook_secret_id is not null
      returning id`,
-    [ctx.tenant.id, i.provider, i.mode, hash],
+    [ctx.tenant.id, i.provider, i.mode, hash, i.webhookSecret !== ""],
   );
   const id = r.rows[0]?.id;
   if (!id) return { ok: false, reason: "Could not save the account." };
   await pool.query("select private.set_payment_secret($1, 'api_key', $2)", [id, i.apiKey]);
-  await pool.query("select private.set_payment_secret($1, 'webhook_secret', $2)", [id, i.webhookSecret]);
+  if (i.webhookSecret !== "") await pool.query("select private.set_payment_secret($1, 'webhook_secret', $2)", [id, i.webhookSecret]);
   return { ok: true, value: url };
+}
+
+/** Second step of connecting: stores the provider's webhook signing secret and switches the account on. */
+export async function setPaymentWebhookSecret(ctx: TenantContext, provider: string, secret: string): Promise<AdminResult> {
+  if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can set the webhook signing secret." };
+  if (secret.length < 8) return { ok: false, reason: "Paste the webhook signing secret." };
+  const pool = trustedPool();
+  const r = await pool.query<{ id: string }>("select id from public.payment_accounts where tenant_id = $1 and provider = $2", [ctx.tenant.id, provider]);
+  const id = r.rows[0]?.id;
+  if (!id) return { ok: false, reason: "Connect the payment account first." };
+  await pool.query("select private.set_payment_secret($1, 'webhook_secret', $2)", [id, secret]);
+  await pool.query("update public.payment_accounts set enabled = true where id = $1 and tenant_id = $2", [id, ctx.tenant.id]);
+  return { ok: true, value: null };
 }
 
 export async function rotateWebhookToken(ctx: TenantContext): Promise<AdminResult<string>> {
