@@ -112,5 +112,6 @@ The adversarial suite and the full aggregate are re-run by `pnpm verify:all` in 
 | F10 | Low | Secret scanning is pattern-based (no entropy analysis, no third-party scanner) | Open: limitations.md |
 | F11 | Info | LGPL-3.0-or-later libvips binaries ship inside the web image | Open: licence review before distributing images (DECISION) |
 | F12 | Medium | Real-host deployment, hosted Supabase behaviour and the clean-clone CI job have not been run | Open: NOT VERIFIED |
+| F13 | Medium | A provider's rejection text (often quoting the recipient's address or number) was stored verbatim in the append-only `ReminderFailed` event, in `messages.failed_reason` and in dead letters; events are kept on erasure. Found by the clean-clone `verify:all` run (a different test order put the worker test before the event scan) | Fixed: every stored provider reason is scrubbed (`providerText` in packages/worker/src/db.ts); failing test first (`worker/test-db/loop.test.ts`). Rows written before the fix are not rewritten (no deployment existed) |
 
 No finding was downgraded to pass; open items are repeated in docs/limitations.md.

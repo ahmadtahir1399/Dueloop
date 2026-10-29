@@ -1,6 +1,14 @@
 // The worker's database access over a direct, trusted Postgres connection (never the browser, never the
 // Data API). Every timestamp comes from the injected clock; outcomes are recorded in single transactions.
+import { scrub } from '@dueloop/ops';
 import type pg from 'pg';
+
+/**
+ * Provider error text (an SMTP rejection, a WhatsApp error) often quotes the recipient. It is scrubbed of contact
+ * details and secrets before it is stored anywhere: message rows, dead letters, and append-only events, which erasure
+ * keeps (rule 20; found by the clean-clone verify:all run, prompt 7).
+ */
+const providerText = (text: string, max: number) => scrub(text, max);
 
 export interface Job {
   readonly msgId: number;
@@ -100,7 +108,7 @@ export class WorkerDb {
   }
 
   async deadLetter(msgId: number, reason: string, attempts: number): Promise<void> {
-    await this.pool.query('select private.dead_letter_action($1, $2, $3)', [msgId, reason, attempts]);
+    await this.pool.query('select private.dead_letter_action($1, $2, $3)', [msgId, providerText(reason, 500), attempts]);
   }
 
   async sweepStale(thresholdSeconds: number, asOf: Date): Promise<{ tenantId: string; invoiceId: string; messageId: string }[]> {
@@ -194,7 +202,7 @@ export class WorkerDb {
   async abandonClaim(messageId: string, reason: string): Promise<void> {
     await this.pool.query(
       `update public.messages set send_state = 'retry', attempt = greatest(attempt - 1, 0), failed_reason = $2 where id = $1 and send_state = 'pending'`,
-      [messageId, reason.slice(0, 200)],
+      [messageId, providerText(reason, 200)],
     );
   }
 
@@ -356,14 +364,14 @@ export class WorkerDb {
   }
 
   async recordRetry(messageId: string, reason: string): Promise<void> {
-    await this.pool.query(`update public.messages set send_state = 'retry', failed_reason = $2 where id = $1 and send_state = 'pending'`, [messageId, reason.slice(0, 200)]);
+    await this.pool.query(`update public.messages set send_state = 'retry', failed_reason = $2 where id = $1 and send_state = 'pending'`, [messageId, providerText(reason, 200)]);
   }
 
   /** Permanent failure: the step counts as skipped (decide moves on), the owner is alerted by the caller. */
   async recordPermanent(a: { tenantId: string; invoiceId: string; messageId: string; key: string; stepId: string; channel: string; reason: string; at: Date }): Promise<void> {
     await this.tx(async (c) => {
-      await c.query(`update public.messages set send_state = 'failed_permanent', failed_reason = $2 where id = $1 and send_state = 'pending'`, [a.messageId, a.reason.slice(0, 200)]);
-      await this.appendEvent(c, a.tenantId, a.invoiceId, { type: 'ReminderFailed', key: `${a.key}:failed`, payload: { stepId: a.stepId, channel: a.channel, reason: a.reason.slice(0, 100) } });
+      await c.query(`update public.messages set send_state = 'failed_permanent', failed_reason = $2 where id = $1 and send_state = 'pending'`, [a.messageId, providerText(a.reason, 200)]);
+      await this.appendEvent(c, a.tenantId, a.invoiceId, { type: 'ReminderFailed', key: `${a.key}:failed`, payload: { stepId: a.stepId, channel: a.channel, reason: providerText(a.reason, 100) } });
       await c.query('update public.invoices set next_action_at = $3, parked_reason = null, enqueued_at = null where tenant_id = $1 and id = $2', [a.tenantId, a.invoiceId, a.at]);
     });
   }
@@ -458,7 +466,7 @@ export class WorkerDb {
     await this.tx(async (c) => {
       await c.query(`insert into public.dead_letters (tenant_id, source, reason, attempts, payload) values ($1, 'transactional_sends', $2, $3, $4)`, [
         job.tenantId,
-        reason.slice(0, 200),
+        providerText(reason, 200),
         attempts,
         JSON.stringify({ receiptId: job.receiptId }),
       ]);
@@ -498,7 +506,7 @@ export class WorkerDb {
     );
   }
   async recordReceiptFailed(messageId: string, reason: string): Promise<void> {
-    await this.pool.query(`update public.messages set send_state = 'failed_permanent', failed_reason = $2 where id = $1 and send_state = 'pending'`, [messageId, reason.slice(0, 200)]);
+    await this.pool.query(`update public.messages set send_state = 'failed_permanent', failed_reason = $2 where id = $1 and send_state = 'pending'`, [messageId, providerText(reason, 200)]);
   }
   /** Stale pending receipt: unknown, never resent (rule 17). Unlike a reminder it does not park the invoice. */
   async markReceiptUnknown(tenantId: string, invoiceId: string, messageId: string, key: string): Promise<void> {

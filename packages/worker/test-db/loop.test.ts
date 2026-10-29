@@ -281,5 +281,14 @@ describe('logging (rules 19, 20)', () => {
     const all = [...w.logs, ...w2.logs].join('\n');
     expect(all.length).toBeGreaterThan(50);
     expect(all).not.toMatch(/@|\+44\d{6,}|Ada Customer|Hi Ada|IBAN/);
+    // A provider's rejection text often quotes the recipient. It must not reach the append-only event (kept on
+    // erasure) or the message row: found by the clean-clone run of `pnpm verify:all` (prompt 7).
+    const stored = await q<{ s: string }>(
+      `select payload::text as s from public.invoice_events where tenant_id = any($1) and type = 'ReminderFailed'
+       union all select coalesce(failed_reason, '') from public.messages where tenant_id = any($1)`,
+      [[w.tenantId, w2.tenantId]],
+    );
+    expect(stored.length).toBeGreaterThan(0);
+    expect(stored.map((r) => r.s).join('\n')).not.toMatch(/@|\+44\d{6,}/);
   });
 });
