@@ -84,7 +84,7 @@ describe('footer', () => {
     expect(out).toContain(FOOTER_SEPARATOR);
   });
   it('uses the language and falls back to English', () => {
-    expect(footerFor('email', 'de-AT')).toContain('STOP');
+    expect(footerFor('email', 'de-AT')).toContain('antworten Sie auf diese E-Mail');
     expect(footerFor('email', 'de-AT')).not.toBe(footerFor('email', 'en'));
     expect(footerFor('whatsapp', 'xx')).toBe(footerFor('whatsapp', 'en'));
   });

@@ -37,6 +37,39 @@ test.describe("accountant", () => {
   });
 });
 
+test.describe("accountant: retries and ambiguous sends", () => {
+  test.use({ storageState: authFile("accountant") });
+
+  async function messageFor(invoiceId: string, state: string, attempt: number, key: string): Promise<string> {
+    const inv = (await db().query("select customer_id from public.invoices where id = $1", [invoiceId])).rows[0];
+    const m = (await db().query("insert into public.messages (tenant_id, customer_id, channel, direction, idempotency_key, send_state, attempt) values ($1, $2, 'email', 'out', $3, $4, $5) returning id", [DEMO_TENANT, inv.customer_id, key, state, attempt])).rows[0];
+    await db().query("insert into public.message_invoices (tenant_id, message_id, invoice_id) values ($1, $2, $3)", [DEMO_TENANT, m.id, invoiceId]);
+    return m.id as string;
+  }
+
+  test("a dead-lettered invoice resumes with its retry counter reset (a retry was provably not sent)", async ({ page }) => {
+    const id = await parkedInvoice("DA-0005", "dead_letter");
+    const msg = await messageFor(id, "retry", 5, `e2e-resume-dl-${Date.now()}`);
+    await page.goto(`/invoices/${id}`);
+    await page.getByRole("form", { name: "Resume reminders" }).getByRole("button", { name: "Resume reminders" }).click();
+    await expect(page.getByRole("form", { name: "Resume reminders" })).toHaveCount(0);
+    expect(await state(id)).toEqual({ parked_reason: null, due: true });
+    expect((await db().query("select attempt from public.messages where id = $1", [msg])).rows[0].attempt).toBe(0);
+  });
+
+  test("an ambiguous send (message still pending) can never be resumed here (rule 17)", async ({ page }) => {
+    const id = await parkedInvoice("DA-0007", "send_ambiguous");
+    await messageFor(id, "pending", 1, `e2e-resume-amb-${Date.now()}`);
+    try {
+      await page.goto(`/invoices/${id}`);
+      await expect(page.getByRole("form", { name: "Resume reminders" })).toHaveCount(0);
+      expect((await state(id)).parked_reason).toBe("send_ambiguous");
+    } finally {
+      await db().query("update public.invoices set parked_reason = null, next_action_at = now() + interval '1 day' where id = $1", [id]);
+    }
+  });
+});
+
 test.describe("collector", () => {
   test.use({ storageState: authFile("collector") });
 

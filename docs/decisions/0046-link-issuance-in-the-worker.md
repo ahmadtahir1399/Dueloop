@@ -12,7 +12,8 @@ with OUR pay-page URL; the provider object is created only when the customer pre
   cannot be rebuilt; reusing would mean storing tokens recoverably. Each reminder carries its own links; old ones
   stay valid until they expire or are revoked, and the page always shows the CURRENT balance and state.
 - The payment block gets the pay-page URL (built from configuration, so not passed through `safePayLink`, which is
-  for provider URLs). The footer gets "Or stop them here: <opt-out URL>" after the reply-STOP text; email gets the
+  for provider URLs). The footer gets "Or stop them here: <opt-out URL>" after the reply-STOP text (WhatsApp; email says "use this link"
+  and never "reply STOP" since review round 2, because email replies are not read in production); email gets the
   RFC 8058 headers when the URL is https. Without `PUBLIC_APP_URL` the prompt 5 behaviour is unchanged.
 - Final invoices need no revocation trigger: the page shows "already paid" or "closed" for them.
 - **WhatsApp (issue D): STOPPED, not changed.** The approved `nudge` template has no link variable (its body has no

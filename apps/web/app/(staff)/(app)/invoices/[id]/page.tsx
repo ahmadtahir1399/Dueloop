@@ -67,7 +67,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
         <Card>
           <CardContent className="grid gap-2 pt-6 text-sm">
             <p>Reminders for this invoice are on hold ({inv.parked_reason}).</p>
-            {inv.parked_reason === "message_unknown" ? (
+            {inv.parked_reason === "message_unknown" || inv.parked_reason === "send_ambiguous" ? (
               <p>
                 A message may or may not have been sent. Check it on <Link href="/messages">Unknown sends</Link> first.
               </p>

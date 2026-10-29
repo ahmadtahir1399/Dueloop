@@ -266,7 +266,7 @@ describe('rendering', () => {
     const text = env?.kind === 'email' ? env.text : '';
     expect(text).toContain('£1,250.50');
     expect(text).toContain('Jun 1, 2026');
-    expect(text).toContain('reply STOP');
+    expect(text).toContain('reply to this email'); // the English footer (no opt-out link in this world)
   });
 });
 

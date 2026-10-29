@@ -35,7 +35,7 @@ flowchart LR
   Worker -- SMTP / WhatsApp / Stripe --> Providers[(Providers)]
   Proc -- optional model --> Model[(Anthropic or OpenAI API)]
   Providers -- signed webhooks --> Hooks
-  Worker -- IMAP poll --> Providers
+  Worker -. IMAP poll: library only, not run in production .-> Providers
 ```
 
 ## Layers (dependencies point inward, rule 2)
@@ -70,7 +70,7 @@ becomes `unknown`, parks the invoice and alerts a human; it is never resent auto
 
 ## Replies (ADR 0022-0031)
 
-Inbound email (IMAP poller) and WhatsApp (webhooks) are stored raw, then the processor normalises, pre-filters,
+Inbound email (IMAP poller: built and tested, but no production command runs it yet) and WhatsApp (webhooks) are stored raw, then the processor normalises, pre-filters,
 matches the reply to an invoice (ambiguous -> human task), optionally classifies it with a model (output is a
 schema-validated proposal only), and applies `planReplyOutcome()` through the state machine.
 
