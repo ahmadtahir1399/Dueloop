@@ -3,7 +3,7 @@
 // at-most-once claim, the kill switch right before the adapter, opt-out, consent, budget, rate limit. The job
 // was queued inside apply_payment's transaction, so a confirmed receipt always has exactly one job.
 import { DEFAULT_TEMPLATES, appendFooter, formatAmount, isSafeAddress, messageIdFor, monthStart, render, route, sanitiseDisplayName, sanitiseHeaderValue, type OutboundEnvelope, type SendOutcome } from '@dueloop/messaging';
-import { loadContext, pickTemplate, type TemplateRow, type WorkerContext } from './context.ts';
+import { loadContext, pickTemplate, readyChannels, type TemplateRow, type WorkerContext } from './context.ts';
 import type { ReceiptJob } from './db.ts';
 import type { WorkerDeps } from './process.ts';
 
@@ -118,7 +118,7 @@ export async function processReceiptJob(job: ReceiptJob, deps: WorkerDeps): Prom
     stepChannel: channel,
     customer: { email: c.customer.email, phoneE164: c.customer.phone },
     consents: c.consents,
-    accounts: [...c.accounts.keys()].filter((ch) => deps.channels.get(ch) !== undefined),
+    accounts: readyChannels(c.accounts, (ch) => deps.channels.get(ch) !== undefined),
     template: { found: tmpl !== null, providerStatus: tmpl?.providerStatus ?? null },
     budgetMinor: c.tenant.budgetMinor,
     spentThisMonthMinor: Number(spent.rows[0]?.s ?? 0),
