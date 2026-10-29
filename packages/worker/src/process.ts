@@ -203,6 +203,15 @@ export async function processJob(job: Job, deps: WorkerDeps): Promise<JobOutcome
   const log = { correlationId: `${job.invoiceId}:${job.msgId}`, tenantId: job.tenantId, invoiceId: job.invoiceId, msgId: job.msgId };
   await failpoints.hit('after_claim', { idempotencyKey: null });
 
+  // A stale job (redelivered after a crash between record and ack, or a duplicate) must not act: the invoice
+  // was rescheduled or parked since it was queued. Acting would send the NEXT step at once, or send while the
+  // invoice waits for a human after an unknown message (rule 17).
+  if (!(await db.jobIsCurrent(job.tenantId, job.invoiceId, clock.now()))) {
+    await db.ack(job.msgId);
+    logger.info('job_stale', log);
+    return 'skipped';
+  }
+
   for (let round = 0; round < 3; round++) {
     const loaded = await loadContext(db, job.tenantId, job.invoiceId);
     if (!loaded.ok) {

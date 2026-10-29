@@ -79,6 +79,18 @@ export class WorkerDb {
     return r.rows.map((x) => ({ msgId: Number(x.msg_id), readCount: x.read_ct, invoiceId: x.invoice_id, tenantId: x.tenant_id }));
   }
 
+  /**
+   * A job is current only while its invoice is still queued and due. Every reschedule (a recorded send, a park,
+   * a wait) clears enqueued_at, so a job redelivered after a crash between record and ack is stale.
+   */
+  async jobIsCurrent(tenantId: string, invoiceId: string, now: Date): Promise<boolean> {
+    const r = await this.pool.query<{ ok: boolean }>(
+      'select (enqueued_at is not null and next_action_at <= $3) as ok from public.invoices where tenant_id = $1 and id = $2',
+      [tenantId, invoiceId, now],
+    );
+    return r.rows[0]?.ok ?? true; // a missing invoice is handled (parked) by loadContext
+  }
+
   async ack(msgId: number): Promise<void> {
     await this.pool.query('select private.ack_action($1)', [msgId]);
   }

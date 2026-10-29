@@ -35,6 +35,8 @@ describe('kill points (deterministic failpoints)', () => {
     const [m] = await messagesOf(w.tenantId);
     const key = `${w.invoiceIds[0]}:s1:email`;
     expect(w.email.keys().filter((k) => k === key)).toHaveLength(calls);
+    // A redelivered job must not send the NEXT step either: the recorded send rescheduled the invoice.
+    expect(w.email.keys()).toHaveLength(calls);
     expect(m?.send_state).toBe(state);
     if (state === 'unknown') {
       // Never silent: an alert, an event, and the invoice is parked for a human.
