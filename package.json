@@ -69,7 +69,9 @@
     "demo:reset": "node packages/demo/src/bin/demo.ts reset",
     "demo:logs": "node packages/demo/src/bin/demo.ts logs",
     "demo:control": "node packages/demo/src/bin/control.ts",
-    "demo:selftest": "node packages/demo/src/bin/selftest.ts"
+    "demo:selftest": "node packages/demo/src/bin/selftest.ts",
+    "db:catalog-audit": "node packages/db/scripts/catalog-audit.ts",
+    "licences:report": "node packages/repo-tools/src/bin/licences.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
