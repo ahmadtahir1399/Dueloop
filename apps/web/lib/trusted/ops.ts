@@ -14,6 +14,7 @@ import { planManualPayment, recordManualPayment, type ManualPlan } from "@dueloo
 import { confirmProof, planProofConfirmation, rejectProof } from "@dueloop/proofs";
 import { reconcileMessage, WorkerDb } from "@dueloop/worker";
 import { buildDeps, buildPaymentsDeps, buildProofsDeps } from "@dueloop/worker/runtime";
+import { NOT_RESUMABLE } from "@/lib/parked";
 import type { TenantContext } from "@/lib/session";
 import { trustedPool } from "./db";
 import { serviceRoleKey, supabaseUrl, trustedDbUrl } from "./env";
@@ -173,4 +174,28 @@ export async function reconcileUnknown(ctx: TenantContext, messageId: string, as
   if (!(await assertRole(ctx, ["owner", "accountant"]))) return { ok: false, reason: "Only an owner or accountant can reconcile messages." };
   const ok = await reconcileMessage(buildDeps(env(), workerDb(), clock), messageId, as);
   return ok ? { ok: true, value: null } : { ok: false, reason: "This message is no longer in the unknown state." };
+}
+
+// ---- resume a parked invoice ----------------------------------------------------------------------------------
+
+/**
+ * "Resume reminders" (the same database function as `pnpm messages unpark`). It only makes the invoice due again:
+ * the worker still runs decide() with fresh context and every send gate (rule 40). Refused while any message for
+ * the invoice is in the unknown state (rule 17).
+ */
+export async function resumeReminders(ctx: TenantContext, invoiceId: string): Promise<OpsResult<null>> {
+  const { data: inv } = await ctx.supabase.from("invoices").select("id, parked_reason").eq("tenant_id", ctx.tenant.id).eq("id", invoiceId).maybeSingle();
+  if (!inv) return { ok: false, reason: "Not found." };
+  if (!(await assertRole(ctx, ["owner", "accountant"]))) return { ok: false, reason: "Only an owner or accountant can resume reminders." };
+  if (!inv.parked_reason) return { ok: false, reason: "Reminders for this invoice are not on hold." };
+  if (NOT_RESUMABLE.has(inv.parked_reason)) return { ok: false, reason: "Resolve this on the Unknown sends or Approvals page instead." };
+  const r = await trustedPool().query<{ ok: boolean }>(
+    `select private.unpark_invoice(i.id, now()) as ok from public.invoices i
+     where i.tenant_id = $1 and i.id = $2 and i.parked_reason is not null and not (i.parked_reason = any($3::text[]))
+       and not exists (select 1 from public.message_invoices mi join public.messages m on m.tenant_id = mi.tenant_id and m.id = mi.message_id
+                       where mi.tenant_id = i.tenant_id and mi.invoice_id = i.id and m.send_state = 'unknown')`,
+    [ctx.tenant.id, invoiceId, [...NOT_RESUMABLE]],
+  );
+  if (r.rows[0]?.ok !== true) return { ok: false, reason: "This invoice has a message in an unknown state. Check it on the Unknown sends page first." };
+  return { ok: true, value: null };
 }

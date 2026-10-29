@@ -396,7 +396,7 @@ async function sendPath(
     const a = await db.approvalFor(job.tenantId, key);
     if (!a || a.status === 'expired' || a.status === 'superseded') {
       await db.requestApproval(job.tenantId, job.invoiceId, key, step.id, channel, now);
-      await alertOnce(deps, { tenantId: job.tenantId, dedupeKey: 'approvals_waiting', kind: 'approvals_waiting', severity: 'info', title: 'Reminders are waiting for approval', lines: ['Run: pnpm approvals list'] }, dayPeriod(now));
+      await alertOnce(deps, { tenantId: job.tenantId, dedupeKey: 'approvals_waiting', kind: 'approvals_waiting', severity: 'info', title: 'Reminders are waiting for approval', lines: ['Open the Approvals page (or: pnpm approvals list).'] }, dayPeriod(now));
       await db.ack(job.msgId);
       logger.info('approval', { ...log, outcome: 'requested' });
       return 'approval_requested';
@@ -598,7 +598,7 @@ async function park(job: Job, deps: WorkerDeps, log: Record<string, string | num
   await deps.db.setNextAction(job.tenantId, job.invoiceId, 'infinity', reason, { type: 'ReminderParked', key: `${key}:parked:${reason}`, payload: { reason } });
   await alertOnce(
     deps,
-    { tenantId: job.tenantId, dedupeKey: `park:${job.invoiceId}:${reason}`, kind: 'parked', severity: 'warning', title: `Reminders for invoice ${c.invoice.number} are on hold`, lines: [`reason: ${reason}`, 'Fix it, then: pnpm messages unpark --invoice <id>'] },
+    { tenantId: job.tenantId, dedupeKey: `park:${job.invoiceId}:${reason}`, kind: 'parked', severity: 'warning', title: `Reminders for invoice ${c.invoice.number} are on hold`, lines: [`reason: ${reason}`, 'Fix the cause, then press "Resume reminders" on the invoice page (or: pnpm messages unpark <invoice id>).'] },
     'once',
   );
   await deps.db.ack(job.msgId);
@@ -609,7 +609,7 @@ async function park(job: Job, deps: WorkerDeps, log: Record<string, string | num
 async function alertUnknown(deps: WorkerDeps, tenantId: string, invoiceNumber: string, key: string): Promise<void> {
   await alertOnce(
     deps,
-    { tenantId, dedupeKey: `unknown:${key}`, kind: 'message_unknown', severity: 'critical', title: `A reminder for invoice ${invoiceNumber} may or may not have been sent`, lines: ['It will NOT be resent automatically.', 'Check, then: pnpm messages resolve --id <message id> --as sent|not_sent'] },
+    { tenantId, dedupeKey: `unknown:${key}`, kind: 'message_unknown', severity: 'critical', title: `A reminder for invoice ${invoiceNumber} may or may not have been sent`, lines: ['It will NOT be resent automatically.', 'Check it on the Unknown sends page and mark it sent or not sent (or: pnpm messages resolve <message id> --as sent|not_sent).'] },
     'once',
   );
 }

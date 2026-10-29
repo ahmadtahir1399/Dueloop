@@ -23,6 +23,7 @@ table; `packages/authz/test/matrix.test.ts` fails unless the table below is byte
 | `proofs.view` | yes | yes | yes |
 | `proofs.decide` | yes | yes | no |
 | `payments.record` | yes | yes | no |
+| `invoices.resume` | yes | yes | no |
 | `messages.reconcile` | yes | yes | no |
 | `import.run` | yes | yes | no |
 | `export.lists` | yes | yes | yes |

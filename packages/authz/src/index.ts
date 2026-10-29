@@ -31,6 +31,7 @@ export const PERMISSIONS = [
   { id: 'proofs.view', label: 'See payment proofs and open the file', roles: ALL, enforcedBy: 'RLS + member check before signing a URL' },
   { id: 'proofs.decide', label: 'Confirm or reject a payment proof', roles: OA, enforcedBy: 'apply_payment / reject_proof role check' },
   { id: 'payments.record', label: 'Record a manual payment', roles: OA, enforcedBy: 'apply_payment role check' },
+  { id: 'invoices.resume', label: 'Resume reminders for a parked invoice', roles: OA, enforcedBy: 'member_has_role before private.unpark_invoice (as pnpm messages unpark)' },
   { id: 'messages.reconcile', label: 'Reconcile a message in an unknown state', roles: OA, enforcedBy: 'reconcile_unknown_message' },
   { id: 'import.run', label: 'Import invoices (CSV)', roles: OA, enforcedBy: 'RLS on import_batches + commit_import_batch' },
   { id: 'export.lists', label: 'Export invoice and customer lists (CSV)', roles: ALL, enforcedBy: 'RLS' },

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { can } from "@dueloop/authz";
+import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/status-badge";
 import { AiText, UntrustedText } from "@/components/untrusted-text";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadInvoice } from "@/lib/data/invoices";
 import { eventLabel } from "@/lib/event-labels";
 import { formatMinor, minorIsPositive } from "@/lib/money";
+import { NOT_RESUMABLE } from "@/lib/parked";
 import { requirePermission } from "@/lib/session";
 import { formatDate, formatInstant } from "@/lib/time";
+import { resumeInvoice } from "./actions";
 import { CancelPromiseForm } from "./cancel-promise-form";
 
 export default async function InvoicePage({ params }: PageProps<"/invoices/[id]">) {
@@ -60,6 +63,30 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
         <Fact label="Next action">{formatInstant(inv.next_action_at, tz)}</Fact>
         {inv.parked_reason ? <Fact label="Parked">{inv.parked_reason}</Fact> : null}
       </div>
+      {inv.parked_reason ? (
+        <Card>
+          <CardContent className="grid gap-2 pt-6 text-sm">
+            <p>Reminders for this invoice are on hold ({inv.parked_reason}).</p>
+            {inv.parked_reason === "message_unknown" ? (
+              <p>
+                A message may or may not have been sent. Check it on <Link href="/messages">Unknown sends</Link> first.
+              </p>
+            ) : inv.parked_reason === "awaiting_approval" ? (
+              <p>
+                A reminder is waiting on the <Link href="/approvals">Approvals</Link> page.
+              </p>
+            ) : !NOT_RESUMABLE.has(inv.parked_reason) && can(ctx.role, "invoices.resume") ? (
+              <ActionForm action={resumeInvoice} label="Resume reminders">
+                <input type="hidden" name="invoice" value={inv.id} />
+                <p className="text-muted-foreground">Fix the cause first (for example the template, the sending account or the budget).</p>
+                <Button type="submit" className="w-fit">
+                  Resume reminders
+                </Button>
+              </ActionForm>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
