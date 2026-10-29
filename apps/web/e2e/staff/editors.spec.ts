@@ -184,6 +184,26 @@ test.describe("owner: two-step payment connect", () => {
   });
 });
 
+test.describe("owner: integration input checks", () => {
+  test.use({ storageState: authFile("owner") });
+
+  test("a wrong Slack URL, a Stripe key of the other mode and the test-only gateway are refused", async ({ page }) => {
+    await page.goto("/settings/integrations");
+    const creds = page.getByRole("form", { name: "Set channel credentials" });
+    await creds.getByLabel("Channel").selectOption("slack");
+    await creds.getByLabel("Secret").fill("https://example.com/not-slack");
+    await creds.getByRole("button", { name: "Save secret" }).click();
+    await expect(creds.getByRole("alert")).toContainText("https://hooks.slack.com/");
+
+    const connect = page.getByRole("form", { name: "Connect a payment account" });
+    await connect.getByLabel("Mode").selectOption("test");
+    await connect.getByLabel("API key").fill("rk_live_not_for_a_test_account");
+    await connect.getByRole("button", { name: "Connect" }).click();
+    await expect(connect.getByRole("alert")).toContainText("Use a Stripe test key");
+    expect((await db().query("select count(*)::int as n from public.payment_accounts where tenant_id = $1 and provider = 'stripe'", [DEMO_TENANT])).rows[0].n).toBe(0);
+  });
+});
+
 test.describe("accountant: standard templates", () => {
   test.use({ storageState: authFile("accountant") });
 

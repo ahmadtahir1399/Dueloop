@@ -35,7 +35,7 @@ export async function settingsAction(_prev: ActionState, form: FormData): Promis
   const v = validateSettings({ timezone, quietHours: { startHour: start, endHour: end }, holidays: [] });
   if (!v.ok) return { error: v.errors.map((e) => e.message).join("; ") };
   const budgetMajor = textField(form, "budget", 20).trim();
-  if (!/^\d{1,12}$/.test(budgetMajor)) return { error: "The monthly budget is a whole number of minor units (0 = no limit)." };
+  if (!/^\d{1,12}$/.test(budgetMajor)) return { error: "The monthly budget is a whole number of minor units (0 blocks WhatsApp and SMS)." };
   const approval = String(form.get("approval_mode"));
   const promise = String(form.get("promise_acceptance"));
   if (!["always", "low_confidence", "never"].includes(approval) || !["auto", "review"].includes(promise)) return { error: "Invalid choice." };
@@ -151,7 +151,7 @@ export async function integrationAction(_prev: IntegrationState, form: FormData)
     return { ok: true, message: "Saved. The account is switched on. The secret cannot be shown again." };
   }
   if (op === "rotate_webhook") {
-    const r = await rotateWebhookToken(ctx);
+    const r = await rotateWebhookToken(ctx, String(form.get("provider")));
     if (!r.ok) return { error: r.reason };
     return { ok: true, webhookUrl: r.value, message: "New webhook URL. Update it at the provider; the old one stops working now." };
   }

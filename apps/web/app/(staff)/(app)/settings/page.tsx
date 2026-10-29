@@ -77,7 +77,7 @@ export default async function SettingsPage() {
             <dt className="text-muted-foreground">Promises from customers</dt>
             <dd>{PROMISE[t.promise_acceptance] ?? t.promise_acceptance}</dd>
             <dt className="text-muted-foreground">Monthly message budget</dt>
-            <dd>{t.monthly_message_budget_minor === "0" ? "No budget set (unlimited)" : formatMinor(t.monthly_message_budget_minor, t.currency)}</dd>
+            <dd>{t.monthly_message_budget_minor === "0" ? "0: WhatsApp and SMS are blocked (email is not limited)" : formatMinor(t.monthly_message_budget_minor, t.currency)}</dd>
             <dt className="text-muted-foreground">Bank details shown to customers</dt>
             <dd><UntrustedText text={t.bank_instructions} /></dd>
             <dt className="text-muted-foreground">AI reading of payment proofs</dt>
@@ -123,7 +123,7 @@ export default async function SettingsPage() {
                 </select>
               </label>
               <label className="grid gap-1">
-                Monthly message budget, in minor units of {t.currency} (0 = no limit)
+                Monthly budget for WhatsApp and SMS, in minor units of {t.currency} (0 = WhatsApp and SMS blocked; email is free and not limited)
                 <Input name="budget" inputMode="numeric" defaultValue={t.monthly_message_budget_minor} required />
               </label>
               <label className="grid gap-1">
@@ -134,7 +134,7 @@ export default async function SettingsPage() {
                 <input type="checkbox" name="proof_ai_extraction" defaultChecked={t.proof_ai_extraction} />
                 <span>
                   Let AI read payment proofs. When on, images customers send as proof are sent to the AI provider configured by the operator
-                  (Anthropic) to suggest amount and date. Suggestions are labelled untrusted and never confirm a payment. PDFs and duplicates are never
+                  (Anthropic or OpenAI) to suggest amount and date. Suggestions are labelled untrusted and never confirm a payment. PDFs and duplicates are never
                   sent. Off by default.
                 </span>
               </label>
