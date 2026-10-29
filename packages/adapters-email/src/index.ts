@@ -156,7 +156,7 @@ export function smtpDefaultsFromEnv(env: Readonly<Record<string, string | undefi
     .split(',')
     .map((d) => d.trim().toLowerCase())
     .filter((d) => d !== '');
-  return { host: env.SMTP_HOST, port: Number(env.SMTP_PORT ?? 587), secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER ?? null, password: env.SMTP_PASSWORD ?? null, allowedFromDomains };
+  return { host: env.SMTP_HOST, port: Number(env.SMTP_PORT || 587), secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER || null, password: env.SMTP_PASSWORD || null, allowedFromDomains };
 }
 export * from './imap.ts';
 export * from './imap-store.ts';
