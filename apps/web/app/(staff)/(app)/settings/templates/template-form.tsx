@@ -28,7 +28,11 @@ export function TemplateForm(p: { id: string; channel: string; subject: string |
         Body (variables like {"{{invoice_number}}"}; unknown variables are refused)
         <textarea name="body" defaultValue={v.body} rows={8} maxLength={5000} dir="auto" className="rounded-md border bg-background p-2 text-sm" disabled={!p.canEdit} />
       </label>
-      <p className="text-xs text-muted-foreground">The opt-out footer is added after your text when the message is sent. It cannot be edited or removed.</p>
+      {p.channel === "whatsapp" ? (
+        <p className="text-xs text-muted-foreground">WhatsApp sends only the text Meta approved; no footer is added. Include an opt-out line such as "Reply STOP to stop these reminders." in it.</p>
+      ) : (
+        <p className="text-xs text-muted-foreground">The opt-out footer is added after your text when the message is sent. It cannot be edited or removed.</p>
+      )}
       {pv ? (
         <div className="grid gap-1 rounded-md bg-muted/40 p-3 text-sm" role="status" data-testid="template-preview">
           {pv.subject && !pv.subject.ok ? <p className="text-destructive">Subject: {pv.subject.error}</p> : null}

@@ -1,5 +1,6 @@
 // SMTP adapter (nodemailer 10). Plain text only. Every failure is classified into a SendOutcome; the one
 // rule that matters (issue K, rule 17): if the server MAY have accepted the message, the outcome is ambiguous.
+import { lookup } from 'node:dns/promises';
 import nodemailer from 'nodemailer';
 import type { EmailContent, OutboundChannel, OutboundEnvelope, SendOutcome } from '@dueloop/messaging';
 
@@ -25,6 +26,25 @@ export interface SmtpChannelOptions {
    * the worker connect wherever a tenant owner says (SSRF), so only enable it for vetted deployments.
    */
   readonly allowTenantHost?: boolean;
+  /**
+   * Is a resolved address acceptable for a business-chosen host? Default: public addresses only (no loopback,
+   * private, link-local, CGNAT or multicast): the worker would otherwise connect to internal services (SSRF).
+   * Injected only by the protocol tests, whose scripted server listens on 127.0.0.1.
+   */
+  readonly tenantAddressAllowed?: (ip: string) => boolean;
+}
+
+/** Loopback, private, link-local, CGNAT, unspecified and multicast addresses (IPv4, IPv6, IPv4-mapped IPv6). */
+export function isPrivateAddress(ip: string): boolean {
+  const v = ip.toLowerCase();
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(v);
+  if (mapped?.[1]) return isPrivateAddress(mapped[1]);
+  const m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(v);
+  if (m) {
+    const [a, b] = [Number(m[1]), Number(m[2])];
+    return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224;
+  }
+  return v === '::' || v === '::1' || /^f[cd]/.test(v) || /^fe[89ab]/.test(v) || /^ff/.test(v);
 }
 
 /** Codes Node sets only when no connection was ever established: nothing can have been sent. */
@@ -112,8 +132,19 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
       if (!settings) return { kind: 'not_sent_retryable', reason: 'smtp_not_configured' };
       const mail: EmailContent = envelope.content;
       if (!settings.tenantHost && !senderAllowed(mail.from.address, options.defaults)) return { kind: 'not_sent_retryable', reason: 'smtp_sender_not_allowed' };
+      // A business-chosen host: resolve once, refuse internal addresses, and connect to THAT address (no second
+      // lookup that DNS rebinding could change); TLS still checks the certificate against the host name.
+      let connectTo = settings.host;
+      if (settings.tenantHost) {
+        const allowed = options.tenantAddressAllowed ?? ((ip: string) => !isPrivateAddress(ip));
+        const addresses = await lookup(settings.host, { all: true }).catch(() => []);
+        const first = addresses[0];
+        if (!first || addresses.some((a) => !allowed(a.address))) return { kind: 'not_sent_retryable', reason: 'smtp_host_refused' };
+        connectTo = first.address;
+      }
       const transport = nodemailer.createTransport({
-        host: settings.host,
+        host: connectTo,
+        servername: settings.host,
         port: settings.port,
         secure: settings.secure,
         requireTLS: settings.requireTLS,

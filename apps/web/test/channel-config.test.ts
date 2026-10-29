@@ -55,7 +55,7 @@ describe('channelConfigFrom', () => {
       config: { from_address: 'billing@shop.example', smtp_host: 'smtp.shop.example', smtp_port: 465, smtp_user: 'billing@shop.example', smtp_secure: true },
       externalAccountId: null,
     });
-    for (const host of ['', 'smtp shop', 'http://x.example', 'a/b', 'x'.repeat(254)]) expect(channelConfigFrom({ ...base, smtp: { host, port: '587', user: 'u', secure: false } }).ok).toBe(false);
+    for (const host of ['', 'smtp shop', 'http://x.example', 'a/b', 'x'.repeat(254), '127.0.0.1', '169.254.169.254', 'localhost']) expect(channelConfigFrom({ ...base, smtp: { host, port: '587', user: 'u', secure: false } }).ok).toBe(false);
     for (const port of ['0', '70000', 'abc', '']) expect(channelConfigFrom({ ...base, smtp: { host: 'smtp.shop.example', port, user: 'u', secure: false } }).ok).toBe(false);
     expect(channelConfigFrom({ ...base, smtp: { host: 'smtp.shop.example', port: '587', user: `a${String.fromCharCode(13, 10)}b`, secure: false } }).ok).toBe(false);
   });

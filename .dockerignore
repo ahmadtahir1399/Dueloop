@@ -30,6 +30,9 @@ packages/*/scripts
 packages/db/scripts/*
 !packages/db/scripts/local-env.ts
 apps/web/playwright.config.ts
+# Developer tooling (pnpm guide:pdf renders the guide with Playwright): never in an image.
+apps/web/scripts
+docs/guides
 data
 supabase
 # Workspace members that are not runtime: keep only their manifests (the frozen lockfile lists them).

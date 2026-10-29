@@ -21,6 +21,10 @@ security findings that are still open are repeated from docs/security-review.md.
 - **Process supervision:** worker, processor and webhooks exit when the database connection drops and need a
   supervisor to restart (compose does; a bare `node` run does not).
 - **Sign-in:** no second factor; no rate limit of our own on sign-in beyond Supabase Auth's.
+- **Routing values set before migration 0026:** until 0026, an owner could write `channel_accounts.external_account_id`
+  and `secret_id` directly through the API. 0026 stops new writes but does not check old ones. On an existing
+  deployment, review them once (for example: every `external_account_id` should be a WhatsApp number that business
+  owns) before upgrading production. NOT VERIFIED on any real deployment.
 - **Email replies are not read in production.** The IMAP poller (`pollMailbox`, ADR 0031) is built and tested against
   a local server, but no production command runs it and there is no screen for mailbox settings. Customer email
   replies (promises, disputes, "already paid") go only to the business's own inbox, where a person must act on

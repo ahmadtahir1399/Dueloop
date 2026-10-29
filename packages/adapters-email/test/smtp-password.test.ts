@@ -2,7 +2,7 @@
 // operator SMTP, each business owner had to paste a password they cannot know). It must NEVER go to a host a
 // tenant chose (SMTP_ALLOW_TENANT_HOST), and a tenant's own saved password always wins.
 import { describe, expect, it } from 'vitest';
-import { senderAllowed, smtpDefaultsFromEnv, smtpLogin } from '../src/index.ts';
+import { isPrivateAddress, senderAllowed, smtpDefaultsFromEnv, smtpLogin } from '../src/index.ts';
 
 const defaults = smtpDefaultsFromEnv({ SMTP_HOST: 'smtp.operator.example', SMTP_PORT: '587', SMTP_USER: 'relay-user', SMTP_PASSWORD: 'operator-secret' });
 
@@ -51,4 +51,11 @@ describe('review round 2: no password in clear; sender domains on the operator r
 
 it('empty env lines (SMTP_PORT=, SMTP_USER=) mean "not set", not port 0 or an empty login', () => {
   expect(smtpDefaultsFromEnv({ SMTP_HOST: 'relay.example', SMTP_PORT: '', SMTP_USER: '', SMTP_PASSWORD: '' })).toMatchObject({ port: 587, user: null, password: null });
+});
+
+it.each(['127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.1.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '224.0.0.1', '::1', '::', 'fd00::1', 'fe80::1', '::ffff:127.0.0.1', '::ffff:10.0.0.1'])('isPrivateAddress(%s) => true', (ip) => {
+  expect(isPrivateAddress(ip)).toBe(true);
+});
+it.each(['8.8.8.8', '172.32.0.1', '100.128.0.1', '2001:4860:4860::8888', '::ffff:8.8.8.8'])('isPrivateAddress(%s) => false', (ip) => {
+  expect(isPrivateAddress(ip)).toBe(false);
 });
