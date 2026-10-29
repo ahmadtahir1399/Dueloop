@@ -16,6 +16,10 @@ FROM ${NODE_IMAGE} AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH COREPACK_ENABLE_DOWNLOAD_PROMPT=0 CI=true
 RUN corepack enable
 WORKDIR /app
+# Fetch pnpm once, keyed only on package.json, so a code change does not download it again (`corepack install`
+# reads "packageManager"). A transient registry timeout at this point failed one clean-clone run.
+COPY package.json ./
+RUN corepack install
 
 # ---- services: production dependencies of the worker, webhooks and ops packages only -----------------------------
 FROM base AS services-build
