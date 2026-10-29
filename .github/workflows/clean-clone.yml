@@ -1,0 +1,77 @@
+name: Clean-clone demo
+
+# Prompt 7 step 7: from a fresh checkout on a fresh runner, with NO dependency or image caches, run the demo contract
+# (`pnpm demo --non-interactive`, the seven guide steps through `pnpm demo:control` via `pnpm demo:selftest`,
+# `pnpm demo:stop`), assert nothing is left behind, and keep the measured timings as an artifact.
+# Linux only: other runners are NOT VERIFIED (Docker availability differs).
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
+  pull_request:
+    paths:
+      - "packages/demo/**"
+      - "supabase/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/clean-clone.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reads the pnpm version from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v6
+
+      # Deliberately no `cache:`: this job measures a clean clone.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install (frozen lockfile)
+        run: |
+          start=$(date +%s)
+          pnpm install --frozen-lockfile
+          echo "INSTALL_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: pnpm demo (cold - image downloads included)
+        run: pnpm demo --non-interactive
+
+      - name: The seven guide steps through demo:control
+        run: pnpm demo:selftest
+
+      - name: Stop and assert nothing is left
+        run: |
+          pnpm demo:stop
+          # The demo started the Supabase stack here, so stop must have removed every container.
+          test -z "$(docker ps -q)"
+          ! pgrep -f "packages/(worker|webhooks|demo)/src/bin" > /dev/null
+
+      - name: Record timings
+        if: always()
+        run: |
+          node -e "
+            const fs = require('fs');
+            const t = fs.existsSync('.demo/timings.json') ? JSON.parse(fs.readFileSync('.demo/timings.json', 'utf8')) : {};
+            fs.mkdirSync('.demo', { recursive: true });
+            fs.writeFileSync('.demo/clean-clone.json', JSON.stringify({ runner: process.env.RUNNER_OS, install_seconds: Number(process.env.INSTALL_SECONDS || 0), demo: t }, null, 2));
+            console.log(fs.readFileSync('.demo/clean-clone.json', 'utf8'));
+          "
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: clean-clone-timings
+          path: |
+            .demo/clean-clone.json
+            .demo/timings.json
+            .demo/selftest.json
+            .demo/logs/
+          if-no-files-found: warn

@@ -68,7 +68,8 @@
     "demo:stop": "node packages/demo/src/bin/demo.ts stop",
     "demo:reset": "node packages/demo/src/bin/demo.ts reset",
     "demo:logs": "node packages/demo/src/bin/demo.ts logs",
-    "demo:control": "node packages/demo/src/bin/control.ts"
+    "demo:control": "node packages/demo/src/bin/control.ts",
+    "demo:selftest": "node packages/demo/src/bin/selftest.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
