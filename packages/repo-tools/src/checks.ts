@@ -119,3 +119,25 @@ export function licenceFindings(root: string): Finding[] {
   }
   return files.length ? [] : [{ where: '.', detail: `licence decision is ${LICENCE_DECISION} but no LICENSE file exists` }];
 }
+
+// ---- undeclared runtime dependencies: a container installs only declared ones ---------------------------------
+const IMPORT_LINE = /^\s*(?:import|export)\b[^'"]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]|\bimport\(\s*['"]([^'"]+)['"]\s*\)/gm;
+
+/** Bare package names a source file imports (relative paths, node: builtins and `@/` aliases excluded). */
+export function importedPackages(source: string, builtins: ReadonlySet<string>): string[] {
+  const out = new Set<string>();
+  for (const m of source.matchAll(IMPORT_LINE)) {
+    const spec = m[1] ?? m[2] ?? m[3] ?? '';
+    if (!spec || spec.startsWith('.') || spec.startsWith('node:') || spec.startsWith('@/')) continue;
+    const name = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : (spec.split('/')[0] ?? '');
+    if (!builtins.has(name)) out.add(name);
+  }
+  return [...out];
+}
+
+export function dependencyFindings(pkgFile: string, pkg: { name?: string; dependencies?: Record<string, string>; peerDependencies?: Record<string, string> }, sources: { file: string; text: string }[], builtins: ReadonlySet<string>): Finding[] {
+  const declared = new Set([...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {}), pkg.name ?? '']);
+  const out: Finding[] = [];
+  for (const s of sources) for (const n of importedPackages(s.text, builtins)) if (!declared.has(n)) out.push({ where: s.file, detail: `imports ${n}, not in ${pkgFile} dependencies` });
+  return out;
+}

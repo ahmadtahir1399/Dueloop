@@ -12,6 +12,9 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const nextConfig: NextConfig = {
   // The Playwright build uses its own folder (it is built against the LOCAL stack: NEXT_PUBLIC_ values are inlined).
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  // The container image (Dockerfile, target `web`) sets NEXT_OUTPUT=standalone: a traced, self-contained server.js
+  // (Next docs, config/next-config-js/output). Tracing starts at the monorepo root so workspace packages are included.
+  ...(process.env.NEXT_OUTPUT === "standalone" ? { output: "standalone" as const, outputFileTracingRoot: path.resolve(process.cwd(), "../..") } : {}),
   // Workspace packages are TypeScript sources (with .ts import extensions); Next compiles them.
   transpilePackages: [
     "@dueloop/core",

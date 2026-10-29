@@ -61,7 +61,9 @@
     "customer": "node packages/ops/src/bin/data.ts customer",
     "verify:all": "node packages/repo-tools/src/bin/verify-all.ts",
     "repo:audit": "node packages/repo-tools/src/bin/repo-audit.ts",
-    "backup:drill": "node packages/ops/scripts/backup-drill.ts"
+    "backup:drill": "node packages/ops/scripts/backup-drill.ts",
+    "images:build": "node packages/ops/scripts/images.ts build",
+    "images:smoke": "node packages/ops/scripts/images.ts smoke"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,0 +1,67 @@
+# Self-hosting the Dueloop services (docs/self-hosting.md). Supabase is NOT in this file: point the services at the
+# local CLI stack or a hosted project through the env file. Secrets come only from that file at runtime (never build
+# args, never baked into an image). Real-host deployment is NOT VERIFIED; `pnpm images:smoke` runs this file locally.
+#
+#   DUELOOP_ENV_FILE=/path/to/selfhost.env docker compose -f compose.selfhost.yml up -d
+#
+# Every service: read-only root filesystem, all Linux capabilities dropped, no privilege escalation, non-root user
+# (from the image). host.docker.internal reaches services on the Docker host (Compose networking docs, host-gateway).
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges
+  restart: unless-stopped
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  env_file:
+    - path: ${DUELOOP_ENV_FILE:-.env.selfhost}
+      required: true
+
+services:
+  web:
+    <<: *hardening
+    image: ${DUELOOP_IMAGE_PREFIX:-dueloop}-web:${DUELOOP_TAG:-local}
+    build:
+      context: .
+      target: web
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?set NEXT_PUBLIC_APP_URL}
+    tmpfs:
+      - /tmp
+      - /app/apps/web/.next/cache
+    ports:
+      - "${WEB_PORT:-3300}:3000"
+
+  webhooks:
+    <<: *hardening
+    image: ${DUELOOP_IMAGE_PREFIX:-dueloop}-services:${DUELOOP_TAG:-local}
+    build:
+      context: .
+      target: services
+    command: ["node", "packages/webhooks/src/bin/webhooks.ts"]
+    environment:
+      DUELOOP_SERVICE: webhooks
+      PORT: "8787"
+    ports:
+      - "${WEBHOOKS_PORT:-8788}:8787"
+
+  worker:
+    <<: *hardening
+    image: ${DUELOOP_IMAGE_PREFIX:-dueloop}-services:${DUELOOP_TAG:-local}
+    command: ["node", "packages/worker/src/bin/worker.ts", "--loop"]
+    environment:
+      DUELOOP_SERVICE: worker
+
+  processor:
+    <<: *hardening
+    image: ${DUELOOP_IMAGE_PREFIX:-dueloop}-services:${DUELOOP_TAG:-local}
+    command: ["node", "packages/worker/src/bin/inbound.ts", "--loop"]
+    environment:
+      DUELOOP_SERVICE: processor
