@@ -48,6 +48,8 @@ export const STEPS: readonly Step[] = [
   { name: 'web low bandwidth', run: [['web:test:lowbandwidth']] },
   { name: 'e2e demo (7 steps)', run: [['e2e:demo']] },
   { name: 'perf pages (50k invoices)', run: [['perf:pages']] },
+  { name: 'container images: build + smoke', run: [['images:smoke']] },
+  { name: 'demo contract: start, seven steps, stop', run: [['demo', '--non-interactive'], ['demo:selftest'], ['demo:stop']] },
 ];
 
 const pnpm = (args: string[], env: NodeJS.ProcessEnv) => pnpmSpawn(args, { cwd: root, env, stdio: 'inherit' });
