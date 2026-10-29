@@ -1,0 +1,44 @@
+# Build context for Dockerfile (prompt 7 step 5). Everything not needed to BUILD or RUN the services is excluded:
+# secrets, VCS, local state, tests, fixtures, demo code and seed data never enter an image (rule 41).
+**/node_modules
+**/.next
+**/.next-*
+.git
+.github
+.demo
+.reports
+**/coverage
+**/test-results
+**/playwright-report
+*.log
+
+# Secrets and local env (only the generated example may enter, and it holds no values).
+.env
+.env.*
+**/*.pem
+
+# Tests, fixtures, evaluation data and demo code.
+**/test
+**/test-db
+**/test-load
+**/test-adversarial
+**/fixtures
+**/e2e
+**/eval
+packages/*/scripts
+!packages/db/scripts
+packages/db/scripts/*
+!packages/db/scripts/local-env.ts
+apps/web/playwright.config.ts
+data
+supabase
+# Workspace members that are not runtime: keep only their manifests (the frozen lockfile lists them).
+packages/sim/*
+!packages/sim/package.json
+packages/repo-tools/*
+!packages/repo-tools/package.json
+
+# Docs are not runtime.
+docs
+*.md
+!packages/classifier/prompts/*.md

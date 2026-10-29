@@ -6,7 +6,8 @@ import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { claimFindings, licenceFindings, piiFindings, scriptFindings, type Finding } from '../checks.ts';
+import { builtinModules } from 'node:module';
+import { claimFindings, dependencyFindings, licenceFindings, piiFindings, scriptFindings, type Finding } from '../checks.ts';
 import { scanHistory, scanText, scanTree, treeFiles } from '../secrets.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -91,6 +92,17 @@ run('script portability (package.json)', () =>
     .filter((f) => f === 'package.json' || /^(packages|apps)\/[^/]+\/package\.json$/.test(f))
     .flatMap((f) => scriptFindings(f, (JSON.parse(readFileSync(path.join(root, f), 'utf8')) as { scripts?: Record<string, string> }).scripts ?? {})),
 );
+
+run('runtime imports are declared dependencies (packages/*/src)', () => {
+  const builtins = new Set(builtinModules);
+  return files
+    .filter((f) => /^packages\/[^/]+\/package\.json$/.test(f))
+    .flatMap((pj) => {
+      const dir = path.dirname(pj);
+      const sources = files.filter((f) => f.startsWith(`${dir}/src/`) && /\.(ts|tsx|mts)$/.test(f)).map((f) => ({ file: f, text: readFileSync(path.join(root, f), 'utf8') }));
+      return dependencyFindings(pj, JSON.parse(readFileSync(path.join(root, pj), 'utf8')) as Record<string, never>, sources, builtins);
+    });
+});
 
 // Self-check: the patterns must fire on hostile input (guards against a regex that silently matches nothing).
 run('secrets: patterns fire on known shapes', () => {
