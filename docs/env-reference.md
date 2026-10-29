@@ -49,6 +49,8 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `HEALTH_MAX_AGE` | no | - | worker, processor | Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300). |
 | `DEMO_WEB_PORT` | no | - | demo | pnpm demo: port of the demo web app (default 3000). |
 | `DEMO_WEBHOOKS_PORT` | no | - | demo | pnpm demo: port of the demo webhooks service (default 8787). |
+| `DEMO_RECORD` | no | - | demo, test | Set to 1 by pnpm demo:record: the e2e demo records video and keeps page DOMs for the leak check. |
+| `DEMO_RECORD_DOM` | no | - | demo, test | Set by pnpm demo:record: where the e2e demo writes the page DOMs it showed. |
 | `DEMO_MODE` | no | - | demo | Set by `pnpm demo` only; demo:control refuses without it. |
 | `DEMO_NOW` | no | - | demo | Demo clock passed to child processes. |
 | `NOW_ISO` | no | - | demo | Demo/script clock. |
