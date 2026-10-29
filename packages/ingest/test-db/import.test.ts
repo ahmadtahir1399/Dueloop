@@ -213,6 +213,25 @@ describe('commit permissions (real signed-in clients through PostgREST)', () => 
     expect(await commitImport(accountant.client, s.batchId)).toMatchObject({ ok: true });
   });
 
+  it('suppression list (migration 0022): an import cannot silently re-add an opted-out or erased contact', async () => {
+    const t = await newTenant();
+    // Opted out, then anonymised (as erasure does): the row no longer carries the address, the list still does.
+    await sql(`insert into public.customers (tenant_id, display_name, email, phone_e164, opted_out) values ($1, 'Gone Ltd', 'gone@example.com', '+442079460958', true)`, [t]);
+    await sql(`update public.customers set email = null, phone_e164 = null, display_name = 'Erased customer' where tenant_id = $1`, [t]);
+    const r = await importFile(service, t, { file: 'x.csv', mapping: 'standard', options: 'gb-ymd', seed: 7, bytes: csv(
+      'S-1,Gone Again Ltd, GONE@example.com ,,100.00,GBP,2026-09-01,2026-10-01,,Open',
+      'S-2,Phone Again,,020 7946 0958,100.00,GBP,2026-09-01,2026-10-01,,Open',
+      'S-3,Fresh Ltd,fresh@example.com,,100.00,GBP,2026-09-01,2026-10-01,,Open',
+    ) });
+    expect(r.result).toMatchObject({ ok: true });
+    const rows = await sql<{ display_name: string; opted_out: boolean }>(`select display_name, opted_out from public.customers where tenant_id = $1 and display_name <> 'Erased customer' order by display_name`, [t]);
+    expect(rows).toEqual([
+      { display_name: 'Fresh Ltd', opted_out: false },
+      { display_name: 'Gone Again Ltd', opted_out: true },
+      { display_name: 'Phone Again', opted_out: true },
+    ]);
+  });
+
   it('user A cannot read tenant B through the API; anon reads nothing', async () => {
     const a = await newTenant();
     const b = await newTenant();

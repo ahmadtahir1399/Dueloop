@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     "@dueloop/ingest",
     "@dueloop/authz",
     "@dueloop/links",
+    "@dueloop/ops",
+    "@dueloop/config",
     "@dueloop/messaging",
     "@dueloop/payments",
     "@dueloop/proofs",

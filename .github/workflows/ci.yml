@@ -88,6 +88,35 @@ jobs:
           pnpm exec supabase db reset
           pnpm demo:payments
           pnpm payments:integrity
-      # Not in CI: pnpm test:load (5,000 invoices, slow), pnpm eval:live and pnpm eval:proof-live (cost money),
+      # Phase 6. Playwright's own installer fetches the browser build that matches the locked @playwright/test
+      # (Playwright docs, "Continuous Integration": `playwright install --with-deps`).
+      - name: Install the Playwright browser (Chromium) and its OS dependencies
+        run: pnpm --filter @dueloop/web exec playwright install --with-deps chromium
+
+      - name: Web E2E (all roles, IDOR, direct-RPC bypass, public pages, API, editors)
+        run: pnpm web:test:e2e
+
+      - name: Web security (headers, bundle and log scans, test-only code scan, uniform invalid links)
+        run: pnpm web:test:security
+
+      - name: Web accessibility (axe, keyboard-only runs; automated checks only)
+        run: pnpm web:test:a11y
+
+      - name: Web low bandwidth (throttled mobile, JavaScript disabled, page-weight budgets)
+        run: pnpm web:test:lowbandwidth
+
+      - name: Full 7-step demo, end to end (real worker, processor, webhook route, Mailpit)
+        run: pnpm e2e:demo
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: apps/web/test-results
+          retention-days: 7
+
+      # Not in CI: pnpm perf:seed + perf:pages (large tenant, slow; run by hand, numbers in the report),
+      # pnpm test:load (5,000 invoices, slow), pnpm eval:live and pnpm eval:proof-live (cost money),
       # and the live smoke tests (pnpm smoke:whatsapp, smoke:whatsapp-webhook, smoke:stripe; env-gated, they
       # print NOT VERIFIED without credentials). The IMAP test runs GreenMail via docker in db:test.

@@ -226,6 +226,9 @@ importers:
       '@dueloop/messaging':
         specifier: workspace:*
         version: link:../../packages/messaging
+      '@dueloop/ops':
+        specifier: workspace:*
+        version: link:../../packages/ops
       '@dueloop/payments':
         specifier: workspace:*
         version: link:../../packages/payments
@@ -290,6 +293,15 @@ importers:
       '@axe-core/playwright':
         specifier: 4.14.0
         version: 4.14.0(playwright-core@1.64.1)
+      '@dueloop/adapters-email':
+        specifier: workspace:*
+        version: link:../../packages/adapters-email
+      '@dueloop/adapters-payments':
+        specifier: workspace:*
+        version: link:../../packages/adapters-payments
+      '@dueloop/webhooks':
+        specifier: workspace:*
+        version: link:../../packages/webhooks
       '@playwright/test':
         specifier: 1.64.1
         version: 1.64.1
@@ -375,6 +387,8 @@ importers:
       '@types/luxon':
         specifier: 3.7.6
         version: 3.7.6
+
+  packages/config: {}
 
   packages/core:
     dependencies:
@@ -483,6 +497,18 @@ importers:
         specifier: ^3.7.6
         version: 3.7.6
 
+  packages/ops:
+    dependencies:
+      '@dueloop/config':
+        specifier: workspace:*
+        version: link:../config
+      nodemailer:
+        specifier: 10.2.1
+        version: 10.2.1
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+
   packages/payments:
     dependencies:
       '@dueloop/adapters-payments':
@@ -542,6 +568,8 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
 
+  packages/repo-tools: {}
+
   packages/sim:
     dependencies:
       '@dueloop/core':
@@ -560,6 +588,9 @@ importers:
       '@dueloop/inbound':
         specifier: workspace:*
         version: link:../inbound
+      '@dueloop/ops':
+        specifier: workspace:*
+        version: link:../ops
       '@dueloop/payments':
         specifier: workspace:*
         version: link:../payments
@@ -606,6 +637,9 @@ importers:
       '@dueloop/messaging':
         specifier: workspace:*
         version: link:../messaging
+      '@dueloop/ops':
+        specifier: workspace:*
+        version: link:../ops
       '@dueloop/payments':
         specifier: workspace:*
         version: link:../payments

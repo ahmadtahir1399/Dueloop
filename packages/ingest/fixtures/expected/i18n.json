@@ -32,7 +32,7 @@
       "raw": [
         "I-1",
         "Müller & Söhne",
-        "mueller@example.de",
+        "mueller@de.example",
         "",
         "100.00",
         "EUR",
@@ -47,7 +47,7 @@
           "invoiceNumber": "I-1",
           "customer": {
             "name": "Müller & Söhne",
-            "email": "mueller@example.de",
+            "email": "mueller@de.example",
             "phone": null,
             "externalId": null
           },
@@ -71,7 +71,7 @@
       "raw": [
         "I-2",
         "شركة الأمل للتجارة",
-        "amal@example.ae",
+        "amal@ae.example",
         "+971 50 123 4567",
         "250.000",
         "KWD",
@@ -86,7 +86,7 @@
           "invoiceNumber": "I-2",
           "customer": {
             "name": "شركة الأمل للتجارة",
-            "email": "amal@example.ae",
+            "email": "amal@ae.example",
             "phone": "+971501234567",
             "externalId": null
           },
@@ -115,7 +115,7 @@
       "raw": [
         "I-3",
         "عمران ٹریڈرز",
-        "imran@example.pk",
+        "imran@pk.example",
         "0321 7654321",
         "1,50,000",
         "PKR",
@@ -130,7 +130,7 @@
           "invoiceNumber": "I-3",
           "customer": {
             "name": "عمران ٹریڈرز",
-            "email": "imran@example.pk",
+            "email": "imran@pk.example",
             "phone": "+923217654321",
             "externalId": null
           },
@@ -203,7 +203,7 @@
       "raw": [
         "I-5",
         "Zoë Ørsted",
-        "zoe@example.dk",
+        "zoe@dk.example",
         "",
         "10.50",
         "EUR",
@@ -218,7 +218,7 @@
           "invoiceNumber": "I-5",
           "customer": {
             "name": "Zoë Ørsted",
-            "email": "zoe@example.dk",
+            "email": "zoe@dk.example",
             "phone": null,
             "externalId": null
           },

@@ -11,12 +11,22 @@ export const FILE_CSP = "sandbox; default-src 'none'; img-src 'self'; style-src 
 export function routeClass(pathname: string): RouteClass {
   if (/^\/proofs\/[^/]+\/file$/.test(pathname)) return "file";
   if (pathname === "/p" || pathname.startsWith("/p/") || pathname === "/o" || pathname.startsWith("/o/")) return "public";
-  if (pathname === "/v1" || pathname.startsWith("/v1/")) return "api";
+  if (pathname === "/v1" || pathname.startsWith("/v1/") || pathname === "/health" || pathname === "/ready") return "api";
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) return "auth";
   return "staff";
 }
 
-export function contentSecurityPolicy(nonce: string, dev: boolean): string {
+/**
+ * form-action for the public pages. Browsers apply form-action to the REDIRECT after a form POST, so "Pay now"
+ * (a POST answered with 303 to the provider's hosted checkout) needs the provider origins here. Stripe hosts
+ * Checkout on checkout.stripe.com and Payment Links on buy.stripe.com (Stripe docs; live checkout NOT VERIFIED).
+ * The FakeGateway origin is added only when the fake gateway is enabled (tests and demo).
+ */
+export function publicFormAction(allowFake: boolean): string {
+  return ["'self'", "https://checkout.stripe.com", "https://buy.stripe.com", ...(allowFake ? ["https://pay.fake.test"] : [])].join(" ");
+}
+
+export function contentSecurityPolicy(nonce: string, dev: boolean, formAction = "'self'"): string {
   return [
     "default-src 'self'",
     // 'strict-dynamic' lets the nonce-carrying Next.js bootstrap load its own chunks; nothing inline without the nonce.
@@ -30,7 +40,7 @@ export function contentSecurityPolicy(nonce: string, dev: boolean): string {
     "connect-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
-    "form-action 'self'",
+    `form-action ${formAction}`,
     "frame-ancestors 'none'",
     "frame-src 'self'",
   ].join("; ");

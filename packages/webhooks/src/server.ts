@@ -37,6 +37,8 @@ export interface WebhookDeps {
   readonly afterStore?: () => void | Promise<void>;
   /** Prompt 5: payment provider deliveries (verify -> store -> queue). Absent = the route does not exist. */
   readonly payments?: (token: string, rawBody: string, headers: Readonly<Record<string, string>>) => Promise<{ readonly status: number }>;
+  /** Prompt 7: readiness (database reachable, schema version matches). Absent = /ready answers like /health. */
+  readonly ready?: () => Promise<{ readonly ok: boolean; readonly reason?: string }>;
 }
 
 const PAYMENTS_PATH = /^\/webhooks\/payments\/([A-Za-z0-9_-]{1,200})$/;
@@ -84,7 +86,11 @@ export function createWebhookHandler(deps: WebhookDeps): (req: http.IncomingMess
 
   const handle = async (req: http.IncomingMessage): Promise<Reply> => {
     const url = new URL(req.url ?? '/', 'http://localhost');
-    if (req.method === 'GET' && url.pathname === '/healthz') return { status: 200, body: '{"ok":true}', type: 'application/json' };
+    if (req.method === 'GET' && (url.pathname === '/healthz' || url.pathname === '/health')) return { status: 200, body: '{"ok":true}', type: 'application/json' };
+    if (req.method === 'GET' && url.pathname === '/ready') {
+      const r = deps.ready ? await deps.ready().catch(() => ({ ok: false, reason: 'readiness check failed' })) : { ok: true };
+      return { status: r.ok ? 200 : 503, body: JSON.stringify(r), type: 'application/json' };
+    }
     const pay = PAYMENTS_PATH.exec(url.pathname);
     if (pay && deps.payments) {
       if (!allow(req.socket.remoteAddress ?? 'unknown')) return plain(429, 'slow down');

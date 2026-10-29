@@ -32,3 +32,17 @@
 30. Tenant and invoice for a payment event come from OUR rows (payment_accounts, payment_requests), never from payload metadata or URLs.
 31. Proof files are PII in private storage. Extracted text is untrusted and never becomes a payment amount by itself.
 32. Receipts and all transactional sends use the same outbox, kill switch, budget and at-most-once rules as reminders.
+33. The UI hides, the DB decides. Every mutation re-checks role and tenant in the database. The role matrix is DATA used by UI gating, tests and docs.
+34. Customer-supplied and model-supplied text is rendered as text only: never HTML, never in a URL, never in a log.
+35. GET never changes state (link scanners prefetch). Public actions are POSTs carrying a valid token.
+36. Public tokens and API keys are random, stored hashed, never logged, never placed where a Referer can leak them. Public pages are no-store and noindex.
+37. The service-role key and every secret never reach a client bundle, a response or a log. Secrets are write-only in the UI.
+38. Money in the UI is minor units formatted via core; instants are shown in the tenant's time zone; never group by UTC day.
+39. Public endpoints are rate-limited, size-capped and answer an invalid, expired or revoked link identically.
+40. No UI action sends a message or changes invoice state except through existing RPCs/pipelines (approvals, tasks, planReplyOutcome, apply_payment, import commit).
+41. Demo-only code, credentials and seed data never run against a non-local database and never exist in production builds or images. Prove it with scans.
+42. No document states a measurement, compliance status or guarantee that a command in this repo does not back. Unknowns are written as TODO or NOT VERIFIED.
+43. Never invent contact details, support hours, SLAs, prices or legal terms. Use marked placeholders.
+44. Every documented command is executed in CI or explicitly marked unverified.
+45. A service refuses to start if the database schema version does not match the code. It says why.
+46. Anything that ever looked like a secret in git is leaked: rotate it; deleting it from the tree is not a fix.

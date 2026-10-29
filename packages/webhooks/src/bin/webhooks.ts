@@ -3,6 +3,7 @@
 // whose secret is in Vault. Env only, never logged. Database: WORKER_DATABASE_URL, else the local stack. Live
 // provider delivery needs a public HTTPS URL in front of this (a tunnel or a reverse proxy): manual (ADR 0023).
 import { DEFAULT_PAYMENTS_CONFIG, NO_PAYMENT_FAILPOINTS, PaymentsDb, accountProviders, ingestPaymentWebhook, type PaymentsDeps } from '@dueloop/payments';
+import { assertSchema, heartbeat, SchemaMismatch } from '@dueloop/ops';
 import pg from 'pg';
 import { localEnv } from '../../../db/scripts/local-env.ts';
 import { DEFAULT_WEBHOOK_CONFIG, createWebhookServer, pgWebhookStore } from '../index.ts';
@@ -15,6 +16,14 @@ if ((!appSecret || !verifyToken) && !payments) {
   process.exit(2);
 }
 const pool = new pg.Pool({ connectionString: process.env.WORKER_DATABASE_URL ?? localEnv().dbUrl, max: 4, application_name: 'dueloop-webhooks' });
+// Rule 45: refuse to start on a schema mismatch (precise reason, no values).
+try {
+  await assertSchema(pool);
+} catch (e) {
+  console.error(e instanceof Error ? e.message : 'schema check failed');
+  await pool.end();
+  process.exit(1);
+}
 const log = (event: string, fields: Readonly<Record<string, string | number | boolean | null>> = {}) =>
   process.stdout.write(`${JSON.stringify({ level: 'info', event, at: new Date().toISOString(), ...fields })}\n`);
 const clock = { now: () => new Date() };
@@ -33,6 +42,15 @@ const server = createWebhookServer({
   config: { ...DEFAULT_WEBHOOK_CONFIG, appSecret: appSecret && verifyToken ? appSecret : '', verifyToken },
   now: () => new Date(),
   log,
+  ready: async () => {
+    try {
+      await assertSchema(pool);
+      await heartbeat(pool, 'webhooks', true, {}, new Date());
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: e instanceof SchemaMismatch ? 'schema_mismatch' : 'database_unreachable' };
+    }
+  },
   ...(payments ? { payments: (token: string, raw: string, headers: Readonly<Record<string, string>>) => ingestPaymentWebhook(paymentsDeps, token, raw, headers) } : {}),
 });
 const port = Number(process.env.PORT ?? 8787);

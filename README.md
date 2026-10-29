@@ -184,3 +184,8 @@ pnpm eval:proof-live                                            # proof hints on
 - Proof files are PII and stay in a private bucket. AI extraction of hints is OFF by default per tenant
   (`tenants.proof_ai_extraction`). It sends the image to a third-party model, and its output is an untrusted
   hint that never confirms anything. See `docs/decisions/0032`-`0041`.
+
+## Licence
+
+TODO(licence): no licence has been chosen yet, so no LICENSE file is included and no rights are granted.
+The owner decides (see the prompt 7 report, "Decisions needed").

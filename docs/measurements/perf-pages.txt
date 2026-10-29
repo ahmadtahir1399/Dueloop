@@ -1,0 +1,20 @@
+# pnpm perf:pages, 2026-10-29T13:32Z, local machine (Windows 10, Docker Desktop), NOT a production measurement
+$ supabase db reset && node packages/db/scripts/perf-seed.ts --invoices 50000 && pnpm --filter @dueloop/web exec playwright test --project perf
+seeded 50000 invoices for Perf Co in 6.5 s
+{"invoices":50000,"customers":10000}
+┌─────────┬──────────────────────────────────┬───────────┬──────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ query                            │ median_ms │ rows │ plan                                                                                                       │
+├─────────┼──────────────────────────────────┼───────────┼──────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'invoice list, first page'       │ 0.77      │ 51   │ '"Index Name":"invoices_tenant_due_idx" "Index Name":"customers_pkey" "Index Name":"payments_invoice_idx"' │
+│ 1       │ 'invoice list, page 50 (keyset)' │ 6.9       │ 51   │ '"Index Name":"invoices_tenant_due_idx" "Index Name":"customers_pkey" "Index Name":"payments_invoice_idx"' │
+│ 2       │ 'invoice list, status=overdue'   │ 0.54      │ 51   │ '"Index Name":"invoices_tenant_status_due_idx" "Index Name":"customers_pkey"'                              │
+│ 3       │ 'invoice list, bucket=31-60'     │ 137.89    │ 51   │ '"Index Name":"payments_invoice_idx"'                                                                      │
+│ 4       │ 'invoice list, search'           │ 68.52     │ 51   │ 'Limit'                                                                                                    │
+│ 5       │ 'customer list, first page'      │ 0.14      │ 51   │ '"Index Name":"customers_tenant_name_idx"'                                                                 │
+│ 6       │ 'kpi_ageing (overview)'          │ 202.87    │ 5    │ 'Function Scan'                                                                                            │
+│ 7       │ 'nav_counters'                   │ 0.53      │ 1    │ 'Function Scan'                                                                                            │
+└─────────┴──────────────────────────────────┴───────────┴──────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+Running 1 test using 1 worker
+PERF PAGES {"invoices":50000,"pages":[{"page":"/invoices","median_ms":39},{"page":"/invoices?status=overdue","median_ms":40},{"page":"/invoices?bucket=31-60","median_ms":175},{"page":"/invoices?q=PF-00123","median_ms":110},{"page":"/customers","median_ms":40},{"page":"/","median_ms":242}]}
+  ok 1 [perf] › e2e\perf\pages.spec.ts:11:5 › page server times on the 50k tenant (3.4s)
+  1 passed (19.2s)
