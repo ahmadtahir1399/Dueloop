@@ -10,6 +10,15 @@ export type ChannelConfigResult =
   | { ok: true; channel: "email" | "whatsapp"; config: Record<string, string>; externalAccountId: string | null }
   | { ok: false; reason: string };
 
+/** Same rule as the worker's email adapter (senderAllowed): SMTP_FROM_DOMAINS, when set, lists the allowed domains. */
+export function senderDomainAllowed(address: string, fromDomainsEnv: string | undefined): boolean {
+  const allowed = (fromDomainsEnv ?? "")
+    .split(",")
+    .map((d) => d.trim().toLowerCase())
+    .filter((d) => d !== "");
+  return allowed.length === 0 || allowed.includes(address.split("@").at(-1)?.toLowerCase() ?? "");
+}
+
 export function channelConfigFrom(i: ChannelConfigInput): ChannelConfigResult {
   if (i.channel === "email") {
     const address = i.fromAddress.trim();

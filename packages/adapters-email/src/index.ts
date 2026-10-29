@@ -11,6 +11,8 @@ export interface SmtpSettings {
   readonly user: string | null;
   /** Operator default only (SMTP_PASSWORD). Never set on, or sent to, a tenant-chosen host. */
   readonly password?: string | null;
+  /** Operator default only (SMTP_FROM_DOMAINS): sender domains this relay may send for. Empty = no limit. */
+  readonly allowedFromDomains?: readonly string[];
 }
 
 export interface SmtpChannelOptions {
@@ -80,12 +82,25 @@ export function smtpLogin(
   defaults: SmtpSettings | null,
   allowTenantHost: boolean,
   tenantPassword: string | null,
-): { host: string; port: number; secure: boolean; auth: { user: string; pass: string } | undefined } | null {
+): { host: string; port: number; secure: boolean; auth: { user: string; pass: string } | undefined; requireTLS: boolean; tenantHost: boolean } | null {
   const r = settingsFor(account, defaults, allowTenantHost);
   if (!r) return null;
   const operatorPassword = r.tenantHost ? null : (r.s.password ?? null);
   const pass = tenantPassword ?? operatorPassword ?? '';
-  return { host: r.s.host, port: r.s.port, secure: r.s.secure, auth: r.s.user ? { user: r.s.user, pass } : undefined };
+  const auth = r.s.user ? { user: r.s.user, pass } : undefined;
+  // A login over a non-TLS port must upgrade with STARTTLS or fail: never send the password in clear (round 2).
+  return { host: r.s.host, port: r.s.port, secure: r.s.secure, auth, requireTLS: auth !== undefined && !r.s.secure, tenantHost: r.tenantHost };
+}
+
+/**
+ * The operator relay sends only for the domains in SMTP_FROM_DOMAINS (when set): otherwise any tenant owner could
+ * send as any address (another tenant, a bank) through the operator's logged-in relay and pass its SPF/DKIM.
+ */
+export function senderAllowed(fromAddress: string, defaults: SmtpSettings | null): boolean {
+  const allowed = defaults?.allowedFromDomains ?? [];
+  if (allowed.length === 0) return true;
+  const domain = fromAddress.split('@').at(-1)?.toLowerCase() ?? '';
+  return allowed.includes(domain);
 }
 
 export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel {
@@ -96,10 +111,12 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
       const settings = smtpLogin(envelope.account, options.defaults, options.allowTenantHost === true, credentials);
       if (!settings) return { kind: 'not_sent_retryable', reason: 'smtp_not_configured' };
       const mail: EmailContent = envelope.content;
+      if (!settings.tenantHost && !senderAllowed(mail.from.address, options.defaults)) return { kind: 'not_sent_retryable', reason: 'smtp_sender_not_allowed' };
       const transport = nodemailer.createTransport({
         host: settings.host,
         port: settings.port,
         secure: settings.secure,
+        requireTLS: settings.requireTLS,
         auth: settings.auth,
         connectionTimeout: options.timeoutMs,
         greetingTimeout: options.timeoutMs,
@@ -135,7 +152,11 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
 /** SMTP_HOST / SMTP_PORT / SMTP_SECURE / SMTP_USER from the environment (the password is a Vault secret). */
 export function smtpDefaultsFromEnv(env: Readonly<Record<string, string | undefined>>): SmtpSettings | null {
   if (!env.SMTP_HOST) return null;
-  return { host: env.SMTP_HOST, port: Number(env.SMTP_PORT ?? 587), secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER ?? null, password: env.SMTP_PASSWORD ?? null };
+  const allowedFromDomains = (env.SMTP_FROM_DOMAINS ?? '')
+    .split(',')
+    .map((d) => d.trim().toLowerCase())
+    .filter((d) => d !== '');
+  return { host: env.SMTP_HOST, port: Number(env.SMTP_PORT ?? 587), secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER ?? null, password: env.SMTP_PASSWORD ?? null, allowedFromDomains };
 }
 export * from './imap.ts';
 export * from './imap-store.ts';

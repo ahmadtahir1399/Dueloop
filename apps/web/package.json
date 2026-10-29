@@ -8,6 +8,7 @@
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {
+    "@dueloop/adapters-whatsapp": "workspace:*",
     "@dueloop/authz": "workspace:*",
     "@dueloop/core": "workspace:*",
     "@dueloop/db": "workspace:*",

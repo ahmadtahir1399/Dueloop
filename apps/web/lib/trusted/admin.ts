@@ -3,9 +3,10 @@
 // Secrets are write-only: they go to Vault through the prompt 3/5 functions and are never read back here.
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
+import { verifyPhoneNumberId } from "@dueloop/adapters-whatsapp";
 import { checkBaseUrl } from "@dueloop/links";
 import { createClient } from "@supabase/supabase-js";
-import { channelConfigFrom, type ChannelConfigInput } from "@/lib/channel-config";
+import { channelConfigFrom, senderDomainAllowed, type ChannelConfigInput } from "@/lib/channel-config";
 import type { TenantContext } from "@/lib/session";
 import { trustedPool } from "./db";
 import { serviceRoleKey, supabaseUrl } from "./env";
@@ -57,27 +58,40 @@ export async function setChannelSecret(ctx: TenantContext, channel: string, secr
 /**
  * Non-secret channel settings (sender address, WhatsApp phone number id). Before this, nothing in the UI could set
  * them, so a new tenant could not send. Replaces only the keys this form owns; other config keys are kept.
+ * WhatsApp: the phone number id is always saved for SENDING (Meta only accepts it with this business's own token).
+ * Inbound replies are routed by external_account_id, so that is set only when Meta confirms, with this business's
+ * token, that the token can read the number; otherwise it is cleared (review round 2: a business could claim
+ * another business's number and receive its customers' replies). Value: true when Meta confirmed it.
  */
-export async function setChannelConfig(ctx: TenantContext, input: ChannelConfigInput): Promise<AdminResult> {
+export async function setChannelConfig(ctx: TenantContext, input: ChannelConfigInput): Promise<AdminResult<boolean | null>> {
   if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can change channel settings." };
   const v = channelConfigFrom(input);
   if (!v.ok) return { ok: false, reason: v.reason };
+  if (v.channel === "email" && !senderDomainAllowed(v.config.from_address ?? "", process.env.SMTP_FROM_DOMAINS)) {
+    return { ok: false, reason: "This server may only send from these domains: " + (process.env.SMTP_FROM_DOMAINS ?? "") + "." };
+  }
   const owned = v.channel === "email" ? ["from_address", "from_name"] : ["phone_number_id"];
+  let confirmed: boolean | null = null;
+  if (v.channel === "whatsapp" && v.externalAccountId) {
+    const graphVersion = process.env.WHATSAPP_GRAPH_VERSION ?? "";
+    const token = (await trustedPool().query<{ s: string | null }>("select private.channel_secret($1, 'whatsapp') as s", [ctx.tenant.id])).rows[0]?.s ?? "";
+    confirmed = graphVersion !== "" && token !== "" && (await verifyPhoneNumberId({ graphVersion, token, phoneNumberId: v.externalAccountId, timeoutMs: 10_000 }));
+  }
+  const external = v.channel === "whatsapp" ? (confirmed ? v.externalAccountId : null) : undefined;
   try {
     await trustedPool().query(
       `insert into public.channel_accounts (tenant_id, channel, config, external_account_id) values ($1, $2, $3::jsonb, $4)
        on conflict (tenant_id, channel) do update
          set config = (public.channel_accounts.config - $5::text[]) || excluded.config,
-             external_account_id = coalesce(excluded.external_account_id, public.channel_accounts.external_account_id)`,
-      [ctx.tenant.id, v.channel, JSON.stringify(v.config), v.externalAccountId, owned],
+             external_account_id = case when $6 then excluded.external_account_id else public.channel_accounts.external_account_id end`,
+      [ctx.tenant.id, v.channel, JSON.stringify(v.config), external ?? null, owned, external !== undefined],
     );
   } catch (e) {
-    // channel_accounts_external_unique: the same WhatsApp number is already connected (possibly to another
-    // tenant). Say only that it cannot be used here.
+    // channel_accounts_external_unique: Meta confirmed the number for THIS token, yet another account routes it.
     if ((e as { code?: string }).code === "23505") return { ok: false, reason: "This phone number ID cannot be used here." };
     throw e;
   }
-  return { ok: true, value: null };
+  return { ok: true, value: confirmed };
 }
 
 function webhookUrl(token: string): string | null {

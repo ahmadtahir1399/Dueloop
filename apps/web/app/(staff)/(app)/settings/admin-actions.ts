@@ -130,7 +130,14 @@ export async function integrationAction(_prev: IntegrationState, form: FormData)
     );
     if (!r.ok) return { error: r.reason };
     revalidatePath("/settings/integrations");
-    return { ok: true, message: "Saved." };
+    if (r.value === false) {
+      return {
+        ok: true,
+        message:
+          "Saved for sending. Customer replies reach the app only after Meta confirms this number: save the WhatsApp access token first, then save the number again.",
+      };
+    }
+    return { ok: true, message: r.value ? "Saved. Meta confirmed this number." : "Saved." };
   }
   if (op === "connect_payment") {
     const r = await connectPaymentAccount(ctx, {

@@ -99,3 +99,24 @@ export function createWhatsAppChannel(options: WhatsAppChannelOptions): Outbound
     },
   };
 }
+
+/**
+ * Does this token have access to this phone number id? GET <base>/<version>/<PHONE_NUMBER_ID> (Meta Cloud API
+ * "Phone Numbers" reference, read 2026-10-30). Used before a business may route inbound WhatsApp to itself, so it
+ * cannot claim another business's number (review round 2). Never throws; the token is never logged or returned.
+ */
+export async function verifyPhoneNumberId(o: { graphVersion: string; token: string; phoneNumberId: string; timeoutMs: number; fetch?: typeof fetch; baseUrl?: string }): Promise<boolean> {
+  if (!/^\d{1,32}$/.test(o.phoneNumberId) || !/^v\d+\.\d+$/.test(o.graphVersion) || !o.token) return false;
+  const doFetch = o.fetch ?? fetch;
+  try {
+    const res = await doFetch(`${o.baseUrl ?? 'https://graph.facebook.com'}/${o.graphVersion}/${o.phoneNumberId}?fields=id`, {
+      headers: { Authorization: `Bearer ${o.token}` },
+      signal: AbortSignal.timeout(o.timeoutMs),
+    });
+    if (!res.ok) return false;
+    const body = (await res.json()) as { id?: unknown };
+    return body.id === o.phoneNumberId;
+  } catch {
+    return false;
+  }
+}
