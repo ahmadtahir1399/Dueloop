@@ -7,7 +7,7 @@
 <!-- Source of docs/guides/getting-your-keys.pdf (rendered by `pnpm guide:pdf`; the PDF itself is not committed).
      Provider steps were read from each provider's own docs on 2026-10-29/30 (list at the end). Screens change:
      the guide tells the reader to follow the provider's page when it differs. App facts were checked against the
-     code by a separate review (round 1) and updated after the fixes it led to. -->
+     code by two separate reviews (rounds 1 and 2) and updated after the fixes they led to. -->
 <style>
   @page { size: A4; margin: 16mm 15mm 18mm; }
   :root { --ink: #1c2430; --soft: #556070; --line: #d9dee5; --accent: #1f5fae; --accent-bg: #eef4fb;
@@ -59,9 +59,9 @@
     <li><b>Server settings (env).</b> Most keys go here. Your hosting service has a page called something like
       "Environment variables". You can also put them in a file named <code>.env</code> on your server. The file
       <code>.env.example</code> in this project lists every name.</li>
-    <li><b>The app's own Settings.</b> Some things are typed into the app after you log in as the owner:
-      <b>Settings → Integrations</b> (email password, sender address, WhatsApp, Stripe, Slack) and each customer's
-      page (consent). The app keeps passwords locked in the database vault and never shows them again.</li>
+    <li><b>Inside the app.</b> Some settings go inside the app. Log in as the owner. Open <b>Settings → Integrations</b>
+      for email, WhatsApp, Stripe and Slack. Open each customer's page to record consent. Passwords you type there are
+      locked in the database vault and never shown again.</li>
   </ul>
 
   <h3>Five safety rules</h3>
@@ -79,7 +79,7 @@
     <tr><td>1</td><td>Supabase (database)</td><td>6 server keys + 1 Supabase setting</td><td><span class="tag free">free plan</span> <span class="tag must">required</span></td></tr>
     <tr><td>2</td><td>Your app's web address</td><td>server keys</td><td>from your hosting <span class="tag must">required</span></td></tr>
     <tr><td>3</td><td>Email (Brevo or Gmail)</td><td>server keys + Settings</td><td><span class="tag free">free plan</span> needed to send email</td></tr>
-    <tr><td>4</td><td>OpenAI (reads replies)</td><td>server keys</td><td><span class="tag paid">paid</span> optional</td></tr>
+    <tr><td>4</td><td>OpenAI (reads WhatsApp replies)</td><td>server keys</td><td><span class="tag paid">paid</span> optional</td></tr>
     <tr><td>5</td><td>WhatsApp (Meta)</td><td>server keys + Settings + customer pages</td><td><span class="tag free">test number</span> optional</td></tr>
     <tr><td>6</td><td>Stripe (pay links)</td><td>1 server key + Settings</td><td><span class="tag free">sandbox</span> optional</td></tr>
     <tr><td>7</td><td>Alerts, checks, final list</td><td>server keys + Settings</td><td>optional</td></tr>
@@ -122,7 +122,7 @@ SUPABASE_SERVICE_ROLE_KEY=sb_secret_...</pre>
   <h3>Step D: the database connection string</h3>
   <ol>
     <li>Click <b>Connect</b> again.</li>
-    <li>Choose <b>Session pooler</b>. It works on any internet connection.</li>
+    <li>Choose <b>Session pooler</b>. Supabase says it works on IPv4 networks, which most servers use. <i class="src">(provider)</i></li>
     <li>Copy it. Replace <code>[YOUR-PASSWORD]</code> with your database password from Step A.</li>
   </ol>
   <p>Use the same string for both keys. Both are <b>secret</b>:</p>
@@ -148,23 +148,26 @@ WORKER_DATABASE_URL=postgresql://postgres.abcdefgh:PASS@POOLER-HOST:5432/postgre
     <li><span class="keyname">PUBLIC_APP_URL</span> <span class="tag must">required</span>: used in pay links and
       opt-out links in every reminder. It must start with <code>https://</code>.</li>
     <li><span class="keyname">NEXT_PUBLIC_APP_URL</span> (optional): only a backup address for sign-up emails. Use the same value.</li>
-    <li><span class="keyname">WEBHOOKS_PUBLIC_URL</span>: the https address of the <b>webhooks</b> program (Part 5 and 6
-      send messages there). Leave it empty only if your proxy sends <code>/webhooks/</code> on your app address to that program.</li>
-    <li><span class="keyname">TRUST_PROXY_HOPS</span>: leave at <code>0</code> unless your host tells you a number.</li>
+    <li><span class="keyname">WEBHOOKS_PUBLIC_URL</span>: the https address of the <b>webhooks</b> program (WhatsApp and
+      Stripe send messages there). If you leave it out, the app uses your app address, so your host must send its
+      <code>/webhooks/</code> pages to the webhooks program. Ask your host if unsure.</li>
+    <li><span class="keyname">TRUST_PROXY_HOPS</span>: most hosts put a "proxy" in front of your app. Ask your host how
+      many. Type that number. If there is none, type 0.</li>
   </ul>
   <pre>PUBLIC_APP_URL=https://app.yourbusiness.example
 NEXT_PUBLIC_APP_URL=https://app.yourbusiness.example
-WEBHOOKS_PUBLIC_URL=https://hooks.yourbusiness.example</pre>
+WEBHOOKS_PUBLIC_URL=https://hooks.yourbusiness.example
+TRUST_PROXY_HOPS=0</pre>
   <div class="box warn"><strong>Hosting is not covered here</strong>The app has four programs: web, worker, reply
-    processor and webhooks. The first three run all the time. Free hosting plans often sleep or stop long-running
-    programs, so check your host's plan. If you use neither WhatsApp nor Stripe, do not run the webhooks program
-    (it refuses to start with nothing to receive). <code>docs/self-hosting.md</code> explains the containers.</div>
+    processor and webhooks. Each one you use must run all the time. Free hosting plans often sleep or stop
+    long-running programs, so check your host's plan. If you use neither WhatsApp nor Stripe, do not run the webhooks
+    program (it refuses to start with nothing to receive). <code>docs/self-hosting.md</code> explains the containers.</div>
 </section>
 
 <section>
   <h2>Part 3: email sending <span class="tag free">free plan</span></h2>
-  <p>The app sends reminders by email through an <b>SMTP</b> service. Pick <b>one</b> option. Option A is better for a
-    real business. Option B is fine for testing with your own Gmail.</p>
+  <p>The app sends reminders by email through an <b>SMTP</b> service (the usual way programs send email). Pick
+    <b>one</b> option. Option A is better for a real business. Option B is fine for testing with your own Gmail.</p>
 
   <h3>Option A: Brevo</h3>
   <p>The free plan can send 300 emails per day. <i class="src">(provider: brevo.com)</i></p>
@@ -192,29 +195,39 @@ SMTP_SECURE=true
 SMTP_USER=(your full Gmail address)
 SMTP_PASSWORD=(the app password)      # secret</pre>
   <div class="box warn"><strong>Gmail limits</strong>Google says app passwords are not recommended, and they may not
-    exist for work, school or Advanced Protection accounts. Changing your Google password cancels them. Use Gmail
-    only for testing.</div>
+    exist for work, school or Advanced Protection accounts. Changing your Google password cancels them.
+    <i class="src">(provider)</i> Use Gmail only for testing.</div>
+  <p class="small">The app always encrypts the login: with port 587 the mail server must offer encryption (STARTTLS),
+    or sending fails instead of sending your password in plain text.</p>
+
+  <h3>Several businesses on one server?</h3>
+  <p>Set <code>SMTP_FROM_DOMAINS</code> to the sender domains your mail service has verified, for example
+    <code>SMTP_FROM_DOMAINS=yourbusiness.example</code>. Then no business can send as someone else.</p>
 
   <h3>Then, in the app (owner)</h3>
   <ol>
     <li>Open <b>Settings → Integrations</b>.</li>
-    <li>In the <b>Email sender</b> form, type the <b>Sender email address</b> (one your email service has verified)
-      and, if you like, a <b>Sender name</b>. Click <b>Save sender</b>.</li>
-    <li>Only if this business uses <b>its own</b> SMTP password instead of <code>SMTP_PASSWORD</code>: in the
-      <b>Channels</b> box, choose <b>email (SMTP password)</b> under <b>Channel</b>, paste it into <b>Secret</b> and
-      click <b>Save secret</b>. A password saved here wins over <code>SMTP_PASSWORD</code>.</li>
+    <li>In the <b>Channels</b> box, fill in <b>Sender email address</b> (one your email service has verified) and,
+      if you like, the sender name. Click <b>Save sender</b>.</li>
   </ol>
   <div class="box ok"><strong>Templates are ready</strong>A new business gets standard English email reminders
     (friendly, nudge, firm, receipt). Read them in <b>Settings → Templates</b> and change the words if you like. If one is
     missing, that page shows an <b>Add the standard email templates</b> button.</div>
+  <div class="box warn"><strong>Email replies are not read by the app yet</strong>When a customer answers a reminder
+    email, the answer goes to your own inbox. Read it there and act on it yourself. To stop reminders, customers use
+    the link at the bottom of each email. WhatsApp replies <i>are</i> read by the app.</div>
+  <p class="small">Your own mail server instead of the server's: only if the operator sets
+    <code>SMTP_ALLOW_TENANT_HOST=true</code>. Then the same box asks for your mail server, port, login and password.</p>
+  <p class="small">By default every reminder waits for a person to approve it: open <b>Approvals</b> to send them.
+    You can change this in <b>Settings</b>.</p>
 </section>
 
 <section>
-  <h2>Part 4: OpenAI, to read customer replies <span class="tag paid">paid</span> optional</h2>
-  <p>When a customer answers a reminder ("I will pay on the 15th"), the AI can suggest what the reply means. A
+  <h2>Part 4: OpenAI, to read WhatsApp replies <span class="tag paid">paid</span> optional</h2>
+  <p>When a customer answers on WhatsApp ("I will pay on the 15th"), the AI can suggest what the reply means. A
     person or the app's rules still decide. <b>The AI never closes an invoice or sends a message.</b></p>
   <div class="box ok"><strong>Free choice: skip this part</strong>If you leave <code>CLASSIFIER</code> empty, every
-    reply goes to a person as a task. Nothing is lost. This costs nothing.</div>
+    reply goes to a person as a task. This costs nothing.</div>
   <div class="box warn"><strong>Cost</strong>We found no official OpenAI free plan for the API. Expect to add a payment
     method and buy credit first. Check OpenAI's billing page for the current rules.</div>
 
@@ -224,13 +237,13 @@ SMTP_PASSWORD=(the app password)      # secret</pre>
     <li>Open <b>Billing</b> and add credit.</li>
     <li>Open <b>API keys</b>. Click <b>Create new secret key</b>. Give it a name, pick your project, and create it.</li>
     <li>Copy the key at once (new keys usually start with <code>sk-proj-</code> <i class="src">(provider)</i>). It is shown only one time.</li>
-    <li>Choose a model on OpenAI's <b>Models</b> page. It must support "Structured Outputs". OpenAI's docs say to start
+    <li>Pick a model that OpenAI says supports "Structured Outputs" (fixed-format answers). OpenAI's docs say to start
       new projects with <code>gpt-6-astra</code>. <i class="src">(provider, 29 Oct 2026)</i></li>
   </ol>
   <pre>CLASSIFIER=openai
 CLASSIFIER_MODEL=gpt-6-astra
 OPENAI_API_KEY=sk-proj-...            # secret</pre>
-  <p>If the model is a "reasoning" model, also set <code>CLASSIFIER_REASONING_EFFORT=low</code>. Otherwise leave it empty.</p>
+  <p>If OpenAI calls your model a "reasoning" model, also set <code>CLASSIFIER_REASONING_EFFORT=low</code>. Otherwise leave it out.</p>
 
   <h3>Also read payment screenshots? (optional)</h3>
   <p>The app can ask the AI for hints from a payment screenshot a customer sends. The hints are only shown to a person;
@@ -247,29 +260,30 @@ PROOF_EXTRACTION_MODEL=(an OpenAI model that can read images)</pre>
 <section>
   <h2>Part 5: WhatsApp <span class="tag free">test number</span> optional</h2>
   <p>WhatsApp uses Meta's <b>WhatsApp Cloud API</b>. Meta gives you a <b>test phone number</b> to start. To message
-    real customers, Meta must check your business and approve your message texts. This takes days.</p>
+    real customers, Meta must check your business and approve your message texts. <i class="src">(provider)</i></p>
 
   <h3>Step A: app and token</h3>
   <ol>
     <li>Register at <b>developers.facebook.com</b>.</li>
     <li>In the App Dashboard, click <b>Create App</b>. Choose <b>Connect with customers through WhatsApp</b>. Pick your business portfolio.</li>
     <li>Click <b>Start using the API</b>. Note the test number's <b>Phone number ID</b> (digits only).</li>
-    <li>Make a <b>permanent token</b>: in <b>Business Settings → System users</b>, add a system user, give it your app
-      and WhatsApp account, then <b>Generate token</b> with the permissions <code>business_management</code>,
-      <code>whatsapp_business_messaging</code> and <code>whatsapp_business_management</code>. The first token Meta
-      shows expires quickly.</li>
+    <li>Make a token that does not expire. Open <b>Business Settings → System users</b>. Add a system user. Give it your
+      app and your WhatsApp account. Click <b>Generate token</b>. Tick <code>business_management</code>,
+      <code>whatsapp_business_messaging</code> and <code>whatsapp_business_management</code>. (Meta says the first token
+      it shows expires quickly. <i class="src">(provider)</i>)</li>
   </ol>
 
   <h3>Step B: server keys</h3>
   <ul>
     <li><span class="keyname">WHATSAPP_GRAPH_VERSION</span>: the Graph API version, for example <code>v26.0</code>
-      (newest on 29 July 2026). <i class="src">(provider)</i></li>
+      (released 29 July 2026 <i class="src">(provider)</i>). Without it, WhatsApp is switched off.</li>
     <li><span class="keyname">WHATSAPP_APP_SECRET</span> <b>secret</b>: in the App Dashboard, open <b>App settings → Basic</b> and copy the <b>App secret</b>.</li>
     <li><span class="keyname">WHATSAPP_VERIFY_TOKEN</span> <b>secret</b>: you <b>make this up</b>. Any long random text. You type the same text into Meta in Step C.</li>
   </ul>
   <pre>WHATSAPP_GRAPH_VERSION=v26.0
 WHATSAPP_APP_SECRET=...
 WHATSAPP_VERIFY_TOKEN=make-up-a-long-random-text</pre>
+  <p class="small">Not here: <code>WHATSAPP_PHONE_NUMBER_ID</code> and <code>WHATSAPP_TOKEN</code> are for a test script only. The Phone number ID goes in Settings (Step D).</p>
 
   <h3>Step C: tell Meta where to send replies</h3>
   <ol>
@@ -279,24 +293,33 @@ WHATSAPP_VERIFY_TOKEN=make-up-a-long-random-text</pre>
     <li>Subscribe to the <b>messages</b> field.</li>
   </ol>
 
-  <h3>Step D: in the app</h3>
+  <h3>Step D: in the app (in this order)</h3>
   <ol>
-    <li><b>Settings → Integrations</b>, form <b>WhatsApp number</b>: paste the <b>Phone number ID</b>, click <b>Save WhatsApp number</b>.</li>
-    <li>Same page, <b>Channels</b> box: choose <b>whatsapp (access token)</b> under <b>Channel</b>, paste the permanent token into <b>Secret</b>, click <b>Save secret</b>.</li>
-    <li><b>Settings</b>: set the <b>Monthly budget for WhatsApp and SMS</b> above 0. At 0, WhatsApp is blocked.</li>
+    <li><b>Settings → Integrations</b>, <b>Channels</b> box: choose <b>whatsapp (access token)</b> under <b>Channel</b>,
+      paste the token into <b>Secret</b>, click <b>Save secret</b>.</li>
+    <li>Same box: type the <b>Phone number ID (from Meta, digits only)</b> and click <b>Save WhatsApp number</b>. The app
+      asks Meta, with your token, that this number is yours. Only then do customer replies reach the app.</li>
+    <li><b>Settings</b>: the <b>Monthly budget for WhatsApp and SMS</b> is in cents, not whole money: 1000 means 10.00.
+      Type more than 0, then click <b>Save settings</b>. At 0, WhatsApp is blocked.</li>
     <li>For each customer who agreed to WhatsApp messages: open the customer, use <b>Record consent</b>, choose
-      WhatsApp and write how they agreed. Customers without it get no WhatsApp reminders.</li>
-    <li>In <b>Settings → Templates</b>, use <b>New WhatsApp template</b>: type the exact text Meta approved, its
-      <b>Name at Meta</b> and <b>Language code at Meta</b>. It starts as pending. An owner then clicks
+      WhatsApp and write how they agreed. Customers without it get no WhatsApp reminders. Their phone number comes from
+      your import.</li>
+    <li><b>Settings → Templates</b>, <b>New WhatsApp template</b>: fill in <b>Template key</b> (for example
+      <code>nudge</code>), <b>Tone</b>, <b>Customer language</b>, <b>Name at Meta</b>, <b>Language code at Meta</b> and the
+      exact <b>Text</b> Meta approved. Click <b>Add WhatsApp template</b>. It starts as pending. An owner then clicks
       <b>Meta approved this text</b>; only then is it sent.</li>
-    <li>In <b>Settings → Policies</b>, add a WhatsApp step that uses that template key.</li>
+    <li><b>Settings → Policies</b>: in the empty "new" row, fill in <b>Days after due</b>, choose <b>whatsapp</b> as
+      <b>Channel</b>, and type your template key as <b>Template</b>. Click <b>Check impact</b>, tick
+      <b>I checked the impact</b>, then click <b>Save policy</b>.</li>
   </ol>
+  <p class="small">Receipts go by WhatsApp to customers with no email. That needs one more WhatsApp template with the
+    key <code>receipt</code>.</p>
 </section>
 
 <section>
   <h2>Part 6: Stripe pay links <span class="tag free">sandbox</span> optional</h2>
-  <p>Stripe lets customers pay by card from a link in the reminder. A Stripe <b>sandbox</b> is a test area: no real
-    money moves. Each business connects <b>its own</b> Stripe account inside the app.</p>
+  <p>Stripe lets customers pay by card from a link in the reminder. A Stripe <b>sandbox</b> is a test area where cards
+    are not charged. <i class="src">(provider)</i> Each business connects <b>its own</b> Stripe account inside the app.</p>
 
   <h3>Step A: one server key</h3>
   <pre>PAYMENTS_WEBHOOKS=true</pre>
@@ -306,13 +329,14 @@ WHATSAPP_VERIFY_TOKEN=make-up-a-long-random-text</pre>
     <li>Sign up at <b>stripe.com</b>. Make or pick a <b>sandbox</b>.</li>
     <li>Open the <b>API keys</b> page (<code>dashboard.stripe.com/apikeys</code>).</li>
     <li>Stripe suggests a limited key (starts with <code>rk_test_</code>) instead of the secret key (<code>sk_test_</code>).
-      The app needs it to make, read and turn off payment links. <span class="small">Which exact permissions are enough was not tested.</span></li>
+      The app needs it to make, read and turn off payment links, and to read checkout sessions.
+      <span class="small">Which exact permissions are enough was not tested.</span></li>
   </ol>
 
   <h3>Step C: connect, then add the signing secret</h3>
   <ol>
-    <li>In the app: <b>Settings → Integrations</b>, form <b>Connect a payment account</b>. Provider <b>Stripe</b>,
-      mode <b>test</b>, paste the API key. Leave <b>Webhook signing secret</b> empty for now. Click <b>Connect</b>.</li>
+    <li>In the app: <b>Settings → Integrations</b>, <b>Payments</b> box. Provider <b>Stripe</b>, mode <b>test</b>, paste
+      the <b>API key</b>. Leave <b>Webhook signing secret</b> empty for now. Click <b>Connect</b>.</li>
     <li>The app shows the <b>webhook URL once</b>. Copy it. The account stays switched off for now, so no pay link is made yet.</li>
     <li>In Stripe, open <b>Workbench → Webhooks</b> and click <b>Create an event destination</b>. Choose <b>Your account</b>
       and the <b>Snapshot</b> payload. API version: <code>2026-09-30.endive</code> (the version this app uses).</li>
@@ -321,38 +345,49 @@ WHATSAPP_VERIFY_TOKEN=make-up-a-long-random-text</pre>
       <code>charge.refunded</code>, <code>charge.dispute.created</code>.</li>
     <li>Choose <b>Webhook endpoint</b> and paste the webhook URL from step 2.</li>
     <li>Click <b>Reveal secret</b> and copy the signing secret (starts with <code>whsec_</code>).</li>
-    <li>Back in the app, form <b>Webhook signing secret</b>: choose the Stripe account, paste it, click
-      <b>Save signing secret</b>. The account is now switched on.</li>
+    <li>Back in the app, <b>Payments</b> box: choose the Stripe account under <b>Payment account</b>, paste it into
+      <b>Signing secret</b>, click <b>Save signing secret</b>. The account is now switched on.</li>
   </ol>
-  <p class="small">The key must match the mode: a test account needs a test key. Not yet tried with a real Stripe account.</p>
+  <ul class="small">
+    <li>The key must match the mode: a test account needs a test key.</li>
+    <li>A new API key later? Click <b>Connect</b> again with the new key. The webhook URL stays the same.</li>
+    <li>Moving from test to live? Connect again with mode <b>live</b> and a live key, then save the live signing secret.
+      Until then the account is switched off.</li>
+    <li>Lost the URL? Click <b>Rotate webhook URL</b> and update it in Stripe. <b>Disconnect</b> switches the account off.</li>
+    <li>Not yet tried with a real Stripe account.</li>
+  </ul>
 </section>
 
 <section>
   <h2>Part 7: alerts, checks and your final list</h2>
   <h3>Alerts (optional)</h3>
   <ul>
-    <li><span class="keyname">OPS_ALERT_EMAIL</span> and <span class="keyname">OPS_ALERT_FROM</span>: where the
-      operator watchdog emails system problems, and the sender it uses (a verified sender). It logs in with
+    <li><span class="keyname">OPS_ALERT_EMAIL</span> and <span class="keyname">OPS_ALERT_FROM</span>: where system
+      problems are emailed, and the sender used. This only happens when the operator runs <code>pnpm ops:watchdog</code>
+      on a schedule (for example every 5 minutes) and <code>SMTP_HOST</code> is set. It logs in with
       <code>SMTP_USER</code> and <code>SMTP_PASSWORD</code>.</li>
-    <li><b>Slack</b> (per business): make a Slack incoming webhook URL (it starts with <code>https://hooks.slack.com/</code>),
-      then in <b>Settings → Integrations</b> choose <b>slack (webhook URL)</b> under <b>Channel</b> and paste it into
-      <b>Secret</b>. That business's alerts then go to Slack; without it they go by email to its owners.</li>
+    <li><b>Slack</b> (per business): make a Slack "incoming webhook" link (it starts with <code>https://hooks.slack.com/</code>).
+      Paste it into <b>Secret</b> under <b>slack (webhook URL)</b>. Alerts then go to Slack. Without it, they go to the
+      owners by email.</li>
   </ul>
 
   <h3>Never set these on a real server</h3>
   <ul>
     <li><code>PAYMENTS_ALLOW_FAKE</code>: a fake payment provider, for tests and the demo only.</li>
     <li><code>DEMO_MODE</code>, <code>DEMO_NOW</code>, <code>NOW_ISO</code> and the other <code>DEMO_*</code> keys.</li>
-    <li><code>NEXT_RUNTIME</code> and <code>OPENAI_LOG</code>.</li>
-    <li>Test-only keys: <code>*_SMOKE</code>, <code>STRIPE_TEST_API_KEY</code>, <code>WHATSAPP_TOKEN</code>,
-      <code>EVAL_LIVE</code>, <code>PROOF_EVAL*</code>, <code>SEND_LOG</code>, <code>APPLY_LOG</code>, <code>MAILPIT_URL</code>.</li>
+    <li><code>NEXT_RUNTIME</code>, <code>NEXT_DIST_DIR</code> and <code>OPENAI_LOG</code>.</li>
+    <li>Test-script keys: <code>WEBHOOK_SMOKE</code>, <code>WEBHOOK_URL</code>, <code>WHATSAPP_SMOKE</code>,
+      <code>WHATSAPP_SMOKE_TO</code>, <code>WHATSAPP_SMOKE_TEMPLATE</code>, <code>WHATSAPP_SMOKE_LANGUAGE</code>,
+      <code>WHATSAPP_TOKEN</code>, <code>WHATSAPP_PHONE_NUMBER_ID</code>, <code>STRIPE_SMOKE</code>,
+      <code>STRIPE_TEST_API_KEY</code>, <code>EVAL_LIVE</code>, <code>PROOF_EVAL</code>, <code>PROOF_EVAL_DIR</code>,
+      <code>TENANT_ID</code>, <code>SUPABASE_ANON_KEY</code>, <code>SEND_LOG</code>, <code>APPLY_LOG</code>,
+      <code>MAILPIT_URL</code>.</li>
   </ul>
 
   <h3>Check your setup</h3>
-  <p>On the server run <code>pnpm doctor --service web</code>, then again with <code>worker</code>, <code>processor</code>
-    and <code>webhooks</code>. It checks that the needed keys are set and well formed, reaches the database
-    (<code>WORKER_DATABASE_URL</code>), checks the database version, reaches Supabase, and opens the SMTP port. It does
-    not test your SMTP password. It never prints a key's value.</p>
+  <p>On the server, run the check once for each program: <code>pnpm doctor --service web</code>, then
+    <code>worker</code>, <code>processor</code> and <code>webhooks</code>. It checks your settings, the database and
+    Supabase, and that the mail server answers. It does not test your email password. It never shows a key.</p>
 
   <h3>Your finished list</h3>
   <pre># Part 1: Supabase (required)
@@ -366,29 +401,32 @@ WORKER_DATABASE_URL=              # secret
 PUBLIC_APP_URL=                   # required
 NEXT_PUBLIC_APP_URL=
 WEBHOOKS_PUBLIC_URL=
+TRUST_PROXY_HOPS=0
 # Part 3: email
 SMTP_HOST=
 SMTP_PORT=
 SMTP_SECURE=
 SMTP_USER=
 SMTP_PASSWORD=                    # secret
-# Part 4: OpenAI (optional, paid)
-CLASSIFIER=openai
+SMTP_FROM_DOMAINS=                # only if several businesses share the server
+# Part 4: AI (only if you did Part 4; otherwise leave these out)
+CLASSIFIER=
 CLASSIFIER_MODEL=
 CLASSIFIER_REASONING_EFFORT=
 OPENAI_API_KEY=                   # secret
 PROOF_EXTRACTION=
 PROOF_EXTRACTION_MODEL=
-# Part 5: WhatsApp (optional)
+# Part 5: WhatsApp (only if you did Part 5)
 WHATSAPP_GRAPH_VERSION=
 WHATSAPP_APP_SECRET=              # secret
 WHATSAPP_VERIFY_TOKEN=            # secret
-# Part 6: Stripe (optional)
-PAYMENTS_WEBHOOKS=true
+# Part 6: Stripe (only if you did Part 6)
+PAYMENTS_WEBHOOKS=
 # Part 7
 NODE_ENV=production
 OPS_ALERT_EMAIL=
 OPS_ALERT_FROM=</pre>
+  <p class="small">An empty line like <code>CLASSIFIER=</code> means "not used".</p>
 
   <h3>Where these steps come from</h3>
   <p class="small">Read 29-30 October 2026.
@@ -397,7 +435,8 @@ OPS_ALERT_FROM=</pre>
     Google: support.google.com/accounts/answer/185833, developers.google.com/workspace/gmail/imap/imap-smtp.
     OpenAI: developers.openai.com/api/docs/quickstart, developers.openai.com/api/docs/guides/structured-outputs.
     Meta: developers.facebook.com/docs/whatsapp/cloud-api/get-started, .../whatsapp/cloud-api/guides/set-up-webhooks,
-    .../graph-api/changelog/versions, .../development/create-an-app/app-dashboard/basic-settings.
+    .../whatsapp/cloud-api/reference/phone-numbers, .../graph-api/changelog/versions,
+    .../development/create-an-app/app-dashboard/basic-settings.
     Stripe: docs.stripe.com/keys, docs.stripe.com/webhooks.
     App facts: docs/env-reference.md, docs/self-hosting.md, Settings → Integrations, packages/adapters-payments/src/stripe.ts.</p>
 </section>

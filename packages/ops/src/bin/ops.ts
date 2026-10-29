@@ -50,7 +50,7 @@ try {
       // Logs in with the operator account (SMTP_USER / SMTP_PASSWORD) when set: Brevo, Gmail and most hosted SMTP
       // services refuse mail without a login.
       const user = process.env.SMTP_USER;
-      const t = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT ?? 587), secure: process.env.SMTP_SECURE === 'true', auth: user ? { user, pass: process.env.SMTP_PASSWORD ?? '' } : undefined, requireTLS: Boolean(user) && process.env.SMTP_SECURE !== 'true' });
+      const t = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), secure: process.env.SMTP_SECURE === 'true', auth: user ? { user, pass: process.env.SMTP_PASSWORD ?? '' } : undefined, requireTLS: Boolean(user) && process.env.SMTP_SECURE !== 'true' });
       await t.sendMail({ from: process.env.OPS_ALERT_FROM ?? 'dueloop-watchdog@localhost', to: process.env.OPS_ALERT_EMAIL, subject: `[dueloop] ${fresh.length} ops finding(s)`, text: fresh.map((f) => `${f.severity}: ${f.message}`).join('\n') });
     }
     if (findings.some((f) => f.severity === 'critical')) process.exitCode = 1;
@@ -82,7 +82,7 @@ try {
       checks.push({ check: 'Supabase API reachable', ok: r > 0 && r < 500, detail: r ? `HTTP ${r}` : 'unreachable' });
     }
     if (process.env.SMTP_HOST) {
-      const ok = await tcp(process.env.SMTP_HOST, Number(process.env.SMTP_PORT ?? 587));
+      const ok = await tcp(process.env.SMTP_HOST, Number(process.env.SMTP_PORT || 587));
       checks.push({ check: 'SMTP port open', ok, detail: ok ? 'ok' : 'cannot connect' });
     }
     console.table(checks);

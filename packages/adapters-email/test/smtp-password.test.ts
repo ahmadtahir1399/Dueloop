@@ -48,3 +48,7 @@ describe('review round 2: no password in clear; sender domains on the operator r
     expect(senderAllowed('ceo@bank.example', defaults)).toBe(true);
   });
 });
+
+it('empty env lines (SMTP_PORT=, SMTP_USER=) mean "not set", not port 0 or an empty login', () => {
+  expect(smtpDefaultsFromEnv({ SMTP_HOST: 'relay.example', SMTP_PORT: '', SMTP_USER: '', SMTP_PASSWORD: '' })).toMatchObject({ port: 587, user: null, password: null });
+});
