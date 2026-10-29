@@ -91,7 +91,7 @@ function paymentsCore(env: Env, workerDb: WorkerDb, clock: Clock, logger: Logger
 
 /**
  * Prompt 6 (ADR 0046): our pay-page and opt-out links when PUBLIC_APP_URL is configured. Without it the worker
- * keeps the prompt 5 behaviour (gateway link or bank text only) and the footer says "reply STOP" only.
+ * keeps the prompt 5 behaviour (gateway link or bank text only) and the email footer asks the customer to reply.
  */
 export function publicLinksFrom(env: Env, db: WorkerDb): PublicLinks | null {
   const base = checkBaseUrl(env.PUBLIC_APP_URL);

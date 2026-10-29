@@ -21,6 +21,11 @@ security findings that are still open are repeated from docs/security-review.md.
 - **Process supervision:** worker, processor and webhooks exit when the database connection drops and need a
   supervisor to restart (compose does; a bare `node` run does not).
 - **Sign-in:** no second factor; no rate limit of our own on sign-in beyond Supabase Auth's.
+- **Email replies are not read in production.** The IMAP poller (`pollMailbox`, ADR 0031) is built and tested against
+  a local server, but no production command runs it and there is no screen for mailbox settings. Customer email
+  replies (promises, disputes, "already paid") go only to the business's own inbox, where a person must act on
+  them. Email opt-out works through the footer link and the one-click unsubscribe header; the email footer no longer
+  says "reply STOP". WhatsApp replies are processed.
 - **Onboarding:** creating a business adds the standard English email templates (Settings > Templates can add back
   any that are missing) but no sending account; an owner sets the SMTP password and sender address in Settings >
   Integrations before anything can be sent. There are no default WhatsApp templates (they need Meta approval).

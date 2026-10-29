@@ -55,13 +55,14 @@ function build(s: Record<string, string>) {
   return Math.round((performance.now() - t0) / 1000);
 }
 
-async function until(what: string, ms: number, check: () => Promise<boolean>) {
+async function until(what: string | (() => string), ms: number, check: () => Promise<boolean>) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
     if (await check().catch(() => false)) return;
     await new Promise((r) => setTimeout(r, 1000)); // polling observable state, not a fixed sleep
   }
-  throw new Error(`timed out waiting for ${what}`);
+  // A function, so the message shows the LAST values seen, not the ones from before the first poll.
+  throw new Error(`timed out waiting for ${typeof what === 'string' ? what : what()}`);
 }
 
 /** File list and content markers that must never be in an image (rule 41). */
@@ -140,9 +141,12 @@ async function smoke(noBuild: boolean) {
     // outbox and Mailpit must agree: one email per approved reminder, none twice. Re-read both until they settle.
     let sent = 0;
     let mails = 0;
-    await until(`one email per sent reminder (last seen: ${sent} sent, ${mails} emails)`, 120_000, async () => {
+    await until(() => `one email per sent reminder (last seen: ${sent} sent, ${mails} reminder emails)`, 120_000, async () => {
       sent = (await pool.query<{ n: number }>(`select count(*)::int as n from public.messages m join public.tenants t on t.id = m.tenant_id where t.name = 'Demo Agency' and m.direction = 'out' and m.send_state = 'sent'`)).rows[0]?.n ?? 0;
-      mails = ((await (await fetch(`${MAILPIT}/api/v1/messages`)).json()) as { total: number }).total;
+      // Owner alerts ("[Dueloop] Reminders are waiting for approval") may also arrive, depending on whether the
+      // long-running worker container raised them before or after the inbox was emptied: count reminders only.
+      const list = (await (await fetch(`${MAILPIT}/api/v1/messages?limit=500`)).json()) as { messages: { Subject: string }[] };
+      mails = list.messages.filter((m) => !m.Subject.startsWith('[Dueloop]')).length;
       return sent === pending && mails === sent;
     });
     report.reminder = { approvals: pending, sent, emails_in_mailpit: mails };

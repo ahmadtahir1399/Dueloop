@@ -189,13 +189,39 @@ export async function resumeReminders(ctx: TenantContext, invoiceId: string): Pr
   if (!(await assertRole(ctx, ["owner", "accountant"]))) return { ok: false, reason: "Only an owner or accountant can resume reminders." };
   if (!inv.parked_reason) return { ok: false, reason: "Reminders for this invoice are not on hold." };
   if (NOT_RESUMABLE.has(inv.parked_reason)) return { ok: false, reason: "Resolve this on the Unknown sends or Approvals page instead." };
-  const r = await trustedPool().query<{ ok: boolean }>(
-    `select private.unpark_invoice(i.id, now()) as ok from public.invoices i
-     where i.tenant_id = $1 and i.id = $2 and i.parked_reason is not null and not (i.parked_reason = any($3::text[]))
-       and not exists (select 1 from public.message_invoices mi join public.messages m on m.tenant_id = mi.tenant_id and m.id = mi.message_id
-                       where mi.tenant_id = i.tenant_id and mi.invoice_id = i.id and m.send_state = 'unknown')`,
-    [ctx.tenant.id, invoiceId, [...NOT_RESUMABLE]],
-  );
-  if (r.rows[0]?.ok !== true) return { ok: false, reason: "This invoice has a message in an unknown state. Check it on the Unknown sends page first." };
-  return { ok: true, value: null };
+  const client = await trustedPool().connect();
+  try {
+    await client.query("begin");
+    // Refused while any message of the invoice is unknown OR still pending (in flight / ambiguous): rule 17.
+    // No FOR UPDATE here: unpark_invoice updates this very row, and a row the same statement modified is skipped by
+    // the lock; its own UPDATE takes the row lock.
+    const r = await client.query<{ ok: boolean; reason: string }>(
+      `select i.parked_reason as reason, private.unpark_invoice(i.id, now()) as ok from public.invoices i
+       where i.tenant_id = $1 and i.id = $2 and i.parked_reason is not null and not (i.parked_reason = any($3::text[]))
+         and not exists (select 1 from public.message_invoices mi join public.messages m on m.tenant_id = mi.tenant_id and m.id = mi.message_id
+                         where mi.tenant_id = i.tenant_id and mi.invoice_id = i.id and m.send_state in ('unknown', 'pending'))`,
+      [ctx.tenant.id, invoiceId, [...NOT_RESUMABLE]],
+    );
+    if (r.rows[0]?.ok !== true) {
+      await client.query("rollback");
+      return { ok: false, reason: "This invoice has a message that may have been sent. Check it on the Unknown sends page first." };
+    }
+    // After a dead letter the step's message is in 'retry' (provably NOT sent) with attempt = maxAttempts, so the
+    // next pass would dead-letter it again at once. Resuming gives it a fresh set of attempts (rule 17 holds:
+    // only 'retry' rows are touched, never 'unknown' or 'pending').
+    if (r.rows[0].reason === "dead_letter") {
+      await client.query(
+        `update public.messages m set attempt = 0 from public.message_invoices mi
+         where mi.tenant_id = m.tenant_id and mi.message_id = m.id and mi.tenant_id = $1 and mi.invoice_id = $2 and m.send_state = 'retry'`,
+        [ctx.tenant.id, invoiceId],
+      );
+    }
+    await client.query("commit");
+    return { ok: true, value: null };
+  } catch (e) {
+    await client.query("rollback").catch(() => undefined);
+    throw e;
+  } finally {
+    client.release();
+  }
 }
