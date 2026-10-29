@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting Your Keys</title>
+<!-- Source of docs/guides/getting-your-keys.pdf (rendered by `pnpm guide:pdf`; the PDF itself is not committed).
+     Provider steps were read from each provider's own docs on 2026-10-29/30 (list at the end). Screens change:
+     the guide tells the reader to follow the provider's page when it differs. -->
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  :root { --ink: #1c2430; --soft: #556070; --line: #d9dee5; --accent: #1f5fae; --accent-bg: #eef4fb;
+          --warn: #8a4b00; --warn-bg: #fff4e2; --ok: #1d6b3a; --ok-bg: #eaf6ee; --code-bg: #f3f5f8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--ink); background: #fff; font: 11pt/1.55 "Segoe UI", Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  h1 { font-size: 26pt; line-height: 1.15; margin: 0 0 6px; }
+  h2 { font-size: 16pt; margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--accent); break-after: avoid; }
+  h3 { font-size: 12.5pt; margin: 16px 0 6px; break-after: avoid; }
+  p { margin: 6px 0; }
+  ol, ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  code { font: 9.5pt/1.4 Consolas, "Courier New", monospace; background: var(--code-bg); padding: 1px 4px; border-radius: 3px; word-break: break-all; }
+  pre { font: 9pt/1.45 Consolas, "Courier New", monospace; background: var(--code-bg); padding: 8px 10px; border-radius: 6px; white-space: pre-wrap; word-break: break-all; margin: 8px 0; break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9.5pt; break-inside: auto; }
+  th, td { border: 1px solid var(--line); padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); }
+  tr { break-inside: avoid; }
+  section { break-before: page; padding-top: 2px; }
+  .cover { padding-top: 40px; }
+  .sub { color: var(--soft); font-size: 12pt; margin-bottom: 18px; }
+  .box { border-radius: 6px; padding: 8px 12px; margin: 10px 0; break-inside: avoid; }
+  .tip { background: var(--accent-bg); border-left: 4px solid var(--accent); }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+  .ok { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+  .box strong:first-child { display: block; margin-bottom: 2px; }
+  .tag { display: inline-block; font-size: 8.5pt; font-weight: 600; padding: 0 6px; border-radius: 10px; border: 1px solid currentColor; }
+  .free { color: var(--ok); } .paid { color: var(--warn); } .must { color: var(--accent); }
+  .keyname { font: 600 10.5pt Consolas, "Courier New", monospace; }
+  .small { font-size: 9pt; color: var(--soft); }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+
+<div class="cover">
+  <h1>Getting your keys</h1>
+  <p class="sub">Easy steps for every setting the app needs, using hosted services with a free plan where one exists.</p>
+
+  <div class="box tip"><strong>What is a "key"?</strong>
+    A key is a long piece of text. It lets our app talk to another service, such as the database or the email
+    service. You copy it from that service's website and paste it into the app's settings.</div>
+
+  <h3>Where do the keys go?</h3>
+  <ul>
+    <li><b>Environment variables (env).</b> Most keys go here. Your hosting service has a page called something
+      like "Environment variables". You can also put them in a file named <code>.env</code> on your server. The file
+      <code>.env.example</code> in this project lists every name.</li>
+    <li><b>The app's own Settings page.</b> Some passwords (email, WhatsApp, Stripe) are NOT env keys. You type them
+      into <b>Settings → Integrations</b> after you log in. The app keeps them locked in the database vault.</li>
+  </ul>
+
+  <h3>Five safety rules</h3>
+  <ol>
+    <li>A <b>secret</b> key is like a house key. Never post it in chat, email, a screenshot or a public file.</li>
+    <li>Never put a secret key in a variable whose name starts with <code>NEXT_PUBLIC_</code>. Those go to every visitor's browser.</li>
+    <li>Never put a <code>.env</code> file into git.</li>
+    <li>If a secret key leaks, make a new one at the service and delete the old one. Deleting the text is not enough.</li>
+    <li>Copy a new key at once. Many services show it only one time.</li>
+  </ol>
+
+  <h3>Quick list</h3>
+  <table>
+    <tr><th>Part</th><th>Service</th><th>Keys</th><th>Cost</th></tr>
+    <tr><td>1</td><td>Supabase (database)</td><td>6 env keys</td><td><span class="tag free">free plan</span> <span class="tag must">required</span></td></tr>
+    <tr><td>2</td><td>Your app's web address</td><td>PUBLIC_APP_URL and friends</td><td>from your hosting <span class="tag must">required</span></td></tr>
+    <tr><td>3</td><td>Email: Brevo or Gmail</td><td>4 env keys + 1 password in Settings</td><td><span class="tag free">free plan</span> needed to send email</td></tr>
+    <tr><td>4</td><td>OpenAI (reads replies)</td><td>OPENAI_API_KEY + 2-4 settings</td><td><span class="tag paid">paid</span> optional</td></tr>
+    <tr><td>5</td><td>WhatsApp (Meta)</td><td>3 env keys + 1 token in Settings</td><td><span class="tag free">test number</span> optional</td></tr>
+    <tr><td>6</td><td>Stripe (pay links)</td><td>1 env key + 2 keys in Settings</td><td><span class="tag free">sandbox</span> optional</td></tr>
+    <tr><td>7</td><td>Alerts and other settings</td><td>small settings</td><td>optional</td></tr>
+  </table>
+  <p class="small">Read on 29-30 October 2026. Websites and free plans change. If a screen looks different, follow
+    the service's own help page (links at the end).</p>
+</div>
+
+<section>
+  <h2>Part 1: Supabase, the database <span class="tag must">required</span> <span class="tag free">free plan</span></h2>
+  <p>Supabase holds all the app's data. Its <b>Free plan</b> costs $0. Supabase's pricing page says it includes a
+    500 MB database, 1 GB file storage and up to 2 active projects, and that free projects are
+    <b>paused after 1 week of inactivity</b>.</p>
+
+  <h3>Step A: make a project</h3>
+  <ol>
+    <li>Go to <b>supabase.com</b> and sign up.</li>
+    <li>Click <b>New project</b>. Give it a name.</li>
+    <li>Type a strong <b>database password</b>. <b>Save it now</b> in a password manager. You need it in Step D.</li>
+    <li>Pick the region closest to your customers. Click create and wait a few minutes.</li>
+  </ol>
+
+  <h3>Step B: the project address</h3>
+  <p>Click the <b>Connect</b> button at the top of your project. Copy the <b>Project URL</b>. It looks like
+    <code>https://abcdefgh.supabase.co</code>. Put the same value in two keys:</p>
+  <pre>NEXT_PUBLIC_SUPABASE_URL=https://abcdefgh.supabase.co
+SUPABASE_URL=https://abcdefgh.supabase.co</pre>
+
+  <h3>Step C: the two API keys</h3>
+  <ol>
+    <li>Open <b>Settings → API Keys</b>.</li>
+    <li>Copy the <b>publishable key</b> (starts with <code>sb_publishable_</code>). It is safe in a browser.</li>
+    <li>Copy a <b>secret key</b> (starts with <code>sb_secret_</code>). It is <b>secret</b>: it can read every row.</li>
+  </ol>
+  <pre>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...</pre>
+  <div class="box tip"><strong>Tip</strong>The older keys (<code>anon</code> and <code>service_role</code>) are on the same
+    page. The app also accepts the <code>service_role</code> key in <code>SUPABASE_SERVICE_ROLE_KEY</code>.</div>
+
+  <h3>Step D: the database connection string</h3>
+  <ol>
+    <li>Click <b>Connect</b> again.</li>
+    <li>Choose the <b>Session pooler</b> string. It works on every network (Supabase says the direct connection
+      needs IPv6 on the Free plan, and the session pooler works over IPv4 on every plan).</li>
+    <li>Copy it. Replace <code>[YOUR-PASSWORD]</code> with your database password from Step A. If the password has
+      symbols like <code>&amp; # ?</code> or spaces, they must be percent-encoded (or pick a password of only letters and numbers).</li>
+  </ol>
+  <p>Use the same string for both keys. Both are <b>secret</b>:</p>
+  <pre>SUPABASE_DB_URL=postgresql://postgres.abcdefgh:PASS@POOLER-HOST:5432/postgres
+WORKER_DATABASE_URL=postgresql://postgres.abcdefgh:PASS@POOLER-HOST:5432/postgres</pre>
+  <p class="small">Here <code>PASS</code> stands for your database password. Copy the real pooler host from the Connect
+    window. You cannot guess it from the region.</p>
+
+  <div class="box warn"><strong>Before the first start</strong>The database needs the <code>pgmq</code> and
+    <code>pg_cron</code> extensions turned on before the app's tables are created. See
+    <code>docs/self-hosting.md</code> ("Hosted Supabase checklist"). This was not tested on a hosted project yet.</div>
+</section>
+
+<section>
+  <h2>Part 2: your app's web address <span class="tag must">required</span></h2>
+  <p>These are not keys from a service. They are the <b>https address</b> where people open your app. Your hosting
+    service shows it after you deploy (for example <code>https://app.yourbusiness.example</code>).</p>
+  <pre>PUBLIC_APP_URL=https://app.yourbusiness.example
+NEXT_PUBLIC_APP_URL=https://app.yourbusiness.example</pre>
+  <ul>
+    <li><span class="keyname">PUBLIC_APP_URL</span>: used in pay links and opt-out links in every reminder. It must start with <code>https://</code>.</li>
+    <li><span class="keyname">WEBHOOKS_PUBLIC_URL</span>: only if your webhooks service has a different address. Otherwise leave it empty.</li>
+    <li><span class="keyname">TRUST_PROXY_HOPS</span>: how many proxies (load balancers) sit in front of the app. If you do not know, leave it at <code>0</code>.</li>
+  </ul>
+  <div class="box warn"><strong>Hosting is not covered here</strong>The app runs four programs all the time (web,
+    worker, reply processor, webhooks). Free hosting plans often sleep or stop long-running programs, so check your
+    host's plan. <code>docs/self-hosting.md</code> explains the containers.</div>
+</section>
+
+<section>
+  <h2>Part 3: email sending <span class="tag free">free plan</span></h2>
+  <p>The app sends reminders by email through an <b>SMTP</b> service. Pick <b>one</b> option. Option A is better for a
+    real business. Option B is fine for testing with your own Gmail.</p>
+
+  <h3>Option A: Brevo</h3>
+  <p>Brevo's own page says its free plan can send <b>300 emails per day</b>.</p>
+  <ol>
+    <li>Go to <b>brevo.com</b> and sign up for the free plan.</li>
+    <li>Add and verify the email address or domain you will send from (Brevo shows you how). Use your own business domain if you can.</li>
+    <li>Open <b>SMTP &amp; API</b> settings, then the <b>SMTP</b> tab.</li>
+    <li>Click to <b>generate a new SMTP key</b>. Brevo says: use an SMTP key, not an API key. Copy it now.</li>
+    <li>On the same tab, copy the <b>SMTP server</b> name and your <b>login</b>.</li>
+  </ol>
+  <pre>SMTP_HOST=(the SMTP server shown on Brevo's SMTP tab)
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=(the login shown on Brevo's SMTP tab)</pre>
+
+  <h3>Option B: Gmail</h3>
+  <ol>
+    <li>Turn on <b>2-Step Verification</b> on your Google account.</li>
+    <li>Go to <b>myaccount.google.com/apppasswords</b>. Make a new app password. Copy it.</li>
+  </ol>
+  <pre>SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=(your full Gmail address)</pre>
+  <div class="box warn"><strong>Gmail limits</strong>Google says app passwords are "not recommended", and they may not
+    exist for work, school or Advanced Protection accounts. Changing your Google password cancels them. Use Gmail
+    only for testing.</div>
+
+  <h3>Then, in the app</h3>
+  <ol>
+    <li>Log in as an owner. Open <b>Settings → Integrations</b>.</li>
+    <li>Under <b>Set channel credentials</b>, choose <b>email (SMTP password)</b>.</li>
+    <li>Paste the Brevo SMTP key (or the Gmail app password). Click <b>Save secret</b>.</li>
+  </ol>
+  <div class="box warn"><strong>One step with no screen yet: the sender address</strong>
+    The app has no form for the "From" address. Your operator sets it once, in Supabase: <b>SQL Editor</b>, change the
+    values, then Run. Find the tenant id in <b>Table Editor → tenants</b>. (This SQL was checked against the table
+    definition but not run in this session.)
+  <pre>insert into public.channel_accounts (tenant_id, channel, config)
+values ('TENANT-ID', 'email',
+        '{"from_address": "billing@yourbusiness.example", "from_name": "Your Business"}')
+on conflict (tenant_id, channel)
+do update set config = public.channel_accounts.config || excluded.config;</pre>
+    The from address must be one your email service has verified.</div>
+</section>
+
+<section>
+  <h2>Part 4: OpenAI, to read customer replies <span class="tag paid">paid</span> optional</h2>
+  <p>When a customer answers a reminder ("I will pay on the 15th"), the AI can suggest what the reply means. A
+    person or the app's rules still decide. <b>The AI never closes an invoice or sends a message.</b></p>
+  <div class="box ok"><strong>Free choice: skip this part</strong>If you leave <code>CLASSIFIER</code> empty, every
+    reply goes to a person as a task. Nothing is lost. This costs nothing.</div>
+  <div class="box warn"><strong>Cost</strong>We found no official OpenAI free plan for the API. Expect to add a payment
+    method and buy credit first. Check OpenAI's billing page for the current rules.</div>
+
+  <h3>Steps</h3>
+  <ol>
+    <li>Go to <b>platform.openai.com</b> and sign up. OpenAI may ask to verify your phone.</li>
+    <li>Open <b>Billing</b> and add credit.</li>
+    <li>Open <b>API keys</b>. Click <b>Create new secret key</b>. Give it a name, pick your project, and create it.</li>
+    <li>Copy the key at once (it usually starts with <code>sk-proj-</code>). It is shown only one time.</li>
+    <li>Choose a model on OpenAI's <b>Models</b> page. It must support "Structured Outputs". OpenAI's docs (read 29
+      October 2026) say to start new projects with <code>gpt-6-astra</code>.</li>
+  </ol>
+  <pre>CLASSIFIER=openai
+CLASSIFIER_MODEL=gpt-6-astra
+OPENAI_API_KEY=sk-proj-...</pre>
+  <h3>Also read payment screenshots? (optional)</h3>
+  <p>The app can ask the AI for hints from a payment screenshot a customer sends. The hints are only shown to a person;
+    they never mark money as paid. Each business must also switch this on in its own settings.</p>
+  <pre>PROOF_EXTRACTION=openai
+PROOF_EXTRACTION_MODEL=(an OpenAI model that can read images)</pre>
+  <div class="box tip"><strong>Already have Claude?</strong>Use <code>CLASSIFIER=anthropic</code> and
+    <code>ANTHROPIC_API_KEY</code> instead. Use one provider, not both.</div>
+  <p class="small">Not tested with a real OpenAI key yet (tested with recorded answers only).</p>
+</section>
+
+<section>
+  <h2>Part 5: WhatsApp <span class="tag free">test number</span> optional</h2>
+  <p>WhatsApp uses Meta's <b>WhatsApp Cloud API</b>. Meta gives you a <b>test phone number</b> to start. Real
+    sending needs business verification and approved message templates, which take time.</p>
+
+  <h3>Step A: app and token</h3>
+  <ol>
+    <li>Register at <b>developers.facebook.com</b>.</li>
+    <li>In the App Dashboard, click <b>Create App</b>. Choose the use case <b>Connect with customers through WhatsApp</b>. Pick your business portfolio.</li>
+    <li>Click <b>Start using the API</b>. Note the test number's <b>Phone number ID</b>.</li>
+    <li>Make a <b>permanent token</b>: in <b>Business Settings → System users</b>, add a system user, give it your app
+      and WhatsApp account, then <b>Generate token</b> with the permissions <code>business_management</code>,
+      <code>whatsapp_business_messaging</code> and <code>whatsapp_business_management</code>. (Meta says the temporary
+      token expires quickly.)</li>
+    <li>In the app: <b>Settings → Integrations → Set channel credentials → whatsapp (access token)</b>. Paste the token.</li>
+  </ol>
+
+  <h3>Step B: env keys</h3>
+  <ul>
+    <li><span class="keyname">WHATSAPP_GRAPH_VERSION</span>: the Graph API version. Meta's changelog lists
+      <code>v26.0</code> as the newest (29 July 2026).</li>
+    <li><span class="keyname">WHATSAPP_APP_SECRET</span> <b>secret</b>: in the App Dashboard, open <b>App settings → Basic</b> and copy the <b>App secret</b>.</li>
+    <li><span class="keyname">WHATSAPP_VERIFY_TOKEN</span> <b>secret</b>: you <b>make this up</b>. Any long random text. You type the same text into Meta in Step C.</li>
+  </ul>
+  <pre>WHATSAPP_GRAPH_VERSION=v26.0
+WHATSAPP_APP_SECRET=...
+WHATSAPP_VERIFY_TOKEN=make-up-a-long-random-text</pre>
+
+  <h3>Step C: tell Meta where to send replies</h3>
+  <ol>
+    <li>In the App Dashboard open <b>WhatsApp → Configuration</b> (for this app type it may be under <b>Use cases → Customize → Configuration</b>).</li>
+    <li>Callback URL: <code>https://YOUR-WEBHOOKS-ADDRESS/webhooks/whatsapp</code></li>
+    <li>Verify token: the same text as <code>WHATSAPP_VERIFY_TOKEN</code>.</li>
+    <li>Subscribe to the <b>messages</b> field.</li>
+  </ol>
+  <div class="box warn"><strong>One step with no screen yet: the phone number ID</strong>Your operator runs this once
+    in Supabase's <b>SQL Editor</b> (checked against the table definition, not run in this session):
+  <pre>insert into public.channel_accounts (tenant_id, channel, config, external_account_id)
+values ('TENANT-ID', 'whatsapp', '{"phone_number_id": "PHONE-NUMBER-ID"}', 'PHONE-NUMBER-ID')
+on conflict (tenant_id, channel)
+do update set config = public.channel_accounts.config || excluded.config,
+              external_account_id = excluded.external_account_id;</pre></div>
+</section>
+
+<section>
+  <h2>Part 6: Stripe pay links <span class="tag free">sandbox</span> optional</h2>
+  <p>Stripe lets customers pay by card from a link in the reminder. A Stripe <b>sandbox</b> is a test area: no real
+    money moves. Each business connects <b>its own</b> Stripe account inside the app.</p>
+
+  <h3>Step A: one env key</h3>
+  <pre>PAYMENTS_WEBHOOKS=true</pre>
+
+  <h3>Step B: the API key</h3>
+  <ol>
+    <li>Sign up at <b>stripe.com</b>. Make or pick a <b>sandbox</b>.</li>
+    <li>Open the <b>API keys</b> page (<code>dashboard.stripe.com/apikeys</code>).</li>
+    <li>Stripe recommends a <b>restricted key</b> (starts with <code>rk_test_</code>) over the secret key
+      (<code>sk_test_</code>). The app makes payment links and reads checkout sessions.
+      <span class="small">Which exact restricted permissions are enough was not tested.</span></li>
+  </ol>
+
+  <h3>Step C: the webhook and its signing secret</h3>
+  <p>Stripe needs the app's webhook address. The app shows that address only after you connect, and to connect it
+    asks for Stripe's signing secret. So do it in this order:</p>
+  <ol>
+    <li>In Stripe, open <b>Workbench → Webhooks</b> and click <b>Create an event destination</b>.</li>
+    <li>Choose <b>Your account</b> and the <b>Snapshot</b> payload. API version: <code>2026-09-30.endive</code> (the
+      version this app uses).</li>
+    <li>Select these events: <code>checkout.session.completed</code>,
+      <code>checkout.session.async_payment_succeeded</code>, <code>checkout.session.async_payment_failed</code>,
+      <code>charge.refunded</code>, <code>charge.dispute.created</code>.</li>
+    <li>Choose <b>Webhook endpoint</b>. For now, enter <code>https://YOUR-WEBHOOKS-ADDRESS/webhooks/payments/pending</code>.</li>
+    <li>Click <b>Reveal secret</b>. Copy the signing secret (starts with <code>whsec_</code>).</li>
+    <li>In the app: <b>Settings → Integrations → Connect a payment account</b>. Provider Stripe, mode test, paste the
+      API key and the <code>whsec_</code> secret. Click <b>Connect</b>.</li>
+    <li>The app shows the real webhook URL <b>once</b>. Copy it. In Stripe, edit the endpoint and paste this URL.</li>
+  </ol>
+  <div class="box warn"><strong>Check after step 7</strong>Make sure the signing secret in Stripe did not change when you
+    edited the URL. This order was not tested with a real Stripe account.</div>
+</section>
+
+<section>
+  <h2>Part 7: alerts and the rest <span class="tag">optional</span></h2>
+  <ul>
+    <li><span class="keyname">OPS_ALERT_EMAIL</span>: your email. The watchdog emails problems here (it uses the SMTP settings from Part 3).</li>
+    <li><span class="keyname">OPS_ALERT_FROM</span>: the "From" address for those alerts (a verified sender).</li>
+    <li><b>Slack alerts:</b> make a Slack incoming webhook URL, then paste it in <b>Settings → Integrations → slack (webhook URL)</b>. It is not an env key.</li>
+    <li><span class="keyname">NODE_ENV</span>: <code>production</code>.</li>
+  </ul>
+
+  <h3>Never set these on a real server</h3>
+  <ul>
+    <li><code>PAYMENTS_ALLOW_FAKE</code>: a fake payment provider, for tests and the demo only.</li>
+    <li><code>DEMO_MODE</code>, <code>DEMO_NOW</code>, <code>NOW_ISO</code> and the other <code>DEMO_*</code> keys.</li>
+    <li><code>NEXT_RUNTIME</code> (Next.js sets it itself).</li>
+    <li>Test-only keys: <code>*_SMOKE</code>, <code>STRIPE_TEST_API_KEY</code>, <code>WHATSAPP_TOKEN</code>,
+      <code>EVAL_LIVE</code>, <code>PROOF_EVAL*</code>, <code>SEND_LOG</code>, <code>APPLY_LOG</code>, <code>MAILPIT_URL</code>.</li>
+  </ul>
+
+  <h3>Your finished list</h3>
+  <pre># Part 1: Supabase (required)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=        # secret
+SUPABASE_DB_URL=                  # secret
+WORKER_DATABASE_URL=              # secret
+# Part 2: address (required)
+PUBLIC_APP_URL=
+NEXT_PUBLIC_APP_URL=
+# Part 3: email
+SMTP_HOST=
+SMTP_PORT=
+SMTP_SECURE=
+SMTP_USER=
+# Part 4: OpenAI (optional, paid)
+CLASSIFIER=openai
+CLASSIFIER_MODEL=
+OPENAI_API_KEY=                   # secret
+# Part 5: WhatsApp (optional)
+WHATSAPP_GRAPH_VERSION=
+WHATSAPP_APP_SECRET=              # secret
+WHATSAPP_VERIFY_TOKEN=            # secret
+# Part 6: Stripe (optional)
+PAYMENTS_WEBHOOKS=true
+# Part 7
+NODE_ENV=production
+OPS_ALERT_EMAIL=</pre>
+  <p>After you fill them in, run <code>pnpm doctor --service web</code> (and again with <code>worker</code>,
+    <code>processor</code>, <code>webhooks</code>) on the server. It checks that the needed keys are set, then tries to
+    reach the database, Supabase and the SMTP port. It never prints a key's value.</p>
+
+  <h3>Where these steps come from</h3>
+  <p class="small">Read 29-30 October 2026.
+    Supabase: supabase.com/docs/guides/api/api-keys, supabase.com/docs/guides/database/connecting-to-postgres, supabase.com/pricing.
+    Brevo: developers.brevo.com/docs/smtp-integration, brevo.com/free-smtp-server.
+    Google: support.google.com/accounts/answer/185833, developers.google.com/workspace/gmail/imap/imap-smtp.
+    OpenAI: developers.openai.com/api/docs/quickstart, developers.openai.com/api/docs/guides/structured-outputs.
+    Meta: developers.facebook.com/docs/whatsapp/cloud-api/get-started, .../whatsapp/cloud-api/guides/set-up-webhooks,
+    .../graph-api/changelog/versions, .../development/create-an-app/app-dashboard/basic-settings.
+    Stripe: docs.stripe.com/keys, docs.stripe.com/webhooks.
+    App facts: docs/env-reference.md, Settings → Integrations, packages/adapters-payments/src/stripe.ts.</p>
+</section>
+
+</main>
+</body>
+</html>
