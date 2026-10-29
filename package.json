@@ -75,7 +75,8 @@
     "docs:check": "node packages/repo-tools/src/bin/docs-check.ts",
     "egress:check": "node packages/repo-tools/src/bin/egress-check.ts",
     "pilot:snapshot": "node packages/ops/src/bin/pilot.ts snapshot",
-    "pilot:report": "node packages/ops/src/bin/pilot.ts report"
+    "pilot:report": "node packages/ops/src/bin/pilot.ts report",
+    "demo:record": "node packages/demo/src/bin/record.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
