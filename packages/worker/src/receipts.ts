@@ -79,7 +79,7 @@ export async function processReceiptJob(job: ReceiptJob, deps: WorkerDeps): Prom
         return 'busy';
       }
       await db.markReceiptUnknown(job.tenantId, job.invoiceId, existing.id, key);
-      await alertOnce(deps, job.tenantId, `unknown:${key}`, 'message_unknown', `A receipt for invoice ${c.invoice.number} may or may not have been sent`, ['It will NOT be resent automatically.', 'Check, then: pnpm messages resolve --id <message id> --as sent|not_sent']);
+      await alertOnce(deps, job.tenantId, `unknown:${key}`, 'message_unknown', `A receipt for invoice ${c.invoice.number} may or may not have been sent`, ['It will NOT be resent automatically.', 'Check it on the Unknown sends page and mark it sent or not sent (or: pnpm messages resolve <message id> --as sent|not_sent).']);
       await db.ackReceipt(job.msgId);
       return 'unknown';
     }
