@@ -184,6 +184,32 @@ test.describe("owner: two-step payment connect", () => {
   });
 });
 
+test.describe("accountant: standard templates", () => {
+  test.use({ storageState: authFile("accountant") });
+
+  test("a missing standard template can be added back from the Templates page, without touching edited ones", async ({ page }) => {
+    const firm = (await db().query("select * from public.templates where tenant_id = $1 and template_key = 'firm' and channel = 'email'", [DEMO_TENANT])).rows[0];
+    await db().query("delete from public.templates where id = $1", [firm.id]);
+    await db().query("update public.templates set body = body || ' (edited)' where tenant_id = $1 and template_key = 'friendly' and channel = 'email'", [DEMO_TENANT]);
+    try {
+      await page.goto("/settings/templates");
+      const form = page.getByRole("form", { name: "Standard templates" });
+      await expect(form).toContainText("firm");
+      await form.getByRole("button", { name: "Add the standard email templates" }).click();
+      // Success re-renders the page with nothing missing, so the offer disappears (an error would stay, as an alert).
+      await expect(page.getByRole("form", { name: "Standard templates" })).toHaveCount(0);
+      const back = (await db().query("select subject, body from public.templates where tenant_id = $1 and template_key = 'firm' and channel = 'email'", [DEMO_TENANT])).rows[0];
+      expect(back).toEqual({ subject: firm.subject, body: firm.body });
+      const friendly = (await db().query("select body from public.templates where tenant_id = $1 and template_key = 'friendly' and channel = 'email'", [DEMO_TENANT])).rows[0];
+      expect(friendly.body).toContain("(edited)");
+      await page.reload();
+      await expect(page.locator('[data-template="firm:email"]')).toBeVisible();
+    } finally {
+      await db().query("update public.templates set body = replace(body, ' (edited)', '') where tenant_id = $1 and template_key = 'friendly' and channel = 'email'", [DEMO_TENANT]);
+    }
+  });
+});
+
 test.describe("accountant: channel settings", () => {
   test.use({ storageState: authFile("accountant") });
 

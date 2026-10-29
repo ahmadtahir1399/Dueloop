@@ -21,8 +21,9 @@ security findings that are still open are repeated from docs/security-review.md.
 - **Process supervision:** worker, processor and webhooks exit when the database connection drops and need a
   supervisor to restart (compose does; a bare `node` run does not).
 - **Sign-in:** no second factor; no rate limit of our own on sign-in beyond Supabase Auth's.
-- **Onboarding:** creating a business creates no message templates and no sending account; an owner must add them in
-  Settings before anything can be sent (the demo seed has them).
+- **Onboarding:** creating a business adds the standard English email templates (Settings > Templates can add back
+  any that are missing) but no sending account; an owner sets the SMTP password and sender address in Settings >
+  Integrations before anything can be sent. There are no default WhatsApp templates (they need Meta approval).
 - **WhatsApp reminders carry no pay link:** approved templates have no link variable yet (options in ADR 0046).
 - **Public links are not reused:** each reminder issues fresh pay and opt-out links (ADR 0046 explains why).
 - **Policy step labels** are not supported in the editor (steps have ids and channels only).
@@ -62,7 +63,7 @@ lifetime; Stripe as the first gateway on the client's own account; a proof block
 outside the weekly reminder cap; ISK, UGX and three-decimal currencies get bank-transfer text only.
 
 From prompt 6 (dashboard): the WhatsApp link options in ADR 0046; whether public links should be reused; step labels;
-whether onboarding should create default templates.
+whether onboarding should create default templates (decided after prompt 7: it adds the English email ones).
 
 From prompt 7 (this release): the licence (none chosen; no rights granted); the contribution policy; the project
 name; the security contact; support terms; the repository URL; the fate of the build guide (publish, sanitise or keep
