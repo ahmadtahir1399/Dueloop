@@ -35,7 +35,8 @@ export default defineConfig({
     { name: "security", testDir: "./e2e/security", use: { ...devices["Desktop Chrome"] } },
     { name: "a11y", testDir: "./e2e/a11y", use: { ...devices["Desktop Chrome"] } },
     { name: "lowbandwidth", testDir: "./e2e/lowbandwidth", use: { ...devices["Pixel 7"] } },
-    { name: "demo", testDir: "./e2e/demo", use: { ...devices["Desktop Chrome"] }, timeout: 600_000 },
+    // `pnpm demo:record` sets DEMO_RECORD=1: video of the same run (Playwright docs, "Videos": use.video { mode, size }).
+    { name: "demo", testDir: "./e2e/demo", use: { ...devices["Desktop Chrome"], video: process.env.DEMO_RECORD === "1" ? { mode: "on", size: { width: 1280, height: 720 } } : "off" }, timeout: 600_000 },
     { name: "perf", testDir: "./e2e/perf", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {

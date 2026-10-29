@@ -2,6 +2,8 @@
 // import wizard, real worker (injected clock), real processor, real webhook route + payment pipeline, real
 // SMTP into Mailpit. No fixed sleeps: every wait is on observable state. Prints a step / assertion / result table.
 import { randomBytes } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { createHash } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -57,6 +59,16 @@ test.use({ timezoneId: "Europe/London" });
 
 test("the 7-step demo, end to end", async ({ page, context }) => {
   test.setTimeout(600_000);
+  // `pnpm demo:record` only: keep the DOM of every page the video shows, so its text can be leak-checked (issue O).
+  if (process.env.DEMO_RECORD === "1") {
+    const dir = process.env.DEMO_RECORD_DOM ?? "";
+    mkdirSync(dir, { recursive: true });
+    let n = 0;
+    page.on("load", async () => {
+      const html = await page.content().catch(() => "");
+      writeFileSync(path.join(dir, `${String(++n).padStart(3, "0")}.html`), html);
+    });
+  }
   const at = demoClock();
   const today = at.startOf("day");
   await clearMail();
@@ -64,11 +76,18 @@ test("the 7-step demo, end to end", async ({ page, context }) => {
   // ---- Step 1: fresh tenant, CSV through the wizard, 12 overdue, ageing visible --------------------------------
   const ownerEmail = await signUpOwner(page);
   await page.getByLabel("Business name").fill("Fresh Demo Co");
+  // The injected clock (demoClock) is a moment inside a London send window, so the tenant must be in London too.
+  // Onboarding defaults to Asia/Karachi; leaving it there made the run depend on the time of day (it failed once
+  // London's window was open but Karachi's was not).
+  await page.getByLabel("Time zone").click();
+  await page.getByRole("option", { name: "Europe/London", exact: true }).click();
   await page.getByLabel("Main currency").fill("GBP");
   await page.getByRole("button", { name: /Create/ }).click();
   await page.waitForURL((u) => u.pathname === "/" || u.pathname === "/import");
-  const tenant = (await db().query<{ id: string }>("select id from public.tenants where name = 'Fresh Demo Co' order by created_at desc limit 1")).rows[0]?.id ?? "";
+  const created = (await db().query<{ id: string; timezone: string }>("select id, timezone from public.tenants where name = 'Fresh Demo Co' order by created_at desc limit 1")).rows[0];
+  const tenant = created?.id ?? "";
   expect(tenant).not.toBe("");
+  expect(created?.timezone, "the demo clock assumes the tenant is in Europe/London").toBe("Europe/London");
   // Setup an owner does in Settings > Integrations / Templates (onboarding creates neither; see limitations):
   // a sending address for SMTP (Mailpit here) and the default template texts.
   await db().query(`insert into public.channel_accounts (tenant_id, channel, config) values ($1, 'email', '{"from_address": "billing@fresh-demo.test", "from_name": "Fresh Demo Co", "message_id_domain": "fresh-demo.test"}')`, [tenant]);

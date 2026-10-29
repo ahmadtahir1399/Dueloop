@@ -26,6 +26,10 @@ pnpm demo:stop
 `pnpm demo` without `--non-interactive` prints the dashboard URL, per-run logins and the guided script
 ([docs/demo-script.md](docs/demo-script.md)).
 
+Demo video: TODO(video-url), to be hosted by the owner. `pnpm demo:record` records the automated demo with synthetic
+data into `.demo/recording/` (never committed) and leak-checks the page text it showed; a person must watch the
+video before it is shared.
+
 ## What is built
 
 The original build guide's feature catalogue is not in this repository, so this table lists what prompts 1-7 built,
