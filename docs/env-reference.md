@@ -22,7 +22,8 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `SMTP_HOST` | no | - | worker, web | Default SMTP host (a tenant account can override when SMTP_ALLOW_TENANT_HOST=true). |
 | `SMTP_PORT` | no | - | worker, web | Default SMTP port. |
 | `SMTP_SECURE` | no | - | worker, web | true for implicit TLS. |
-| `SMTP_USER` | no | - | worker, web | Default SMTP user (the password lives in Vault per tenant). |
+| `SMTP_PASSWORD` | yes | - | worker, cli | Operator SMTP password for SMTP_HOST/SMTP_USER. Used only when a tenant saved no SMTP password of its own; never sent to a tenant-chosen host. |
+| `SMTP_USER` | no | - | worker, web | Default SMTP user. Its password: SMTP_PASSWORD (operator) or the tenant one saved in Settings (Vault), which wins. |
 | `SMTP_ALLOW_TENANT_HOST` | no | - | worker, web | Let tenant channel config choose the SMTP host. |
 | `WHATSAPP_GRAPH_VERSION` | no | - | worker, web | Meta Graph API version; unset = no WhatsApp sending. |
 | `WHATSAPP_APP_SECRET` | yes | - | webhooks | Meta app secret for webhook signatures; unset = WhatsApp webhook disabled. |
