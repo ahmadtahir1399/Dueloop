@@ -1,0 +1,53 @@
+name: Release check
+
+# Runs when a maintainer pushes a version tag (v*). It verifies everything and builds the images, but it does NOT
+# push images, publish packages or create a GitHub release: those stay manual (docs/release.md).
+# NOT VERIFIED: this workflow has never run (nothing has been tagged or pushed).
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # repo:audit scans the full git history.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: pnpm exec supabase start
+
+      - name: Every suite (verify:all), including images and the demo contract
+        run: pnpm verify:all
+
+      - name: Licence report (the project's notices until a licence decision exists)
+        if: always()
+        run: pnpm licences:report
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: release-evidence
+          path: |
+            .reports/
+            .demo/timings.json
+            .demo/selftest.json
+            .demo/images-smoke.json
+            .demo/backup-drill/report.json
+          if-no-files-found: warn

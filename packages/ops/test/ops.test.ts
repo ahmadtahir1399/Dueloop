@@ -62,3 +62,12 @@ describe('error scrubber (hostile input)', () => {
     expect(summarise(e)).toBe('Error: boom for [email]');
   });
 });
+
+describe('version (prompt 7 step 13)', () => {
+  it('APP_VERSION (heartbeats, /ready) equals the root package.json version', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { APP_VERSION } = await import('../src/index.ts');
+    const pkg = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../../../package.json'), 'utf8')) as { version: string };
+    expect(APP_VERSION).toBe(pkg.version);
+  });
+});

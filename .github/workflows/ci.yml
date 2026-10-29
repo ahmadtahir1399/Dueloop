@@ -13,6 +13,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          # repo:audit scans the full git history (rule 46).
+          fetch-depth: 0
 
       # Reads the pnpm version from "packageManager" in package.json.
       - uses: pnpm/action-setup@v6
@@ -26,6 +29,12 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+      # Prompt 7: repository hygiene and documentation checks.
+      - run: pnpm env:check
+      - run: pnpm repo:audit
+      - run: pnpm docs:check
+      - run: pnpm egress:check
       - name: Web app production build
         run: pnpm web:build
 
@@ -49,6 +58,7 @@ jobs:
         run: pnpm db:test
 
       - run: pnpm db:rls-check
+      - run: pnpm db:catalog-audit
       - run: pnpm db:types:check
 
       - name: Import dry run, then the same import twice with identical counts
