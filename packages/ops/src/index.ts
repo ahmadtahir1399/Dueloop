@@ -7,7 +7,7 @@ import type pg from 'pg';
  * so every new migration bumps it in the same commit.
  */
 export const EXPECTED_SCHEMA_VERSION = '0023';
-export const APP_VERSION = '0.6.0';
+export const APP_VERSION = '0.7.0';
 
 export class SchemaMismatch extends Error {}
 
