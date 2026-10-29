@@ -6,5 +6,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["src", "test", "test-db"]
+  "include": ["src", "test", "test-db", "scripts"]
 }
