@@ -45,3 +45,4 @@ next-env.d.ts
 /test-results/
 /e2e/.auth/
 /playwright-report/
+/.next-demo/

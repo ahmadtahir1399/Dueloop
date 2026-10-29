@@ -123,7 +123,7 @@ test("production client bundle: no service-role key, no DB URL, no env secret va
 
 test("test-only code and fixtures are absent from the production build", () => {
   const all = files(BUILD).filter((f) => /\.(js|json|html|rsc|body)$/.test(f) && !f.includes(`${path.sep}cache${path.sep}`));
-  const markers = ["local-e2e-only", "__pwned", "e2e-claim", "e2e-demo-steps", "KeywordBaselineClassifier", "fixtures.ts"];
+  const markers = ["local-e2e-only", "__pwned", "e2e-claim", "e2e-demo-steps", "KeywordBaselineClassifier", "fixtures.ts", "demo.owner@", "fpay_demo_", "demo-script"];
   const hits: string[] = [];
   for (const f of all) {
     const text = readFileSync(f, "utf8");

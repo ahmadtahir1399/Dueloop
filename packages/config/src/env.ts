@@ -64,6 +64,8 @@ export const ENV: readonly EnvVar[] = [
   { name: 'NEXT_OUTPUT', secret: false, requiredBy: [], usedBy: ['web'], description: 'Build-time only: `standalone` makes next build emit the traced server the web image runs (set by the Dockerfile).', example: '' },
   { name: 'DUELOOP_SERVICE', secret: false, requiredBy: [], usedBy: ['worker', 'webhooks', 'processor'], description: 'Which service a services-image container runs (worker | processor | webhooks); picks the container healthcheck.', example: 'worker' },
   { name: 'HEALTH_MAX_AGE', secret: false, requiredBy: [], usedBy: ['worker', 'processor'], description: 'Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300).', example: '300', pattern: /^\d{1,5}$/ },
+  { name: 'DEMO_WEB_PORT', secret: false, requiredBy: [], usedBy: ['demo'], description: 'pnpm demo: port of the demo web app (default 3000).', example: '3000', pattern: /^\d{1,5}$/ },
+  { name: 'DEMO_WEBHOOKS_PORT', secret: false, requiredBy: [], usedBy: ['demo'], description: 'pnpm demo: port of the demo webhooks service (default 8787).', example: '8787', pattern: /^\d{1,5}$/ },
   { name: 'DEMO_MODE', secret: false, requiredBy: [], usedBy: ['demo'], description: 'Set by `pnpm demo` only; demo:control refuses without it.', example: '' },
   { name: 'DEMO_NOW', secret: false, requiredBy: [], usedBy: ['demo'], description: 'Demo clock passed to child processes.', example: '' },
   { name: 'NOW_ISO', secret: false, requiredBy: [], usedBy: ['demo'], description: 'Demo/script clock.', example: '' },

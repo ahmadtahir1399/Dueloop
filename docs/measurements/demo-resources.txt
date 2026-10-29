@@ -1,0 +1,16 @@
+# pnpm demo, measured 2026-10-29 on one machine: Windows 10, 15.7 GB RAM, Docker Desktop (Engine 29.8.0).
+# Local measurements only; another machine will differ.
+
+memory while the demo runs (after the 7-step flow)
+  node processes (web, webhooks, worker, demo processor): 417 MB working set
+  Supabase containers (db, storage, rest, auth, kong, mailpit): 594 MB (docker stats)
+
+disk
+  Supabase images (postgres 1.7 GB, storage-api 1.43 GB, kong, gotrue, postgrest, mailpit, pg_prove): about 3.6 GB
+  node_modules: 803 MB
+  web build (.next-demo): 119 MB
+
+wall clock (.demo/timings.json)
+  first start, stack already running, web build included: 52.9 s
+  warm start (stack running, build cached): 37.1 s (reset_and_seed 28.6 s, services_ready 6 s)
+  cold start (no cached images, clean clone): NOT MEASURED locally; the clean-clone CI job records it

@@ -63,7 +63,12 @@
     "repo:audit": "node packages/repo-tools/src/bin/repo-audit.ts",
     "backup:drill": "node packages/ops/scripts/backup-drill.ts",
     "images:build": "node packages/ops/scripts/images.ts build",
-    "images:smoke": "node packages/ops/scripts/images.ts smoke"
+    "images:smoke": "node packages/ops/scripts/images.ts smoke",
+    "demo": "node packages/demo/src/bin/demo.ts start",
+    "demo:stop": "node packages/demo/src/bin/demo.ts stop",
+    "demo:reset": "node packages/demo/src/bin/demo.ts reset",
+    "demo:logs": "node packages/demo/src/bin/demo.ts logs",
+    "demo:control": "node packages/demo/src/bin/control.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
