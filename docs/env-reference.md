@@ -36,10 +36,13 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `CLASSIFIER_MODEL` | no | - | processor | Model id of the chosen provider (required when CLASSIFIER is set). |
 | `CLASSIFIER_TIMEOUT_MS` | no | - | processor | Classifier call timeout. |
 | `CLASSIFIER_FALLBACKS` | no | - | processor | false = no model fallback (Anthropic only). |
+| `CLASSIFIER_REASONING_EFFORT` | no | - | processor | OpenAI reasoning models only: none \| minimal \| low \| medium \| high. Unset = not sent (other models reject it). |
 | `ANTHROPIC_API_KEY` | yes | - | processor, worker, smoke | Read by the Anthropic SDK when CLASSIFIER or PROOF_EXTRACTION is anthropic. |
 | `OPENAI_API_KEY` | yes | - | processor, worker | Read by the OpenAI SDK when CLASSIFIER or PROOF_EXTRACTION is openai. |
+| `OPENAI_LOG` | no | - | test | Read by the OpenAI SDK, but has no effect here: the app sets the SDK log level to off (debug would log customer text). Do not set. |
 | `PROOF_EXTRACTION` | no | - | worker | anthropic or openai = AI hints on proof images (tenants must also opt in). |
 | `PROOF_EXTRACTION_MODEL` | no | - | worker | Model id for proof hints. |
+| `PROOF_EXTRACTION_REASONING_EFFORT` | no | - | worker | OpenAI reasoning models only, for proof hints: none \| minimal \| low \| medium \| high. Unset = not sent. |
 | `PROOF_EXTRACTION_FALLBACKS` | no | - | worker | false = no model fallback (Anthropic only). |
 | `NEXT_DIST_DIR` | no | - | test | Build folder (the e2e build uses .next-e2e). |
 | `SENTRY_DSN` | yes | - | - | Reserved: no error-reporting vendor is wired (ErrorReporter is a no-op by default). |

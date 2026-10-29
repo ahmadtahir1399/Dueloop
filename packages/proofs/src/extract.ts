@@ -5,8 +5,8 @@
 // Accuracy is NOT measured here.
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
-import { openAIError, openAIOutputText, openAITextFormat, parseJsonOrNull } from '@dueloop/classifier';
-import OpenAI from 'openai';
+import { openAIClient, openAIError, openAIOutputText, openAITextFormat, parseJsonOrNull, type OpenAIReasoningEffort } from '@dueloop/classifier';
+import type OpenAI from 'openai';
 import { isValidReferenceCode, normaliseReferenceCode, parseAmount, parseDate } from '@dueloop/ingest/parsers';
 import { z } from 'zod';
 
@@ -125,7 +125,8 @@ export class AnthropicProofExtractor implements ProofExtractor {
   constructor(o: AnthropicProofExtractorOptions) {
     if (!o.model) throw new Error('PROOF_EXTRACTION_MODEL is required');
     this.o = o;
-    this.client = o.client ?? new Anthropic();
+    // logLevel 'off' beats ANTHROPIC_LOG, whose 'debug' level would log the image (bank details).
+    this.client = o.client ?? new Anthropic({ logLevel: 'off' });
   }
   async extract(image: Buffer, mime: ImageMime): Promise<ExtractResult> {
     try {
@@ -170,6 +171,8 @@ export interface OpenAIProofExtractorOptions {
   readonly model: string;
   readonly timeoutMs: number;
   readonly maxRetries: number;
+  /** Reasoning models only (PROOF_EXTRACTION_REASONING_EFFORT); unset = not sent. */
+  readonly reasoningEffort?: OpenAIReasoningEffort | undefined;
   readonly client?: OpenAI;
 }
 
@@ -185,15 +188,16 @@ export class OpenAIProofExtractor implements ProofExtractor {
   constructor(o: OpenAIProofExtractorOptions) {
     if (!o.model) throw new Error('PROOF_EXTRACTION_MODEL is required');
     this.o = o;
-    this.client = o.client ?? new OpenAI();
+    this.client = o.client ?? openAIClient();
   }
   async extract(image: Buffer, mime: ImageMime): Promise<ExtractResult> {
     try {
       const res = await this.client.responses.create(
         {
           model: this.o.model,
-          max_output_tokens: 2048,
+          max_output_tokens: 8192,
           store: false,
+          ...(this.o.reasoningEffort ? { reasoning: { effort: this.o.reasoningEffort } } : {}),
           text: { format: openAITextFormat(ProofHintsRaw, 'proof_hints') },
           input: [
             {

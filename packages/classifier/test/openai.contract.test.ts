@@ -87,6 +87,31 @@ describe('OpenAIReplyClassifier', () => {
     expect(await make(client, { timeoutMs: 50 }).classify(input)).toEqual({ ok: false, error: 'timeout' });
   });
 
+  it('reasoning effort is sent only when configured (models without reasoning reject the field)', async () => {
+    const plain = fakeClient(() => response([text(JSON.stringify(analysis))]));
+    await make(plain.client).classify(input);
+    expect(plain.bodies[0]).not.toHaveProperty('reasoning');
+    const reasoning = fakeClient(() => response([text(JSON.stringify(analysis))]));
+    await make(reasoning.client, { reasoningEffort: 'low' }).classify(input);
+    expect(reasoning.bodies[0]?.reasoning).toEqual({ effort: 'low' });
+  });
+
+  it('the default client logs nothing, whatever OPENAI_LOG says (it could print customer text)', () => {
+    const saved = process.env.OPENAI_LOG;
+    const savedKey = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_LOG = 'debug';
+    process.env.OPENAI_API_KEY = 'test-key'; // read by the SDK; nothing is called
+    try {
+      const c = new OpenAIReplyClassifier({ model: 'm', timeoutMs: 1, maxRetries: 0, nowMs: () => 0, client: undefined as never });
+      expect((c as unknown as { client: { logLevel: string } }).client.logLevel).toBe('off');
+    } finally {
+      if (saved === undefined) delete process.env.OPENAI_LOG;
+      else process.env.OPENAI_LOG = saved;
+      if (savedKey === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = savedKey;
+    }
+  });
+
   it('no model configured => refuses to start (never a hard-coded default)', () => {
     expect(() => make(new OpenAI({ apiKey: 'k' }), { model: '' })).toThrow(/CLASSIFIER_MODEL/);
   });
