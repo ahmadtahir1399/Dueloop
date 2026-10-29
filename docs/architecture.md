@@ -33,7 +33,7 @@ flowchart LR
   Worker --> Store
   DB --- Vault
   Worker -- SMTP / WhatsApp / Stripe --> Providers[(Providers)]
-  Proc -- optional model --> Model[(Anthropic API)]
+  Proc -- optional model --> Model[(Anthropic or OpenAI API)]
   Providers -- signed webhooks --> Hooks
   Worker -- IMAP poll --> Providers
 ```

@@ -15,6 +15,9 @@ export const SECRET_RULES: readonly SecretRule[] = [
   { id: 'stripe-secret-key', re: /\b[sr]k_(?:live|test)_[0-9A-Za-z]{16,}/ },
   { id: 'stripe-webhook-secret', re: /\bwhsec_[0-9A-Za-z+/=]{16,}/ },
   { id: 'anthropic-api-key', re: /\bsk-ant-[0-9A-Za-z_-]{20,}/ },
+  // OpenAI publishes no key-format spec; secret scanners match the shared "T3BlbkFJ" marker (GitGuardian's OpenAI
+  // detectors, OpenRouter's secret-format guide) and the project/service-account/admin prefixes.
+  { id: 'openai-api-key', re: /\bsk-(?:(?:proj|svcacct|admin)-[0-9A-Za-z_-]{20,}|[0-9A-Za-z_-]{8,}T3BlbkFJ[0-9A-Za-z_-]{8,})/ },
   { id: 'aws-access-key-id', re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/ },
   { id: 'github-token', re: /\b(?:gh[pousr]_[0-9A-Za-z]{30,}|github_pat_[0-9A-Za-z_]{40,})/ },
   { id: 'slack-token', re: /\bxox[abprs]-[0-9A-Za-z-]{10,}/ },

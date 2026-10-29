@@ -18,9 +18,9 @@ export const URL_VARS = ['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_D
 
 /**
  * Credentials that always reach a real provider when set: these providers have no test-mode key format we could
- * tell apart (Anthropic, WhatsApp Cloud API) or the variable only exists for live smoke checks.
+ * tell apart (Anthropic, OpenAI, WhatsApp Cloud API) or the variable only exists for live smoke checks.
  */
-export const ALWAYS_LIVE_VARS = ['ANTHROPIC_API_KEY', 'WHATSAPP_TOKEN', 'WHATSAPP_APP_SECRET', 'SENTRY_DSN', 'STRIPE_TEST_API_KEY'] as const;
+export const ALWAYS_LIVE_VARS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'WHATSAPP_TOKEN', 'WHATSAPP_APP_SECRET', 'SENTRY_DSN', 'STRIPE_TEST_API_KEY'] as const;
 
 /** Documented live-mode key prefixes (Stripe: https://docs.stripe.com/keys: pk_live_, rk_live_, sk_live_, sk_org_). */
 const LIVE_KEY = /\b(?:[spr]k_live_|sk_org_)[0-9A-Za-z]/;

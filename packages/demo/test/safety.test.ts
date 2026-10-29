@@ -25,6 +25,7 @@ describe('demo safety gate', () => {
     for (const p of ['sk_live_', 'rk_live_', 'pk_live_', 'sk_org_']) expect(safetyProblems({ SOMETHING: live(p) })).toEqual(['SOMETHING looks like a live-mode provider key']);
     expect(safetyProblems({ X: live('sk_test_') })).toEqual([]);
     expect(safetyProblems({ ANTHROPIC_API_KEY: 'x' })[0]).toContain('ANTHROPIC_API_KEY is set');
+    expect(safetyProblems({ OPENAI_API_KEY: 'x' })[0]).toContain('OPENAI_API_KEY is set');
     expect(safetyProblems({ NODE_ENV: 'production' })).toHaveLength(1);
   });
   it('never echoes a value', () => {

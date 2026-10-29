@@ -17,6 +17,7 @@ const IGNORE = /(\.invalid|\.example|\.test|example\.(com|org|net)|^docs\.|local
 /** Outbound clients by import, and where each one sends (SDK defaults per their docs; env-configured otherwise). */
 const CLIENTS: Record<string, string> = {
   '@anthropic-ai/sdk': 'api.anthropic.com',
+  openai: 'api.openai.com',
   stripe: 'api.stripe.com',
   nodemailer: 'config:SMTP',
   imapflow: 'config:IMAP',

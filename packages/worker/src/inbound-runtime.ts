@@ -1,6 +1,6 @@
 // Composition root for the inbound processor: classifier choice, notifier, logger. Failpoints are always the
 // no-op here (tests build their own deps).
-import { AnthropicReplyClassifier, type ClassifierResult, type ReplyClassifier } from '@dueloop/classifier';
+import { AnthropicReplyClassifier, OpenAIReplyClassifier, type ClassifierResult, type ReplyClassifier } from '@dueloop/classifier';
 import { DEFAULT_INBOUND_CONFIG, InboundDb, NO_INBOUND_FAILPOINTS, type InboundDeps } from '@dueloop/inbound';
 import type { WorkerDb } from './db.ts';
 import type { Clock } from './ports.ts';
@@ -29,6 +29,9 @@ export function classifierFrom(env: Env, nowMs: () => number): ReplyClassifier {
       fallbacks: env.CLASSIFIER_FALLBACKS !== 'false',
       nowMs,
     });
+  }
+  if (env.CLASSIFIER === 'openai') {
+    return new OpenAIReplyClassifier({ model: env.CLASSIFIER_MODEL ?? '', timeoutMs: Number(env.CLASSIFIER_TIMEOUT_MS ?? 30_000), maxRetries: 2, nowMs });
   }
   return new HumanOnlyClassifier();
 }

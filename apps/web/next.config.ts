@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
     "@dueloop/webhooks",
   ],
   // Node-only libraries used by the server-side pipelines (never in a client bundle): required at runtime.
-  serverExternalPackages: ["pg", "nodemailer", "imapflow", "@anthropic-ai/sdk", "postal-mime", "html-to-text"],
+  serverExternalPackages: ["pg", "nodemailer", "imapflow", "@anthropic-ai/sdk", "openai", "postal-mime", "html-to-text"],
   // No X-Powered-By header (nothing to fingerprint).
   poweredByHeader: false,
   experimental: {

@@ -4,7 +4,7 @@ import { createSmtpChannel, smtpDefaultsFromEnv } from '@dueloop/adapters-email'
 import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail } from '@dueloop/adapters-notify';
 import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
-import { AnthropicProofExtractor, DEFAULT_PROOFS_CONFIG, ProofsDb, createMediaFetcher, supabaseProofStore, type ProofExtractor, type ProofsDeps } from '@dueloop/proofs';
+import { AnthropicProofExtractor, OpenAIProofExtractor, DEFAULT_PROOFS_CONFIG, ProofsDb, createMediaFetcher, supabaseProofStore, type ProofExtractor, type ProofsDeps } from '@dueloop/proofs';
 import { accountProviders, createRequestFor, DEFAULT_PAYMENTS_CONFIG, NO_PAYMENT_FAILPOINTS, PaymentsDb, type PaymentsDeps } from '@dueloop/payments';
 import { checkBaseUrl, issueLinks } from '@dueloop/links';
 import pg from 'pg';
@@ -124,7 +124,7 @@ export function paymentLinks(p: PaymentsDeps): PaymentLinks {
 /**
  * Proof inbox (step 13). Storage: the service-role client from SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, else
  * the local stack (never logged, never sent to a browser). AI extraction only with PROOF_EXTRACTION=anthropic
- * and PROOF_EXTRACTION_MODEL set, and then still only for tenants that opted in (proof_ai_extraction).
+ * or openai, and PROOF_EXTRACTION_MODEL set, and then still only for tenants that opted in (proof_ai_extraction).
  */
 export function buildProofsDeps(env: Env, db: WorkerDb, clock: Clock): ProofsDeps {
   const w = buildDeps(env, db, clock);
@@ -132,7 +132,9 @@ export function buildProofsDeps(env: Env, db: WorkerDb, clock: Clock): ProofsDep
   const extractor: ProofExtractor | null =
     env.PROOF_EXTRACTION === 'anthropic'
       ? new AnthropicProofExtractor({ model: env.PROOF_EXTRACTION_MODEL ?? '', timeoutMs: 60_000, maxRetries: 2, fallbacks: env.PROOF_EXTRACTION_FALLBACKS !== 'false' })
-      : null;
+      : env.PROOF_EXTRACTION === 'openai'
+        ? new OpenAIProofExtractor({ model: env.PROOF_EXTRACTION_MODEL ?? '', timeoutMs: 60_000, maxRetries: 2 })
+        : null;
   return {
     db: new ProofsDb(db.pool),
     store: supabaseProofStore(env.SUPABASE_URL ?? local?.apiUrl ?? '', env.SUPABASE_SERVICE_ROLE_KEY ?? local?.serviceRoleKey ?? ''),

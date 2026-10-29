@@ -24,7 +24,7 @@ header), no tests, fixtures, demo code, seed data or env files (`.dockerignore`;
 - A Supabase project with these extensions: `pgmq` (Supabase Queues, documented at
   https://supabase.com/docs/guides/queues/pgmq), `pg_cron` (Supabase Cron, https://supabase.com/docs/guides/cron),
   `supabase_vault`, `pgcrypto`. Availability on your plan: check those pages; NOT VERIFIED here.
-- SMTP for email; optionally WhatsApp Cloud API, Stripe, an Anthropic API key (each is opt-in; see
+- SMTP for email; optionally WhatsApp Cloud API, Stripe, an Anthropic or OpenAI API key (each is opt-in; see
   docs/data-handling.md for what is sent where).
 
 ## Build

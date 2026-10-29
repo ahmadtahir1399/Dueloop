@@ -8,6 +8,11 @@ nothing is published (docs/release.md).
 
 ## [Unreleased]
 
+### Added
+
+- OpenAI as a second, optional model provider: `CLASSIFIER=openai` and `PROOF_EXTRACTION=openai` with
+  `OPENAI_API_KEY` (ADR 0053). Anthropic stays supported; with neither set, every reply still goes to a human.
+
 ## [0.7.0] - 2026-10-29
 
 Not tagged or published; this is the state of the default branch at the end of build phase 7.

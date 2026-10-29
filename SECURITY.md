@@ -17,7 +17,7 @@ No response time and no bug bounty are offered.
 ## Scope
 
 In scope: the code in this repository (services, web app, database migrations, container images built from the
-Dockerfile). Out of scope: third-party providers (Supabase, Stripe, Meta, Anthropic, Slack, SMTP hosts) and any
+Dockerfile). Out of scope: third-party providers (Supabase, Stripe, Meta, Anthropic, OpenAI, Slack, SMTP hosts) and any
 deployment not run by the maintainer.
 
 How the project reviews itself: docs/security-review.md and docs/threat-model.md.
