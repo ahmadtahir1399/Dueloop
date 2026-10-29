@@ -27,6 +27,40 @@ export async function addStandardTemplatesAction(): Promise<{ ok?: boolean; erro
   return { ok: true, message: "Added. Read them and change the wording if you like." };
 }
 
+/**
+ * Adds a WhatsApp template (RLS: owner/accountant). It always starts 'pending' (migration 0024 enforces this in the
+ * database); the router sends only 'approved' ones, and only an owner can mark it approved.
+ */
+export async function newWhatsAppTemplateAction(_prev: { ok?: boolean; error?: string; message?: string }, form: FormData): Promise<{ ok?: boolean; error?: string; message?: string }> {
+  const ctx = await requireTenant();
+  const key = textField(form, "template_key", 40).trim();
+  const tone = String(form.get("tone"));
+  const locale = textField(form, "locale", 20).trim() || "en";
+  const name = textField(form, "provider_template_name", 512).trim();
+  const language = textField(form, "provider_language", 20).trim();
+  const body = textField(form, "body", 5000);
+  if (!/^[a-z0-9_]{1,40}$/.test(key)) return { error: "The template key uses lowercase letters, digits and _ (for example nudge)." };
+  if (!["friendly", "neutral", "firm"].includes(tone)) return { error: "Choose a tone." };
+  if (!/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/.test(locale)) return { error: "The customer language is a code like en or ur-Latn." };
+  if (!name || !language) return { error: "Give the template name and language code exactly as Meta shows them." };
+  const preview = previewTemplate({ channel: "whatsapp", locale, subject: null, body });
+  if (!preview.body.ok) return { error: "The text does not render; fix the variables first." };
+  const { error } = await ctx.supabase.from("templates").insert({
+    tenant_id: ctx.tenant.id,
+    template_key: key,
+    channel: "whatsapp",
+    locale,
+    tone,
+    body,
+    provider_template_name: name,
+    provider_language: language,
+  });
+  if (error?.code === "23505") return { error: "A WhatsApp template with this key and language already exists; edit it instead." };
+  if (error) return { error: dbErrorMessage(error) };
+  revalidatePath("/settings/templates");
+  return { ok: true, message: "Added as pending. An owner marks it approved once Meta has approved the same text." };
+}
+
 export async function templateAction(_prev: TemplateState, form: FormData): Promise<TemplateState> {
   const ctx = await requireTenant();
   const id = uuidField(form, "template");

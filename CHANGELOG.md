@@ -12,8 +12,26 @@ nothing is published (docs/release.md).
 
 - OpenAI as a second, optional model provider: `CLASSIFIER=openai` and `PROOF_EXTRACTION=openai` with
   `OPENAI_API_KEY` (ADR 0053). Anthropic stays supported; with neither set, every reply still goes to a human.
+- Settings > Integrations: "Email sender" and "WhatsApp number" forms; Stripe can be connected first and its
+  webhook signing secret added afterwards ("Webhook signing secret"); the account stays off until then.
+- Settings > Templates: the standard email templates (also added at onboarding) and "New WhatsApp template"
+  (starts pending; an owner marks it approved).
+- Invoice page: "Resume reminders" for a parked invoice (owner/accountant; never for unknown-state messages).
+- Customer page: record and withdraw consent (owner/accountant).
+- `SMTP_PASSWORD` (operator SMTP login, never sent to a tenant-chosen host); the ops watchdog logs in with it.
+- `CLASSIFIER_REASONING_EFFORT`, `PROOF_EXTRACTION_REASONING_EFFORT`.
 - `docs/guides/getting-your-keys.html` and `pnpm guide:pdf`: an easy-English guide to getting each environment key
   from a hosted service (free plans where one exists), rendered to a git-ignored PDF.
+
+### Fixed
+
+- A new business could not send anything without database access: no screen for the sender address, the WhatsApp
+  phone number id, templates or consent, and a parked invoice could only be resumed from the CLI.
+- Migration 0024: a WhatsApp template inserted by a member always starts "pending" (only an owner approves it).
+- The budget label said "0 = unlimited"; 0 blocks WhatsApp and SMS.
+- A wrong Slack URL or a Stripe key of the other mode was accepted and failed silently later.
+- "Rotate the webhook URL" failed with more than one payment account.
+- AI SDK logging is forced off (`OPENAI_LOG` / `ANTHROPIC_LOG` at debug would log customer text).
 
 ## [0.7.0] - 2026-10-29
 

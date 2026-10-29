@@ -53,7 +53,7 @@ export function TemplateForm(p: { id: string; channel: string; subject: string |
             </Button>
           </>
         ) : null}
-        {p.canApprove && p.channel === "whatsapp" && p.status === "needs_resubmission" ? (
+        {p.canApprove && p.channel === "whatsapp" && (p.status === "needs_resubmission" || p.status === "pending") ? (
           <Button type="submit" name="op" value="approve" variant="outline" disabled={pending}>
             Meta approved this text
           </Button>

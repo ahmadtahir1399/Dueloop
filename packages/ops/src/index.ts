@@ -6,7 +6,7 @@ import type pg from 'pg';
  * The migration this build was written against. A test fails if it is not the newest file in supabase/migrations,
  * so every new migration bumps it in the same commit.
  */
-export const EXPECTED_SCHEMA_VERSION = '0023';
+export const EXPECTED_SCHEMA_VERSION = '0024';
 export const APP_VERSION = '0.7.0';
 
 export class SchemaMismatch extends Error {}
