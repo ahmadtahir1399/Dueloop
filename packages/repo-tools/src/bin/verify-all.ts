@@ -1,10 +1,10 @@
 // pnpm verify:all [--from <step>] [--only a,b] [--list]: EVERY suite from prompts 1-7, in order, against the local
 // stack. Stops at the first failure and exits non-zero; prints a step / result / seconds table and writes it to
 // .reports/verify-all.json. Steps that need a fresh database reset it first (they are listed with "reset").
-import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pnpmSpawn } from '../../../ops/scripts/pnpm-spawn.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -50,18 +50,13 @@ export const STEPS: readonly Step[] = [
   { name: 'perf pages (50k invoices)', run: [['perf:pages']] },
 ];
 
-/** pnpm through its own JS entry when we were started by pnpm (no shell, so no quoting differences on Windows). */
-function pnpm(args: string[], env: NodeJS.ProcessEnv) {
-  const entry = process.env.npm_execpath;
-  return entry && /pnpm/i.test(entry)
-    ? spawnSync(process.execPath, [entry, ...args], { cwd: root, env, stdio: 'inherit' })
-    : spawnSync('pnpm', args, { cwd: root, env, stdio: 'inherit', shell: process.platform === 'win32' });
-}
+const pnpm = (args: string[], env: NodeJS.ProcessEnv) => pnpmSpawn(args, { cwd: root, env, stdio: 'inherit' });
 
 function localEnv(): NodeJS.ProcessEnv {
-  const r = spawnSync(process.execPath, [process.env.npm_execpath ?? 'pnpm', 'exec', 'supabase', 'status', '-o', 'json'], { cwd: root, encoding: 'utf8' });
+  const r = pnpmSpawn(['exec', 'supabase', 'status', '-o', 'json'], { cwd: root, encoding: 'utf8' });
   try {
-    const s = JSON.parse(r.stdout.slice(r.stdout.indexOf('{'))) as Record<string, string>;
+    const out = String(r.stdout ?? '');
+    const s = JSON.parse(out.slice(out.indexOf('{'))) as Record<string, string>;
     return { ...process.env, SUPABASE_URL: s.API_URL, SUPABASE_SERVICE_ROLE_KEY: s.SERVICE_ROLE_KEY, WORKER_DATABASE_URL: s.DB_URL };
   } catch {
     return process.env;
@@ -92,10 +87,10 @@ function main() {
       if (!ok) break;
       if (cmd === SIM) {
         // Deterministic: the same seed twice gives byte-identical output.
-        const a = spawnSync(process.execPath, [process.env.npm_execpath ?? 'pnpm', ...SIM], { cwd: root, encoding: 'utf8' });
-        const b = spawnSync(process.execPath, [process.env.npm_execpath ?? 'pnpm', ...SIM], { cwd: root, encoding: 'utf8' });
-        ok = a.status === 0 && b.status === 0 && a.stdout === b.stdout;
-        process.stdout.write(a.stdout.split('\n').slice(-6).join('\n'));
+        const a = pnpmSpawn(SIM, { cwd: root, encoding: 'utf8' });
+        const b = pnpmSpawn(SIM, { cwd: root, encoding: 'utf8' });
+        ok = a.status === 0 && b.status === 0 && String(a.stdout) === String(b.stdout);
+        process.stdout.write(String(a.stdout).split('\n').slice(-6).join('\n'));
       } else ok = pnpm(cmd, env).status === 0;
     }
     rows.push({ step: s.name, result: ok ? 'PASS' : 'FAIL', seconds: Math.round((performance.now() - t0) / 100) / 10 });
