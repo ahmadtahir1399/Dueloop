@@ -137,6 +137,10 @@ insert into ops values
   ('api_idempotency', 'insert', $$insert into public.api_idempotency (tenant_id, idem_key, request_hash, expires_at) values ('{T}', 'new', repeat('2', 64), now() + interval '1 day')$$),
   ('api_idempotency', 'update', $$update public.api_idempotency set status = status where tenant_id = '{T}'$$),
   ('api_idempotency', 'delete', $$delete from public.api_idempotency where tenant_id = '{T}'$$),
+  ('kpi_snapshots', 'select', $$select 1 from public.kpi_snapshots where tenant_id = '{T}'$$),
+  ('kpi_snapshots', 'insert', $$insert into public.kpi_snapshots (tenant_id, taken_at, kind, period_from, period_to, kpis, created_by) values ('{T}', now(), 'periodic', '2026-01-01', '2026-01-31', '{}', 'x')$$),
+  ('kpi_snapshots', 'update', $$update public.kpi_snapshots set notes = notes where tenant_id = '{T}'$$),
+  ('kpi_snapshots', 'delete', $$delete from public.kpi_snapshots where tenant_id = '{T}'$$),
   ('invoice_balances', 'select', $$select 1 from public.invoice_balances where tenant_id = '{T}'$$),
   ('invoices_due', 'select', $$select 1 from public.invoices_due where tenant_id = '{T}'$$);
 
@@ -151,6 +155,9 @@ insert into public.api_keys (tenant_id, name, prefix, secret_hash) values
 insert into public.api_idempotency (tenant_id, idem_key, request_hash, expires_at) values
   ('00000000-0000-0000-0000-00000000000a', 'k', repeat('7', 64), now() + interval '1 day'),
   ('00000000-0000-0000-0000-00000000000b', 'k', repeat('8', 64), now() + interval '1 day');
+insert into public.kpi_snapshots (tenant_id, taken_at, kind, period_from, period_to, kpis, created_by) values
+  ('00000000-0000-0000-0000-00000000000a', now(), 'baseline', '2026-01-01', '2026-01-31', '{}', 'fixture'),
+  ('00000000-0000-0000-0000-00000000000b', now(), 'baseline', '2026-01-01', '2026-01-31', '{}', 'fixture');
 
 create temp table expected (tbl text, op text, owner text, accountant text, collector text, primary key (tbl, op)) on commit drop;
 insert into expected values
@@ -282,6 +289,10 @@ insert into expected values
   ('api_idempotency', 'insert', 'deny', 'deny', 'deny'),
   ('api_idempotency', 'update', 'deny', 'deny', 'deny'),
   ('api_idempotency', 'delete', 'deny', 'deny', 'deny'),
+  ('kpi_snapshots', 'select', 'allow', 'allow', 'deny'),
+  ('kpi_snapshots', 'insert', 'deny', 'deny', 'deny'),
+  ('kpi_snapshots', 'update', 'deny', 'deny', 'deny'),
+  ('kpi_snapshots', 'delete', 'deny', 'deny', 'deny'),
   ('invoice_balances', 'select', 'allow', 'allow', 'allow'),
   ('invoices_due', 'select', 'allow', 'allow', 'allow');
 

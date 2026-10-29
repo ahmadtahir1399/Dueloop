@@ -507,6 +507,32 @@ isOneToOne: false
       referencedColumns: ["tenant_id","id"]
     }
                   ]
+                },"kpi_snapshots": {
+                  Row: {
+                    "client_reported": NonNullable<Json>,"created_by": string,"id": string,"kind": string,"kpis": NonNullable<Json>,"notes": string | null,"period_from": string,"period_to": string,"taken_at": string,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_reported"?: NonNullable<Json>,"created_by": string,"id"?: string,"kind": string,"kpis": NonNullable<Json>,"notes"?: string | null,"period_from": string,"period_to": string,"taken_at": string,"tenant_id": string
+                  }
+                  Update: {
+                    "client_reported"?: NonNullable<Json>,"created_by"?: string,"id"?: string,"kind"?: string,"kpis"?: NonNullable<Json>,"notes"?: string | null,"period_from"?: string,"period_to"?: string,"taken_at"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "kpi_snapshots_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "kpi_this_week"
+      referencedColumns: ["tenant_id"]
+    },{
+      foreignKeyName: "kpi_snapshots_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"memberships": {
                   Row: {
                     "created_at": string,"role": string,"tenant_id": string,"user_id": string
