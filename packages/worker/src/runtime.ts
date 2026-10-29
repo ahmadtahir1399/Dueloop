@@ -10,6 +10,7 @@ import { checkBaseUrl, issueLinks } from '@dueloop/links';
 import pg from 'pg';
 import { localEnv } from '../../db/scripts/local-env.ts';
 import { WorkerDb } from './db.ts';
+import { reasoningEffort } from './inbound-runtime.ts';
 import { createJsonLogger, type Logger } from './logger.ts';
 import { DEFAULT_CONFIG, NO_FAILPOINTS, type Clock, type Notifier, type PaymentLinks, type PublicLinks, type WorkerConfig } from './ports.ts';
 import type { WorkerDeps } from './process.ts';
@@ -133,7 +134,7 @@ export function buildProofsDeps(env: Env, db: WorkerDb, clock: Clock): ProofsDep
     env.PROOF_EXTRACTION === 'anthropic'
       ? new AnthropicProofExtractor({ model: env.PROOF_EXTRACTION_MODEL ?? '', timeoutMs: 60_000, maxRetries: 2, fallbacks: env.PROOF_EXTRACTION_FALLBACKS !== 'false' })
       : env.PROOF_EXTRACTION === 'openai'
-        ? new OpenAIProofExtractor({ model: env.PROOF_EXTRACTION_MODEL ?? '', timeoutMs: 60_000, maxRetries: 2 })
+        ? new OpenAIProofExtractor({ model: env.PROOF_EXTRACTION_MODEL ?? '', timeoutMs: 60_000, maxRetries: 2, reasoningEffort: reasoningEffort(env.PROOF_EXTRACTION_REASONING_EFFORT) })
         : null;
   return {
     db: new ProofsDb(db.pool),

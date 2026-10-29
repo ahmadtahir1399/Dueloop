@@ -1,7 +1,7 @@
 // Which AI provider the processor and the proof inbox use is configuration only (ADR 0053).
 import { AnthropicReplyClassifier, OpenAIReplyClassifier } from '@dueloop/classifier';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { classifierFrom, HumanOnlyClassifier } from '../src/inbound-runtime.ts';
+import { classifierFrom, HumanOnlyClassifier, reasoningEffort } from '../src/inbound-runtime.ts';
 
 const saved = process.env.OPENAI_API_KEY;
 beforeEach(() => {
@@ -23,6 +23,14 @@ describe('classifierFrom', () => {
     expect(classifierFrom({}, () => 0)).toBeInstanceOf(HumanOnlyClassifier);
     expect(classifierFrom({ CLASSIFIER: 'gpt' }, () => 0)).toBeInstanceOf(HumanOnlyClassifier);
   });
+  it('reasoning effort: unset is not sent; an unknown value refuses to start', () => {
+    expect(reasoningEffort(undefined)).toBeUndefined();
+    expect(reasoningEffort('')).toBeUndefined();
+    expect(reasoningEffort('low')).toBe('low');
+    expect(() => reasoningEffort('extreme')).toThrow(/reasoning effort/);
+    expect(() => classifierFrom({ CLASSIFIER: 'openai', CLASSIFIER_MODEL: 'm', CLASSIFIER_REASONING_EFFORT: 'extreme' }, () => 0)).toThrow(/reasoning effort/);
+  });
+
   it('a provider without a model refuses to start', () => {
     expect(() => classifierFrom({ CLASSIFIER: 'openai' }, () => 0)).toThrow(/CLASSIFIER_MODEL/);
   });

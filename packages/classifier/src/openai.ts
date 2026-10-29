@@ -16,11 +16,28 @@ export interface OpenAIClassifierOptions {
   readonly timeoutMs: number;
   /** SDK retries for 408/409/429/5xx and connection errors before we report an outage. */
   readonly maxRetries: number;
+  /**
+   * Reasoning models only (CLASSIFIER_REASONING_EFFORT). Unset = the field is not sent, because models without
+   * reasoning reject it. With a reasoning model, leaving it at the model's default can spend the output budget on
+   * reasoning and end "incomplete" (=> a human looks at every reply).
+   */
+  readonly reasoningEffort?: OpenAIReasoningEffort | undefined;
   readonly promptVersion?: string;
   /** Latency measurement without reading the clock in library code. */
   readonly nowMs: () => number;
   /** Injected for tests; otherwise a client reading OPENAI_API_KEY from the environment. */
   readonly client?: OpenAI;
+}
+
+export type OpenAIReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high';
+export const OPENAI_REASONING_EFFORTS: readonly OpenAIReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high'];
+
+/**
+ * The default client. logLevel 'off' explicitly: it beats OPENAI_LOG, whose 'debug' level would print request and
+ * response bodies (customer replies, bank screenshots) to the log (rules 20, 25). We report errors ourselves.
+ */
+export function openAIClient(): OpenAI {
+  return new OpenAI({ logLevel: 'off' });
 }
 
 /**
@@ -81,7 +98,7 @@ export class OpenAIReplyClassifier implements ReplyClassifier {
     this.o = o;
     this.promptVersion = o.promptVersion ?? CURRENT_PROMPT_VERSION;
     this.template = loadPrompt(this.promptVersion);
-    this.client = o.client ?? new OpenAI();
+    this.client = o.client ?? openAIClient();
   }
 
   async classify(input: ClassifierInput): Promise<ClassifierResult> {
@@ -90,8 +107,9 @@ export class OpenAIReplyClassifier implements ReplyClassifier {
       const res = await this.client.responses.create(
         {
           model: this.o.model,
-          max_output_tokens: 4096,
+          max_output_tokens: 16_384,
           store: false,
+          ...(this.o.reasoningEffort ? { reasoning: { effort: this.o.reasoningEffort } } : {}),
           text: { format: openAITextFormat(ReplyAnalysis, 'reply_analysis') },
           input: [{ role: 'user', content: renderPrompt(this.template, input) }],
         },

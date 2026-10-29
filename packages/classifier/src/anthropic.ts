@@ -37,7 +37,8 @@ export class AnthropicReplyClassifier implements ReplyClassifier {
     this.o = o;
     this.promptVersion = o.promptVersion ?? CURRENT_PROMPT_VERSION;
     this.template = loadPrompt(this.promptVersion);
-    this.client = o.client ?? new Anthropic();
+    // logLevel 'off' beats ANTHROPIC_LOG, whose 'debug' level would log request bodies (customer text).
+    this.client = o.client ?? new Anthropic({ logLevel: 'off' });
   }
 
   async classify(input: ClassifierInput): Promise<ClassifierResult> {

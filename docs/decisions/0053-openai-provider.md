@@ -21,6 +21,18 @@ Structured Outputs guide (read 2026-10-29):
   map to timeout / rate_limited / unavailable, exactly like the Claude adapter.
 - There is no equivalent of Claude's server-side fallback, so the `*_FALLBACKS` variables apply to Anthropic only.
 
+**After review (round 1).**
+- Logging: every AI client (OpenAI and Claude) is built with `logLevel: 'off'`, which beats `OPENAI_LOG` /
+  `ANTHROPIC_LOG`. At `debug` the SDKs print request and response bodies: customer replies and bank screenshots
+  (rules 20, 25).
+- Reasoning models: `max_output_tokens` covers reasoning tokens too. The limits are now 16384 (replies) and 8192
+  (proofs), and `CLASSIFIER_REASONING_EFFORT` / `PROOF_EXTRACTION_REASONING_EFFORT` send `reasoning.effort` when
+  set (never by default, because models without reasoning reject the field). An answer cut short still goes to a
+  human.
+- Known limit: the length limits removed from the wire schema are stated in the prompt only for `summary`. A model
+  that copies a very long date phrase into `promisedDateText` produces output that `toProposal` rejects, so that
+  reply goes to a human. Fixing it means a new prompt version (and a new recorded evaluation), so it is left open.
+
 **Unchanged.** Rule 21 (model output can only become a Proposal or an untrusted hint), rule 26 (dates are checked by
 `validatePromiseDate`), rule 31 (an extracted amount never confirms money). The demo refuses to start when
 `OPENAI_API_KEY` is set, like `ANTHROPIC_API_KEY`. The secret scanner knows OpenAI's key prefixes.
