@@ -12,6 +12,8 @@ nothing is published (docs/release.md).
 
 - OpenAI as a second, optional model provider: `CLASSIFIER=openai` and `PROOF_EXTRACTION=openai` with
   `OPENAI_API_KEY` (ADR 0053). Anthropic stays supported; with neither set, every reply still goes to a human.
+- `docs/guides/getting-your-keys.html` and `pnpm guide:pdf`: an easy-English guide to getting each environment key
+  from a hosted service (free plans where one exists), rendered to a git-ignored PDF.
 
 ## [0.7.0] - 2026-10-29
 

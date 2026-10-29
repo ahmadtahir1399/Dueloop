@@ -54,6 +54,7 @@
     "perf:seed": "node packages/db/scripts/perf-seed.ts",
     "perf:pages": "supabase db reset && node packages/db/scripts/perf-seed.ts --invoices 50000 && pnpm --filter @dueloop/web exec playwright test --project perf",
     "env:example": "node packages/config/scripts/env-example.ts",
+    "guide:pdf": "pnpm --filter @dueloop/web exec node scripts/guide-pdf.mts",
     "env:check": "node packages/config/scripts/env-example.ts --check",
     "ops:status": "node packages/ops/src/bin/ops.ts status",
     "ops:watchdog": "node packages/ops/src/bin/ops.ts watchdog",
