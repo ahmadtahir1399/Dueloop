@@ -45,7 +45,20 @@ try {
     const fresh = [];
     for (const f of findings) if (await firstAlert(pool, f.key, now)) fresh.push(f);
     out({ at: now.toISOString(), findings, alerted: fresh.map((f) => f.key) });
-    if (fresh.length && process.env.OPS_ALERT_EMAIL && process.env.SMTP_HOST) {
+    if (fresh.length && process.env.OPS_ALERT_EMAIL && process.env.RESEND_API_KEY) {
+      const { createResendChannel } = await import('@dueloop/adapters-email');
+      const channel = createResendChannel({ apiKey: process.env.RESEND_API_KEY, timeoutMs: 10_000 });
+      const content = {
+        kind: 'email',
+        to: { address: process.env.OPS_ALERT_EMAIL, name: '' },
+        from: { address: process.env.OPS_ALERT_FROM || 'dueloop-watchdog@localhost', name: '' },
+        subject: `[dueloop] ${fresh.length} ops finding(s)`,
+        text: fresh.map((f) => `${f.severity}: ${f.message}`).join('\n'),
+        messageId: '',
+      } as const;
+      const sent = await channel.send({ tenantId: 'ops', idempotencyKey: `ops-watchdog:${now.toISOString()}`, account: {}, content }, null);
+      if (sent.kind !== 'sent') throw new Error(`ops alert email not sent (${sent.reason})`);
+    } else if (fresh.length && process.env.OPS_ALERT_EMAIL && process.env.SMTP_HOST) {
       const nodemailer = await import('nodemailer');
       // Logs in with the operator account (SMTP_USER / SMTP_PASSWORD) when set: Brevo, Gmail and most hosted SMTP
       // services refuse mail without a login.
@@ -81,7 +94,10 @@ try {
       const r = await fetch(`${api}/auth/v1/health`).then((x) => x.status, () => 0);
       checks.push({ check: 'Supabase API reachable', ok: r > 0 && r < 500, detail: r ? `HTTP ${r}` : 'unreachable' });
     }
-    if (process.env.SMTP_HOST) {
+    if (process.env.RESEND_API_KEY) {
+      const ok = await tcp('api.resend.com', 443);
+      checks.push({ check: 'Resend API reachable', ok, detail: ok ? 'ok' : 'cannot connect' });
+    } else if (process.env.SMTP_HOST) {
       const ok = await tcp(process.env.SMTP_HOST, Number(process.env.SMTP_PORT || 587));
       checks.push({ check: 'SMTP port open', ok, detail: ok ? 'ok' : 'cannot connect' });
     }

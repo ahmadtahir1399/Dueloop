@@ -10,6 +10,9 @@ nothing is published (docs/release.md).
 
 ### Added
 
+- Resend as an optional way to send email: set `RESEND_API_KEY` and email goes through its HTTPS API instead of SMTP
+  (ADR 0054). The ops watchdog and doctor follow it, the demo refuses to run with the key set, and the secret scanner
+  knows the key shape. Not yet tried with a real Resend account.
 - OpenAI as a second, optional model provider: `CLASSIFIER=openai` and `PROOF_EXTRACTION=openai` with
   `OPENAI_API_KEY` (ADR 0053). Anthropic stays supported; with neither set, every reply still goes to a human.
 - Settings > Integrations: "Email sender" and "WhatsApp number" forms; Stripe can be connected first and its
@@ -25,6 +28,7 @@ nothing is published (docs/release.md).
 
 ### Fixed
 
+- `pnpm demo` failed on the first run of a fresh clone: it wrote `.demo/build.json` before `.demo/` existed.
 - A new business could not send anything without database access: no screen for the sender address, the WhatsApp
   phone number id, templates or consent, and a parked invoice could only be resumed from the CLI.
 - Migration 0024: a WhatsApp template inserted by a member always starts "pending" (only an owner approves it).

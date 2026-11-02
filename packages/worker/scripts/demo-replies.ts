@@ -34,6 +34,7 @@ const nowIso = at.toUTC().toISO() ?? '';
 const now = new Date(nowIso);
 const env: NodeJS.ProcessEnv = { ...process.env, DEMO_NOW: nowIso, SMTP_HOST: '127.0.0.1', SMTP_PORT: '54325', SMTP_SECURE: 'false' };
 delete env.WORKER_DATABASE_URL;
+delete env.RESEND_API_KEY;
 
 const node = (script: string, args: string[] = []) => {
   const r = spawnSync(process.execPath, [script, ...args], { env, encoding: 'utf8' });

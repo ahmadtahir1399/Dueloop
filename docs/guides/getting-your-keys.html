@@ -78,7 +78,7 @@
     <tr><th>Part</th><th>What</th><th>Where you set it</th><th>Cost</th></tr>
     <tr><td>1</td><td>Supabase (database)</td><td>6 server keys + 1 Supabase setting</td><td><span class="tag free">free plan</span> <span class="tag must">required</span></td></tr>
     <tr><td>2</td><td>Your app's web address</td><td>server keys</td><td>from your hosting <span class="tag must">required</span></td></tr>
-    <tr><td>3</td><td>Email (Brevo or Gmail)</td><td>server keys + Settings</td><td><span class="tag free">free plan</span> needed to send email</td></tr>
+    <tr><td>3</td><td>Email (Brevo, Gmail or Resend)</td><td>server keys + Settings</td><td><span class="tag free">free plan</span> needed to send email</td></tr>
     <tr><td>4</td><td>OpenAI (reads WhatsApp replies)</td><td>server keys</td><td><span class="tag paid">paid</span> optional</td></tr>
     <tr><td>5</td><td>WhatsApp (Meta)</td><td>server keys + Settings + customer pages</td><td><span class="tag free">test number</span> optional</td></tr>
     <tr><td>6</td><td>Stripe (pay links)</td><td>1 server key + Settings</td><td><span class="tag free">sandbox</span> optional</td></tr>
@@ -165,8 +165,9 @@ TRUST_PROXY_HOPS=0</pre>
 
 <section>
   <h2>Part 3: email sending <span class="tag free">free plan</span></h2>
-  <p>The app sends reminders by email through an <b>SMTP</b> service (the usual way programs send email). Pick
-    <b>one</b> option. Option A is better for a real business. Option B is fine for testing with your own Gmail.</p>
+  <p>The app sends reminders by email through an <b>SMTP</b> service (the usual way programs send email) or through
+    Resend. Pick <b>one</b> option. Option A is better for a real business. Option B is fine for testing with your own
+    Gmail. Option C suits a host that blocks email ports, because it uses normal web traffic.</p>
 
   <h3>Option A: Brevo</h3>
   <p>The free plan can send 300 emails per day. <i class="src">(provider: brevo.com)</i></p>
@@ -199,6 +200,15 @@ SMTP_PASSWORD=(the app password)      # secret</pre>
   <p class="small">The app always protects your email password. If the mail server cannot do that on port 587,
     sending stops.</p>
 
+  <h3>Option C: Resend</h3>
+  <ol>
+    <li>Go to <b>resend.com</b> and sign up.</li>
+    <li>Add and verify your domain (Resend shows you how). You must send from that domain. <i class="src">(provider)</i></li>
+    <li>Open <b>API Keys</b> and create a key. Copy it now (it starts with <code>re_</code>).</li>
+  </ol>
+  <pre>RESEND_API_KEY=re_...                 # secret</pre>
+  <p class="small">You do not need the five SMTP keys with this option. Not yet tried with a real Resend account.</p>
+
   <h3>Several businesses on one server?</h3>
   <p>Set <code>SMTP_FROM_DOMAINS</code> to the sender domains your mail service has verified, for example
     <code>SMTP_FROM_DOMAINS=yourbusiness.example</code>. Then the server only sends from these domains.</p>
@@ -217,7 +227,7 @@ SMTP_PASSWORD=(the app password)      # secret</pre>
     the bottom. Receipts ask the customer to reply instead, so watch your inbox for "stop" replies. WhatsApp replies
     <i>are</i> read by the app.</div>
   <p class="small">Your own mail server instead of the server's: only if the operator sets
-    <code>SMTP_ALLOW_TENANT_HOST=true</code>. Then the same box asks for your <b>Mail server</b>, <b>Port</b> and
+    <code>SMTP_ALLOW_TENANT_HOST=true</code> (not with Resend). Then the same box asks for your <b>Mail server</b>, <b>Port</b> and
     <b>Login</b>. The password goes in <b>Secret</b>, with <b>Channel</b> set to "email (password for your own mail
     server)", then <b>Save secret</b>.</p>
   <p class="small">By default every reminder waits for a person to approve it: open <b>Approvals</b> to send them.
@@ -408,8 +418,8 @@ WHATSAPP_VERIFY_TOKEN=make-up-a-long-random-text</pre>
   <p>In the services container, run the check once for each program:
     <code>node packages/ops/src/bin/ops.ts doctor --service worker</code>, then with <code>processor</code> and
     <code>webhooks</code> (on a development machine: <code>pnpm doctor --service web</code> and so on). It checks your
-    settings, the database and Supabase, and that the mail server's port accepts a connection. It does not test your
-    email password. It never shows a key. NOT VERIFIED on a hosted server.</p>
+    settings, the database and Supabase, and that the mail server's port (or Resend) accepts a connection. It does not
+    test your email password or Resend key. It never shows a key. NOT VERIFIED on a hosted server.</p>
 
   <h3>Your finished list</h3>
   <pre># Part 1: Supabase (required)
@@ -432,6 +442,7 @@ SMTP_USER=
 SMTP_PASSWORD=                    # secret
 SMTP_FROM_DOMAINS=                # only if several businesses share the server
 SMTP_ALLOW_TENANT_HOST=           # true only if businesses may use their own mail server
+RESEND_API_KEY=                   # secret, only if you chose Resend (then leave the SMTP_ keys above empty)
 # Part 4: AI (only if you did Part 4; otherwise leave these out)
 CLASSIFIER=
 CLASSIFIER_MODEL=
@@ -454,8 +465,9 @@ OPS_ALERT_FROM=</pre>
     587 and an empty <code>SMTP_SECURE</code> means false.</p>
 
   <h3>Where these steps come from</h3>
-  <p class="small">Read 29-30 October 2026.
-    Supabase: supabase.com/docs/guides/api/api-keys, supabase.com/docs/guides/database/connecting-to-postgres, supabase.com/pricing.
+  <p class="small">Read 29-30 October 2026 (Resend: 1 November 2026).
+    Resend: resend.com/docs/api-reference/emails/send-email, resend.com/docs/api-reference/errors.
+    Supabase:supabase.com/docs/guides/api/api-keys, supabase.com/docs/guides/database/connecting-to-postgres, supabase.com/pricing.
     Brevo: developers.brevo.com/docs/smtp-integration, brevo.com/free-smtp-server.
     Google: support.google.com/accounts/answer/185833, developers.google.com/workspace/gmail/imap/imap-smtp.
     OpenAI: developers.openai.com/api/docs/quickstart, developers.openai.com/api/docs/guides/structured-outputs.

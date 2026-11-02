@@ -43,6 +43,7 @@ export const ENV: readonly EnvVar[] = [
   { name: 'SMTP_FROM_DOMAINS', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Comma-separated sender domains the operator SMTP host may send for (e.g. yourbusiness.example). Set it when several businesses share one server. Unset = any.', example: '' },
   { name: 'SMTP_USER', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Default SMTP user (operator mail server); its password is SMTP_PASSWORD. A business uses its own login and password only with its own server (SMTP_ALLOW_TENANT_HOST).', example: '' },
   { name: 'SMTP_ALLOW_TENANT_HOST', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'true = a business may use its own mail server (Email sender form) and its own email password. The worker then connects where a business says (SSRF): only for vetted deployments.', example: 'false', pattern: /^(true|false)$/ },
+  { name: 'RESEND_API_KEY', secret: true, requiredBy: [], usedBy: ['worker', 'cli'], description: 'Resend API key (needs a domain verified at Resend). Set = all email goes through the Resend API over HTTPS and SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER and SMTP_PASSWORD are not used; SMTP_FROM_DOMAINS still applies.', example: '' },
   { name: 'WHATSAPP_GRAPH_VERSION', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Meta Graph API version; unset = no WhatsApp sending.', example: '' },
   { name: 'WHATSAPP_APP_SECRET', secret: true, requiredBy: [], usedBy: ['webhooks'], description: 'Meta app secret for webhook signatures; unset = WhatsApp webhook disabled.', example: '' },
   { name: 'WHATSAPP_VERIFY_TOKEN', secret: true, requiredBy: [], usedBy: ['webhooks'], description: 'Meta webhook verification token.', example: '' },
@@ -110,6 +111,8 @@ export function validateEnv(service: Service, env: Readonly<Record<string, strin
   if (service !== 'demo' && service !== 'test' && env.PAYMENTS_ALLOW_FAKE === 'true' && env.NODE_ENV === 'production') {
     problems.push('PAYMENTS_ALLOW_FAKE must not be true in a production build');
   }
+  // The Integrations page would offer a business its own mail server, and the worker would never use it.
+  if (env.RESEND_API_KEY && env.SMTP_ALLOW_TENANT_HOST === 'true') problems.push('SMTP_ALLOW_TENANT_HOST=true does not work with RESEND_API_KEY: unset one');
   return problems;
 }
 
