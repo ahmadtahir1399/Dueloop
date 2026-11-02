@@ -66,7 +66,7 @@ export async function seedStaffFixtures(): Promise<StaffFixtures> {
     );
     tasks[key] = r.rows[0].id;
   };
-  await task("DA-0005", "e2e-claim", "verify_payment_claim", { draft: `Thanks! ${HOSTILE.script} ${HOSTILE.formula}`, blocks: true, details: { summary: `AI says: ${HOSTILE.img}`, amount_text: HOSTILE.formula } });
+  await task("DA-0005", "e2e-claim", "verify_payment_claim", { draft: `Thanks! ${HOSTILE.script} ${HOSTILE.formula}`, blocks: true, details: { amount_text: HOSTILE.formula } });
   await task("DA-0006", "e2e-parity-ui", "human_review");
   await task("DA-0006", "e2e-parity-cli", "human_review");
 
@@ -134,12 +134,14 @@ export async function seedStaffFixtures(): Promise<StaffFixtures> {
         hc,
         `${HOSTILE.script}\n${HOSTILE.urdu}\n${HOSTILE.link}`,
         `Re: ${HOSTILE.img}`,
-        JSON.stringify({ summary: `Customer wants ${HOSTILE.script}`, intent: "question" }),
+        // The shape the inbound pipeline stores (pipeline.ts); a hand-written `summary` here hid a real bug.
+        JSON.stringify({ untrustedSummary: `Customer wants ${HOSTILE.script}`, intent: "question" }),
         JSON.stringify([{ filename: `"><img src=x onerror=alert(1)>.pdf`, mime: "application/pdf", size: 1234 }]),
       ],
     )
   ).rows[0].id as string;
   await q("insert into public.message_invoices (tenant_id, message_id, invoice_id) values ($1, $2, $3)", [T, msg, hi]);
+  await q("update public.tasks set message_id = $2 where id = $1", [tasks["e2e-claim"], msg]);
 
   return { invoice: inv, approvals, tasks, unknown, proofs, promise, hostileCustomer: hc, hostileInvoice: hi };
 }

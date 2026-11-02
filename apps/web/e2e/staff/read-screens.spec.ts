@@ -55,13 +55,16 @@ test("hostile fixtures render as text everywhere (no script, no markup)", async 
   await page.goto(`/invoices/${f.hostileInvoice}`);
   await expect(page.locator("h1")).toContainText("X-<script>1</script>");
   await expect(page.getByText(HOSTILE.urdu)).toBeVisible();
-  await expect(page.locator('[data-ai-untrusted="true"]').first()).toContainText("AI-generated, untrusted");
+  const aiSummary = page.locator('[data-ai-untrusted="true"]').filter({ hasText: "Customer wants" });
+  await expect(aiSummary).toContainText("AI-generated, untrusted");
   await page.goto(`/inbox/${f.hostileCustomer}/email`);
   await expect(page.getByText('"><img src=x onerror=alert(1)>.pdf')).toBeVisible();
+  await expect(aiSummary).toContainText(HOSTILE.script);
   // javascript: text is never a link.
   await expect(page.locator('a[href^="javascript:"]')).toHaveCount(0);
   await page.goto(`/tasks/${f.tasks["e2e-claim"]}`);
   await expect(page.getByRole("textbox", { name: "Suggested reply" })).toHaveValue(/<script>/);
+  await expect(aiSummary).toContainText(HOSTILE.script);
   await page.goto(`/proofs/${f.proofs.ui}`);
   await expect(page.getByText('"><svg onload=alert(1)>.png')).toBeVisible();
   await expect(page.getByText('<script>window.__pwned=1;alert("x")</script>')).toBeVisible();

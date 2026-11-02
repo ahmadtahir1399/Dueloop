@@ -20,6 +20,10 @@ describe('the outcome table (demo steps)', () => {
     expect(await eventsOf(w.tenantId, inv?.id ?? '')).toEqual(['PromiseRecorded', 'ReplyReceived']);
     expect(w.alerts.map((a) => a.kind)).toEqual(['reply_promise_recorded']);
     expect(await tasksOf(w.tenantId)).toEqual([]);
+    // The inbox, invoice and task pages read this key (apps/web/lib/ai-summary.ts).
+    const [stored] = await q<{ analysis: Record<string, unknown> }>(`select analysis from public.messages where tenant_id = $1 and direction = 'in'`, [w.tenantId]);
+    expect(stored?.analysis.untrustedSummary).toEqual(expect.any(String));
+    expect(stored?.analysis.untrustedSummary).not.toBe('');
   });
 
   it('vague date => review task, status unchanged', async () => {
