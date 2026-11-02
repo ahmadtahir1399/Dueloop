@@ -29,6 +29,8 @@ nothing is published (docs/release.md).
 
 ### Fixed
 
+- AI summaries now show on the inbox thread, invoice and task pages. The pages read a key the pipeline never wrote,
+  and the e2e fixtures used that same wrong key, so the tests stayed green.
 - A new business could not send anything without database access: no screen for the sender address, the WhatsApp
   phone number id, templates or consent, and a parked invoice could only be resumed from the CLI.
 - Migration 0024: a WhatsApp template inserted by a member always starts "pending" (only an owner approves it).
