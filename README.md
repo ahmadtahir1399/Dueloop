@@ -1,7 +1,4 @@
-# invoice-followup-agent
-
-Working name, TODO(project-name): the owner has not chosen a name; no trademark check has been done. Packages use the
-code name `dueloop`.
+# Dueloop
 
 Software that follows up unpaid invoices for a small business: it sends polite reminders by email or WhatsApp on a
 schedule the business controls, reads the replies, records promises and disputes, takes payments through the
@@ -10,7 +7,7 @@ the system never decides that money arrived because a customer said so.
 
 **Status:** all seven build phases are done in this repository. It has run only on one developer machine and in local
 containers. It has not run on a real server, against a hosted Supabase project or with live providers (see
-[docs/limitations.md](docs/limitations.md)). There is no licence yet (below).
+[docs/limitations.md](docs/limitations.md)).
 
 ## Quickstart (local demo, synthetic data)
 
@@ -222,7 +219,10 @@ pnpm eval:proof-live                                            # proof hints on
   (`tenants.proof_ai_extraction`). It sends the image to a third-party model, and its output is an untrusted
   hint that never confirms anything. See `docs/decisions/0032`-`0041`.
 
-## Licence
+## License
 
-TODO(licence): no licence has been chosen yet, so no LICENSE file is included and no rights are granted.
-The owner decides (see the prompt 7 report, "Decisions needed").
+[MIT](LICENSE)
+
+## Author
+
+Built by **Muhammad Ahmad Tahir**. [Portfolio](https://ahmadverse.vercel.app/) · [LinkedIn](https://www.linkedin.com/in/ahmad-ai-fullstack-engineer/) · [GitHub](https://github.com/ahmadtahir1399)
