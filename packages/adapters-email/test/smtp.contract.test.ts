@@ -86,6 +86,15 @@ describe('SMTP adapter contract', () => {
     expect(r).toEqual({ kind: 'sent', providerMessageId: '<inv-1.s1.email.dueloop@test-co.example>' });
     expect(s.received[0]).toMatch(/^Message-ID: <inv-1\.s1\.email\.dueloop@test-co\.example>$/m);
     expect(s.received[0]).toMatch(/^Content-Type: text\/plain/m);
+    expect(s.received[0]).not.toMatch(/^Reply-To:/im);
+  });
+
+  it('Reply-To is on the wire when the account has one', async () => {
+    const s = await smtp();
+    const base = envelope(s.port);
+    if (base.content.kind !== 'email') throw new Error('email expected');
+    await channel.send({ ...base, content: { ...base.content, replyTo: 'replies@test-co.example' } }, null);
+    expect(s.received[0]).toMatch(/^Reply-To: replies@test-co\.example$/m);
   });
 
   it.each<[string, Script, string, string]>([

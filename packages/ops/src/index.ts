@@ -6,7 +6,7 @@ import type pg from 'pg';
  * The migration this build was written against. A test fails if it is not the newest file in supabase/migrations,
  * so every new migration bumps it in the same commit.
  */
-export const EXPECTED_SCHEMA_VERSION = '0026';
+export const EXPECTED_SCHEMA_VERSION = '0027';
 export const APP_VERSION = '0.7.0';
 
 export class SchemaMismatch extends Error {}
@@ -26,7 +26,7 @@ export async function assertSchema(pool: pg.Pool, expected = EXPECTED_SCHEMA_VER
   return applied;
 }
 
-export type ServiceName = 'web' | 'worker' | 'processor' | 'webhooks' | 'payments';
+export type ServiceName = 'web' | 'worker' | 'processor' | 'webhooks' | 'payments' | 'mailbox';
 export const INSTANCE_ID = `${hostname().slice(0, 60)}:${process.pid}`;
 
 export async function heartbeat(pool: pg.Pool, service: ServiceName, ok: boolean, details: Record<string, string | number | boolean | null>, now: Date): Promise<void> {

@@ -8,7 +8,7 @@ security findings that are still open are repeated from docs/security-review.md.
 - Real-host deployment (a server, a TLS proxy, real DNS); hosted Supabase behaviour (extensions, Vault, Auth settings,
   platform backups); any platform other than the one Windows 10 machine this was built on (macOS, Linux desktop,
   WSL2); a second machine running the clean-clone job (the workflow exists and has not run).
-- Live providers: SMTP to real inboxes, WhatsApp Cloud API, Stripe live and test accounts, Anthropic and OpenAI models, Slack.
+- Live providers: SMTP to real inboxes, IMAP on a real mailbox, WhatsApp Cloud API, Stripe live and test accounts, Anthropic and OpenAI models, Slack.
   Each has a contract test with recorded or fake responses and an env-gated smoke command; none ran with credentials.
 - Accessibility beyond automated axe checks and scripted keyboard runs (no screen-reader or user testing).
 - Performance beyond one machine and one synthetic 50,000-invoice tenant (docs/measurements/perf-pages.txt).
@@ -25,11 +25,12 @@ security findings that are still open are repeated from docs/security-review.md.
   and `secret_id` directly through the API. 0026 stops new writes but does not check old ones. On an existing
   deployment, review them once (for example: every `external_account_id` should be a WhatsApp number that business
   owns) before upgrading production. NOT VERIFIED on any real deployment.
-- **Email replies are not read in production.** The IMAP poller (`pollMailbox`, ADR 0031) is built and tested against
-  a local server, but no production command runs it and there is no screen for mailbox settings. Customer email
-  replies (promises, disputes, "already paid") go only to the business's own inbox, where a person must act on
-  them. Email opt-out works through the footer link and the one-click unsubscribe header; the email footer no longer
-  says "reply STOP". WhatsApp replies are processed.
+- **Email replies need a connected mailbox.** The operator sets `IMAP_ALLOW_TENANT_HOST=true`, then a business connects
+  a mailbox in Settings > Integrations (ADR 0054). Until then, customer email replies go only to the business's own
+  mailbox, where a person must act on them. Real providers are NOT VERIFIED: the poller is tested against a local
+  server only. Mail from before connecting is not read, and neither is a first message from an address that is not a
+  customer's (it stays in the mailbox). Email opt-out works through the footer link and the one-click unsubscribe
+  header; the footer does not say "reply STOP", because reading replies is optional. WhatsApp replies are processed.
 - **Onboarding:** creating a business adds the standard English email templates (Settings > Templates can add back
   any that are missing) but no sending account; an owner sets the SMTP password and sender address in Settings >
   Integrations before anything can be sent. There are no default WhatsApp templates (they need Meta approval).

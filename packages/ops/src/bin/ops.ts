@@ -6,7 +6,7 @@
 // pnpm ops alive --service <s> [--max-age 300]
 //                            container healthcheck: exit 0 when THIS host has a heartbeat for that service younger
 //                            than max-age seconds (the worker and processor have no HTTP port).
-// pnpm doctor [--service web|worker|webhooks|processor]
+// pnpm doctor [--service web|worker|webhooks|processor|mailbox]
 //                            config (names only), schema version, connectivity (database, Supabase API, SMTP port).
 import { connect } from 'node:net';
 import { hostname } from 'node:os';

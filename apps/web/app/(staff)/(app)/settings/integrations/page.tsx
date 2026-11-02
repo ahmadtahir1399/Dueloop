@@ -3,12 +3,28 @@ import { SecretOnceForm } from "@/components/action-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { mailboxStatus } from "@/lib/data/mailbox";
 import { requirePermission } from "@/lib/session";
+import { formatInstant } from "@/lib/time";
 import { integrationAction } from "../admin-actions";
 
 // Connection STATUS only. Secrets can be set or replaced, never read back (issue N); webhook URLs carry an opaque
 // token and are shown once, to an owner, when created or rotated.
 type ChannelRow = { channel: string; config: unknown };
+
+/** Poller failure codes (private.imap_cursors.last_error) in plain words. */
+const MAILBOX_PROBLEMS: Record<string, string> = {
+  host_refused: "This server cannot reach that mail server. Check the host name; internal addresses are refused.",
+  login_failed: "The mail server refused the login. Check the login and password. Most providers need an app password, and IMAP switched on.",
+  connect_failed: "Could not connect securely to the mail server. Check the host name and port; the server must offer TLS.",
+  mailbox_not_found: "Connected, but that folder does not exist.",
+  poll_failed: "Reading the mailbox failed. It is tried again automatically.",
+};
+
+function textOf(config: unknown, key: string): string {
+  const v = config && typeof config === "object" ? (config as Record<string, unknown>)[key] : undefined;
+  return typeof v === "string" ? v : "";
+}
 
 function configValue(rows: ChannelRow[] | null, channel: string, key: string): unknown {
   const config = rows?.find((r) => r.channel === channel)?.config;
@@ -31,7 +47,7 @@ function configSummary(channel: string, config: unknown): string {
 export default async function IntegrationsPage() {
   const ctx = await requirePermission("integrations.view");
   const [channels, payments] = await Promise.all([
-    ctx.supabase.from("channel_accounts").select("channel, enabled, secret_id, config").eq("tenant_id", ctx.tenant.id).order("channel"),
+    ctx.supabase.from("channel_accounts").select("channel, enabled, secret_id, config, imap_config").eq("tenant_id", ctx.tenant.id).order("channel"),
     ctx.supabase.from("payment_accounts").select("provider, mode, enabled").eq("tenant_id", ctx.tenant.id),
   ]);
   if (channels.error || payments.error) throw new Error("could not load integrations");
@@ -39,6 +55,10 @@ export default async function IntegrationsPage() {
   // The operator decides whether a business may use its own mail server (SSRF: the worker connects wherever it says).
   const tenantSmtp = process.env.SMTP_ALLOW_TENANT_HOST === "true";
   const whatsappWired = Boolean(process.env.WHATSAPP_GRAPH_VERSION);
+  // The same decision for reading a mailbox: the poller connects to a host the business names.
+  const tenantImap = process.env.IMAP_ALLOW_TENANT_HOST === "true";
+  const imap = channels.data?.find((c) => c.channel === "email")?.imap_config ?? null;
+  const status = owner && imap ? await mailboxStatus(ctx) : null;
   return (
     <div className="grid max-w-2xl gap-4">
       <h1 className="text-xl font-semibold">Integrations</h1>
@@ -126,6 +146,75 @@ export default async function IntegrationsPage() {
               </SecretOnceForm>
             </>
           ) : null}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Customer email replies</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm">
+          {!tenantImap ? (
+            <p data-testid="mailbox-status">Email replies are not read on this server (IMAP_ALLOW_TENANT_HOST). They go to your sender address; read them there.</p>
+          ) : (
+            <>
+              <p data-testid="mailbox-status">
+                {imap ? `Reading ${textOf(imap, "mailbox")} at ${textOf(imap, "host")}` : "No mailbox connected: replies go to your sender address, and the app does not see them."}
+                {imap && status?.lastOkAt ? ` · last checked ${formatInstant(status.lastOkAt.toISOString(), ctx.tenant.timezone)}` : ""}
+                {imap && !status?.lastOkAt && !status?.lastError ? " · waiting for the first check" : ""}
+              </p>
+              {status?.lastError ? (
+                <p role="alert" className="text-destructive">
+                  {MAILBOX_PROBLEMS[status.lastError] ?? MAILBOX_PROBLEMS.poll_failed}
+                </p>
+              ) : null}
+              <p className="text-muted-foreground">
+                The app only reads this mailbox, and never changes or deletes anything in it. It reads mail that arrives after you connect, from your customers or in reply to your reminders. Anything else is left alone, and stays in your mailbox for you. A mailbox used only for these replies is best.
+              </p>
+              {owner ? (
+                <SecretOnceForm action={integrationAction} label="Connect a mailbox">
+                  <input type="hidden" name="op" value="mailbox" />
+                  <label className="grid gap-1">
+                    Mail server (IMAP)
+                    <Input name="imap_host" autoComplete="off" required placeholder="imap.yourbusiness.example" defaultValue={textOf(imap, "host")} />
+                  </label>
+                  <label className="grid gap-1">
+                    Port
+                    <select name="imap_port" className="h-9 rounded-md border bg-background px-2" defaultValue={String((imap as { port?: unknown } | null)?.port ?? "993")}>
+                      <option value="993">993 (TLS, the usual choice)</option>
+                      <option value="143">143 (STARTTLS)</option>
+                    </select>
+                  </label>
+                  <label className="grid gap-1">
+                    Login
+                    <Input name="imap_user" autoComplete="off" required defaultValue={textOf(imap, "user")} />
+                  </label>
+                  <label className="grid gap-1">
+                    {imap ? "Password (empty = keep the saved one)" : "Password"}
+                    <Input name="imap_password" type="password" autoComplete="off" required={!imap} />
+                  </label>
+                  <label className="grid gap-1">
+                    Folder
+                    <Input name="imap_mailbox" autoComplete="off" defaultValue={textOf(imap, "mailbox") || "INBOX"} />
+                  </label>
+                  <label className="grid gap-1">
+                    Reply address (optional; use it when this mailbox is not your sender address)
+                    <Input name="reply_to" type="email" autoComplete="off" defaultValue={configOf(channels.data, "email", "reply_to")} />
+                  </label>
+                  <Button type="submit" className="w-fit">
+                    Save mailbox
+                  </Button>
+                </SecretOnceForm>
+              ) : null}
+              {owner && imap ? (
+                <SecretOnceForm action={integrationAction} label="Disconnect the mailbox">
+                  <input type="hidden" name="op" value="disconnect_mailbox" />
+                  <Button type="submit" size="sm" variant="outline" className="w-fit">
+                    Disconnect
+                  </Button>
+                </SecretOnceForm>
+              ) : null}
+            </>
+          )}
         </CardContent>
       </Card>
       <Card>

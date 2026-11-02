@@ -121,7 +121,7 @@ async function smoke(noBuild: boolean) {
     const t1 = performance.now();
     await until('web /ready', 180_000, async () => (await fetch(`${WEB}/ready`)).ok);
     await until('webhooks /ready', 120_000, async () => (await fetch(`${HOOKS}/ready`)).ok);
-    for (const svc of ['worker', 'processor', 'webhooks', 'web'])
+    for (const svc of ['worker', 'processor', 'mailbox', 'webhooks', 'web'])
       await until(`${svc} healthy`, 240_000, async () => {
         const id = compose('ps', '-q', svc).out.trim();
         return id !== '' && sh('docker', ['inspect', '--format', '{{.State.Health.Status}}', id]).out.trim() === 'healthy';

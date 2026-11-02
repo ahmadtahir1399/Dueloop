@@ -109,14 +109,14 @@ isOneToOne: false
                   ]
                 },"channel_accounts": {
                   Row: {
-                    "channel": string,"config": NonNullable<Json>,"created_at": string,"enabled": boolean,"external_account_id": string | null,"id": string,"secret_id": string | null,"tenant_id": string
+                    "channel": string,"config": NonNullable<Json>,"created_at": string,"enabled": boolean,"external_account_id": string | null,"id": string,"imap_config": Json | null,"imap_secret_id": string | null,"secret_id": string | null,"tenant_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "channel": string,"config"?: NonNullable<Json>,"created_at"?: string,"enabled"?: boolean,"external_account_id"?: string | null,"id"?: string,"secret_id"?: string | null,"tenant_id": string
+                    "channel": string,"config"?: NonNullable<Json>,"created_at"?: string,"enabled"?: boolean,"external_account_id"?: string | null,"id"?: string,"imap_config"?: Json | null,"imap_secret_id"?: string | null,"secret_id"?: string | null,"tenant_id": string
                   }
                   Update: {
-                    "channel"?: string,"config"?: NonNullable<Json>,"created_at"?: string,"enabled"?: boolean,"external_account_id"?: string | null,"id"?: string,"secret_id"?: string | null,"tenant_id"?: string
+                    "channel"?: string,"config"?: NonNullable<Json>,"created_at"?: string,"enabled"?: boolean,"external_account_id"?: string | null,"id"?: string,"imap_config"?: Json | null,"imap_secret_id"?: string | null,"secret_id"?: string | null,"tenant_id"?: string
                   }
                   Relationships: [
                     {
