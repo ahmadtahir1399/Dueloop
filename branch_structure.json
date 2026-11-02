@@ -1,0 +1,39 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "claude/ant-supabase-migration-check-a356b9",
+    "claude/fix-main-repo-audit",
+    "claude/getting-your-keys-pdf-ce4f5c",
+    "dependabot/npm_and_yarn/development-minor-patch-1e0544708a",
+    "dependabot/npm_and_yarn/production-minor-patch-2304d9b600",
+    "dependabot/npm_and_yarn/types/node-26.6.5",
+    "main",
+    "master",
+    "redesign/build",
+    "redesign/story-polish"
+  ],
+  "parent": {
+    "claude/ant-supabase-migration-check-a356b9": "main",
+    "claude/fix-main-repo-audit": "main",
+    "claude/getting-your-keys-pdf-ce4f5c": "main",
+    "dependabot/npm_and_yarn/development-minor-patch-1e0544708a": "main",
+    "dependabot/npm_and_yarn/production-minor-patch-2304d9b600": "main",
+    "dependabot/npm_and_yarn/types/node-26.6.5": "main",
+    "main": null,
+    "master": "main",
+    "redesign/build": "main",
+    "redesign/story-polish": "main"
+  },
+  "order": [
+    "main",
+    "claude/ant-supabase-migration-check-a356b9",
+    "claude/fix-main-repo-audit",
+    "claude/getting-your-keys-pdf-ce4f5c",
+    "dependabot/npm_and_yarn/development-minor-patch-1e0544708a",
+    "dependabot/npm_and_yarn/production-minor-patch-2304d9b600",
+    "dependabot/npm_and_yarn/types/node-26.6.5",
+    "master",
+    "redesign/build",
+    "redesign/story-polish"
+  ]
+}
