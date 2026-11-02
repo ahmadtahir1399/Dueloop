@@ -30,6 +30,7 @@
     "payments:integrity": "node packages/worker/src/bin/payments.ts integrity",
     "proofs": "node packages/worker/src/bin/proofs.ts",
     "inbound": "node packages/worker/src/bin/inbound.ts",
+    "mailbox": "node packages/worker/src/bin/mailbox.ts",
     "webhooks": "node packages/webhooks/src/bin/webhooks.ts",
     "demo:send": "node packages/worker/scripts/demo-send.ts",
     "demo:replies": "node packages/worker/scripts/demo-replies.ts",

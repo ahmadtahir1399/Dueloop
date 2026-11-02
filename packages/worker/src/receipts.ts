@@ -2,7 +2,7 @@
 // already confirmed; there is nothing to decide), and keeps every other rule of the outbox: the same
 // at-most-once claim, the kill switch right before the adapter, opt-out, consent, budget, rate limit. The job
 // was queued inside apply_payment's transaction, so a confirmed receipt always has exactly one job.
-import { DEFAULT_TEMPLATES, appendFooter, formatAmount, isSafeAddress, messageIdFor, monthStart, render, route, sanitiseDisplayName, sanitiseHeaderValue, type OutboundEnvelope, type SendOutcome } from '@dueloop/messaging';
+import { DEFAULT_TEMPLATES, appendFooter, formatAmount, isSafeAddress, messageIdFor, monthStart, render, replyToOf, route, sanitiseDisplayName, sanitiseHeaderValue, type OutboundEnvelope, type SendOutcome } from '@dueloop/messaging';
 import { loadContext, pickTemplate, readyChannels, type TemplateRow, type WorkerContext } from './context.ts';
 import type { ReceiptJob } from './db.ts';
 import type { WorkerDeps } from './process.ts';
@@ -164,6 +164,7 @@ export async function processReceiptJob(job: ReceiptJob, deps: WorkerDeps): Prom
         subject: subjectText,
         text,
         messageId: messageIdFor(key, domain),
+        ...replyToOf(account),
       },
     };
   } else {

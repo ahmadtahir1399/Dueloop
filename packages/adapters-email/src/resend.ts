@@ -51,6 +51,7 @@ export function buildResendRequest(envelope: OutboundEnvelope): Record<string, u
     to: [mail.to.address],
     subject: mail.subject,
     text: mail.text,
+    ...(mail.replyTo ? { reply_to: mail.replyTo } : {}),
     // RFC 8058 one-click unsubscribe, the same two headers the SMTP adapter sends.
     ...(mail.listUnsubscribe ? { headers: { 'List-Unsubscribe': `<${mail.listUnsubscribe}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } } : {}),
   };

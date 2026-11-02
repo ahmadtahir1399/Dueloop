@@ -17,7 +17,7 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `SUPABASE_SECRET_KEY` | yes | - | web | Alternative name for the server key (newer Supabase key format). |
 | `SUPABASE_DB_URL` | yes | web | web, cli, test | Direct Postgres URL for the web server trusted pipelines (contains the password). |
 | `DATABASE_URL` | yes | - | web | Fallback for SUPABASE_DB_URL in the web server. |
-| `WORKER_DATABASE_URL` | yes | worker, webhooks, processor | worker, webhooks, processor, cli, demo | Direct Postgres URL for the worker, processor, webhook runtime and CLIs. Without it they use the LOCAL stack. |
+| `WORKER_DATABASE_URL` | yes | worker, webhooks, processor, mailbox | worker, webhooks, processor, mailbox, cli, demo | Direct Postgres URL for the worker, processor, mailbox poller, webhook runtime and CLIs. Without it they use the LOCAL stack. |
 | `SUPABASE_ANON_KEY` | no | - | test | Local anon key for integration tests (read from `supabase status` when unset). |
 | `SMTP_HOST` | no | - | worker, web | Default SMTP host (a tenant account can override when SMTP_ALLOW_TENANT_HOST=true). |
 | `SMTP_PORT` | no | - | worker, web | Default SMTP port. |
@@ -26,6 +26,7 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `SMTP_FROM_DOMAINS` | no | - | worker, web | Comma-separated sender domains the operator SMTP host may send for (e.g. yourbusiness.example). Set it when several businesses share one server. Unset = any. |
 | `SMTP_USER` | no | - | worker, web | Default SMTP user (operator mail server); its password is SMTP_PASSWORD. A business uses its own login and password only with its own server (SMTP_ALLOW_TENANT_HOST). |
 | `SMTP_ALLOW_TENANT_HOST` | no | - | worker, web | true = a business may use its own mail server (Email sender form) and its own email password. The worker then connects where a business says (SSRF): only for vetted deployments. |
+| `IMAP_ALLOW_TENANT_HOST` | no | - | mailbox, web | true = a business may connect the mailbox its customers reply to, and the mailbox service reads it. The service then connects where a business says (SSRF): only for vetted deployments. Unset = email replies are not read. |
 | `RESEND_API_KEY` | yes | - | worker, cli | Resend API key (needs a domain verified at Resend). Set = all email goes through the Resend API over HTTPS and SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER and SMTP_PASSWORD are not used; SMTP_FROM_DOMAINS still applies. |
 | `WHATSAPP_GRAPH_VERSION` | no | - | worker, web | Meta Graph API version; unset = no WhatsApp sending. |
 | `WHATSAPP_APP_SECRET` | yes | - | webhooks | Meta app secret for webhook signatures; unset = WhatsApp webhook disabled. |
@@ -52,8 +53,8 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `OPS_ALERT_EMAIL` | no | - | cli | Watchdog: where system findings are emailed (SMTP defaults). Unset = exit code and JSON only. |
 | `OPS_ALERT_FROM` | no | - | cli | Watchdog: sender address for ops alerts. |
 | `NEXT_OUTPUT` | no | - | web | Build-time only: `standalone` makes next build emit the traced server the web image runs (set by the Dockerfile). |
-| `DUELOOP_SERVICE` | no | - | worker, webhooks, processor | Which service a services-image container runs (worker \| processor \| webhooks); picks the container healthcheck. |
-| `HEALTH_MAX_AGE` | no | - | worker, processor | Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300). |
+| `DUELOOP_SERVICE` | no | - | worker, webhooks, processor, mailbox | Which service a services-image container runs (worker \| processor \| mailbox \| webhooks); picks the container healthcheck. |
+| `HEALTH_MAX_AGE` | no | - | worker, processor, mailbox | Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300). |
 | `DEMO_WEB_PORT` | no | - | demo | pnpm demo: port of the demo web app (default 3000). |
 | `DEMO_WEBHOOKS_PORT` | no | - | demo | pnpm demo: port of the demo webhooks service (default 8787). |
 | `DEMO_RECORD` | no | - | demo, test | Set to 1 by pnpm demo:record: the e2e demo records video and keeps page DOMs for the leak check. |

@@ -12,6 +12,7 @@ import {
   formatAmount,
   formatDueDate,
   isSafeAddress,
+  replyToOf,
   paymentBlock,
   safePayLink,
   jitterMinutes,
@@ -114,6 +115,11 @@ describe('header sanitising (issue J)', () => {
     expect(isSafeAddress('a@example.com')).toBe(true);
     expect(isSafeAddress('a@example.com\r\nBcc: b@x.example')).toBe(false);
     expect(isSafeAddress('a@example.com, b@example.com')).toBe(false);
+    // config is client-writable, so a bad reply_to must not reach a header.
+    expect(replyToOf({ reply_to: 'replies@example.com' })).toEqual({ replyTo: 'replies@example.com' });
+    expect(replyToOf({ reply_to: 'a@example.com\r\nBcc: b@x.example' })).toEqual({});
+    expect(replyToOf({ reply_to: 7 })).toEqual({});
+    expect(replyToOf({})).toEqual({});
   });
   it('Message-IDs are stable per key and well-formed', () => {
     const id = messageIdFor('6f1c2c9e-0000-4000-8000-000000000001:s1:email', 'mail.example.com');

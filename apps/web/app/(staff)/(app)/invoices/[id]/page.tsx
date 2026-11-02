@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { AiText, UntrustedText } from "@/components/untrusted-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { aiSummaryOf } from "@/lib/ai-summary";
 import { loadInvoice } from "@/lib/data/invoices";
 import { eventLabel } from "@/lib/event-labels";
 import { formatMinor, minorIsPositive } from "@/lib/money";
@@ -23,8 +24,6 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const { invoice: inv } = d;
   const tz = ctx.tenant.timezone;
   const activePromise = d.promises.find((p) => p.status === "active");
-  const summary = (a: unknown): string | null =>
-    a && typeof a === "object" && "summary" in a && typeof (a as { summary: unknown }).summary === "string" ? (a as { summary: string }).summary : null;
 
   return (
     <div className="grid gap-6">
@@ -167,7 +166,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                 </p>
               ) : null}
               <UntrustedText text={m.body} />
-              {m.direction === "in" && summary(m.analysis) ? <AiText text={summary(m.analysis)} /> : null}
+              {m.direction === "in" && aiSummaryOf(m.analysis) ? <AiText text={aiSummaryOf(m.analysis)} /> : null}
             </article>
           ))}
         </CardContent>
