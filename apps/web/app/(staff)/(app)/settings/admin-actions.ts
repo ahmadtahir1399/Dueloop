@@ -8,7 +8,7 @@ import { validateSettings } from "@dueloop/core";
 import { revalidatePath } from "next/cache";
 import { type ActionState, dbErrorMessage, textField, uuidField } from "@/lib/actions";
 import { requireTenant } from "@/lib/session";
-import { connectPaymentAccount, inviteMember, rotateWebhookToken, setChannelConfig, setChannelSecret, setPaymentWebhookSecret, disconnectPaymentAccount } from "@/lib/trusted/admin";
+import { connectPaymentAccount, disconnectMailbox, inviteMember, rotateWebhookToken, setChannelConfig, setChannelSecret, setMailbox, setPaymentWebhookSecret, disconnectPaymentAccount } from "@/lib/trusted/admin";
 
 export async function holidayAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const ctx = await requireTenant();
@@ -145,6 +145,22 @@ export async function integrationAction(_prev: IntegrationState, form: FormData)
       };
     }
     return { ok: true, message: r.value ? "Saved. Meta confirmed this number." : "Saved." };
+  }
+  if (op === "mailbox") {
+    const r = await setMailbox(
+      ctx,
+      { host: textField(form, "imap_host", 300), port: textField(form, "imap_port", 10), user: textField(form, "imap_user", 300), mailbox: textField(form, "imap_mailbox", 300), replyTo: textField(form, "reply_to", 320) },
+      textField(form, "imap_password", 4096),
+    );
+    if (!r.ok) return { error: r.reason };
+    revalidatePath("/settings/integrations");
+    return { ok: true, message: "Saved. The mailbox is checked every minute; only mail that arrives from now on is read." };
+  }
+  if (op === "disconnect_mailbox") {
+    const r = await disconnectMailbox(ctx);
+    if (!r.ok) return { error: r.reason };
+    revalidatePath("/settings/integrations");
+    return { ok: true, message: "Disconnected. The password is deleted; replies go to the sender address again." };
   }
   if (op === "connect_payment") {
     const r = await connectPaymentAccount(ctx, {

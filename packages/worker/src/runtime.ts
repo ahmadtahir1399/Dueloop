@@ -1,6 +1,6 @@
 // Composition root for the production worker and the ops CLIs. This is the ONLY place real adapters are
 // wired, and it can only ever construct NO_FAILPOINTS (tested): failpoints are unreachable in production.
-import { emailChannelFromEnv } from '@dueloop/adapters-email';
+import { emailChannelFromEnv, pgImapStore, pollMailbox } from '@dueloop/adapters-email';
 import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail } from '@dueloop/adapters-notify';
 import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
@@ -12,6 +12,7 @@ import { localEnv } from '../../db/scripts/local-env.ts';
 import { WorkerDb } from './db.ts';
 import { reasoningEffort } from './inbound-runtime.ts';
 import { createJsonLogger, type Logger } from './logger.ts';
+import type { MailboxDeps } from './mailbox.ts';
 import { DEFAULT_CONFIG, NO_FAILPOINTS, type Clock, type Notifier, type PaymentLinks, type PublicLinks, type WorkerConfig } from './ports.ts';
 import type { WorkerDeps } from './process.ts';
 
@@ -146,6 +147,11 @@ export function buildProofsDeps(env: Env, db: WorkerDb, clock: Clock): ProofsDep
     notifier: w.notifier,
     config: DEFAULT_PROOFS_CONFIG,
   };
+}
+
+export function buildMailboxDeps(env: Env, db: WorkerDb, clock: Clock): MailboxDeps {
+  const w = buildDeps(env, db, clock); // the same logger and Slack-or-email alert routing
+  return { store: pgImapStore(db.pool), db, clock, logger: w.logger, notifier: w.notifier, poll: pollMailbox };
 }
 
 export function buildPaymentsDeps(env: Env, db: WorkerDb, clock: Clock): PaymentsDeps {

@@ -24,6 +24,31 @@ export type ChannelConfigResult =
 const CONTROL = /[\u0000-\u001F\u007F]/;
 const HOSTNAME = /^(?=.{1,253}$)[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
 
+/** The mailbox customers reply to (ADR 0054): only offered when the operator sets IMAP_ALLOW_TENANT_HOST=true. */
+export interface MailboxInput {
+  host: string;
+  port: string;
+  user: string;
+  mailbox: string;
+  replyTo: string;
+}
+
+export type MailboxResult = { ok: true; config: { host: string; port: number; user: string; mailbox: string }; replyTo: string | null } | { ok: false; reason: string };
+
+export function mailboxConfigFrom(i: MailboxInput): MailboxResult {
+  const host = i.host.trim();
+  const user = i.user.trim();
+  const mailbox = i.mailbox.trim() || "INBOX";
+  const replyTo = i.replyTo.trim();
+  if (!HOSTNAME.test(host) || /^[\d.]+$/.test(host)) return { ok: false, reason: "The mail server is a host name like imap.yourbusiness.example." };
+  // Two ports, both encrypted: 993 is TLS from the start, 143 must upgrade with STARTTLS (the poller insists).
+  if (i.port !== "993" && i.port !== "143") return { ok: false, reason: "Choose port 993 or 143." };
+  if (user.length < 1 || user.length > 254 || CONTROL.test(user)) return { ok: false, reason: "Enter the mailbox login (often your email address)." };
+  if (mailbox.length > 200 || CONTROL.test(mailbox)) return { ok: false, reason: "The folder name is too long, or has characters a folder cannot have." };
+  if (replyTo !== "" && (replyTo.length > 254 || !isSafeAddress(replyTo))) return { ok: false, reason: "Enter one plain email address, like replies@yourbusiness.example." };
+  return { ok: true, config: { host, port: Number(i.port), user, mailbox }, replyTo: replyTo || null };
+}
+
 /** Same rule as the worker's email adapter (senderAllowed): SMTP_FROM_DOMAINS, when set, lists the allowed domains. */
 export function senderDomainAllowed(address: string, fromDomainsEnv: string | undefined): boolean {
   const allowed = (fromDomainsEnv ?? "")

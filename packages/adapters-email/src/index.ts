@@ -1,8 +1,8 @@
 // SMTP adapter (nodemailer 10). Plain text only. Every failure is classified into a SendOutcome; the one
 // rule that matters (issue K, rule 17): if the server MAY have accepted the message, the outcome is ambiguous.
-import { lookup } from 'node:dns/promises';
 import nodemailer from 'nodemailer';
 import type { EmailContent, OutboundChannel, OutboundEnvelope, SendOutcome } from '@dueloop/messaging';
+import { pinnedAddress } from './net-guard.ts';
 import { createResendChannel } from './resend.ts';
 import { fromDomainsFromEnv, senderAllowed } from './sender.ts';
 
@@ -34,19 +34,6 @@ export interface SmtpChannelOptions {
    * Injected only by the protocol tests, whose scripted server listens on 127.0.0.1.
    */
   readonly tenantAddressAllowed?: (ip: string) => boolean;
-}
-
-/** Loopback, private, link-local, CGNAT, unspecified and multicast addresses (IPv4, IPv6, IPv4-mapped IPv6). */
-export function isPrivateAddress(ip: string): boolean {
-  const v = ip.toLowerCase();
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(v);
-  if (mapped?.[1]) return isPrivateAddress(mapped[1]);
-  const m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(v);
-  if (m) {
-    const [a, b] = [Number(m[1]), Number(m[2])];
-    return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224;
-  }
-  return v === '::' || v === '::1' || /^f[cd]/.test(v) || /^fe[89ab]/.test(v) || /^ff/.test(v);
 }
 
 /** Codes Node sets only when no connection was ever established: nothing can have been sent. */
@@ -127,11 +114,9 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
       // lookup that DNS rebinding could change); TLS still checks the certificate against the host name.
       let connectTo = settings.host;
       if (settings.tenantHost) {
-        const allowed = options.tenantAddressAllowed ?? ((ip: string) => !isPrivateAddress(ip));
-        const addresses = await lookup(settings.host, { all: true }).catch(() => []);
-        const first = addresses[0];
-        if (!first || addresses.some((a) => !allowed(a.address))) return { kind: 'not_sent_retryable', reason: 'smtp_host_refused' };
-        connectTo = first.address;
+        const pinned = await pinnedAddress(settings.host, options.tenantAddressAllowed);
+        if (pinned === null) return { kind: 'not_sent_retryable', reason: 'smtp_host_refused' };
+        connectTo = pinned;
       }
       const transport = nodemailer.createTransport({
         host: connectTo,
@@ -154,6 +139,7 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
           subject: mail.subject,
           text: mail.text,
           messageId: mail.messageId,
+          ...(mail.replyTo ? { replyTo: mail.replyTo } : {}),
           // RFC 8058 one-click unsubscribe (nodemailer `list` option + the POST header). Must be DKIM-signed by
           // the sending domain to be honoured by receivers (RFC 8058 section 4); that is the tenant's mail setup.
           ...(mail.listUnsubscribe
@@ -184,5 +170,6 @@ export function emailChannelFromEnv(env: Readonly<Record<string, string | undefi
 }
 export * from './imap.ts';
 export * from './imap-store.ts';
+export * from './net-guard.ts';
 export * from './resend.ts';
 export * from './sender.ts';

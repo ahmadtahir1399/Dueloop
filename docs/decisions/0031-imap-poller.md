@@ -1,5 +1,8 @@
 # 0031: IMAP poller, MIME parsing and the test server
 
+**Changed by ADR 0054:** the poller now runs in production, takes a baseline on its first poll, reads only mail about
+customers, re-reads only recent mail after a UIDVALIDITY change, and has its own password instead of the SMTP one.
+
 **Choices** (one line each, after checking the installed packages):
 - **IMAP client: imapflow 2.9.1.** Its `mailboxOpen(path, { readOnly: true })` issues EXAMINE, and its
   `source` fetch uses `BODY.PEEK[]` (verified in `dist/esm/commands/fetch.js`), so we can never set `\Seen`.

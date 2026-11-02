@@ -2,7 +2,7 @@
 // "Resend may have the message" is always ambiguous (rule 17).
 import { describe, expect, it } from 'vitest';
 import type { OutboundEnvelope } from '@dueloop/messaging';
-import { classifyResendStatus, createResendChannel, emailChannelFromEnv, fromDomainsFromEnv } from '../src/index.ts';
+import { buildResendRequest, classifyResendStatus, createResendChannel, emailChannelFromEnv, fromDomainsFromEnv } from '../src/index.ts';
 
 const API_KEY = 're_test_not_a_real_key';
 
@@ -57,6 +57,12 @@ describe('Resend adapter contract', () => {
       'List-Unsubscribe': '<https://app.example/o/tok/unsubscribe>',
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     });
+  });
+
+  it('sends the reply address when the message has one, and leaves it out otherwise', () => {
+    const content = { ...envelope.content, replyTo: 'replies@test-co.example' } as OutboundEnvelope['content'];
+    expect(buildResendRequest({ ...envelope, content })?.reply_to).toBe('replies@test-co.example');
+    expect(buildResendRequest(envelope)).not.toHaveProperty('reply_to');
   });
 
   it('a hostile sender name cannot break out of the from header', async () => {

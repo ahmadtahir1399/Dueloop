@@ -4,6 +4,7 @@ import { can } from "@dueloop/authz";
 import { AiText, UntrustedText } from "@/components/untrusted-text";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { aiSummaryOf } from "@/lib/ai-summary";
 import { requirePermission } from "@/lib/session";
 import { formatInstant } from "@/lib/time";
 import { CopyDraft, TaskForm } from "./task-form";
@@ -25,14 +26,14 @@ export default async function TaskPage({ params }: PageProps<"/tasks/[id]">) {
   if (!UUID.test(id)) notFound();
   const { data: t, error } = await ctx.supabase
     .from("tasks")
-    .select("id, type, reason, status, urgent, details, draft_reply, created_at, blocks_reminders_until, resolved_at, resolved_by, resolution_note, invoice_id, invoices(number), customers(display_name), message_id")
+    .select("id, type, reason, status, urgent, details, draft_reply, created_at, blocks_reminders_until, resolved_at, resolved_by, resolution_note, invoice_id, invoices(number), customers(display_name), message_id, messages(analysis)")
     .eq("tenant_id", ctx.tenant.id)
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error("could not load task");
   if (!t) notFound();
   const tz = ctx.tenant.timezone;
-  const summary = t.details && typeof t.details === "object" && !Array.isArray(t.details) && typeof (t.details as Record<string, unknown>).summary === "string" ? String((t.details as Record<string, unknown>).summary) : null;
+  const summary = aiSummaryOf(t.messages?.analysis);
   return (
     <div className="grid gap-4">
       <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold">

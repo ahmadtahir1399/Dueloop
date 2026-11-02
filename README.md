@@ -43,7 +43,7 @@ each with the test or document that backs it.
 | Email reminders (SMTP), approvals, kill switch, quiet hours, budgets | built | `packages/worker/test-db`, `pnpm chaos`, `pnpm demo:send` |
 | WhatsApp reminders (approved templates) | built; live NOT VERIFIED | adapter contract tests; `pnpm smoke:whatsapp` needs credentials |
 | SMS reminders | not built | - |
-| Replies: WhatsApp inbound, classification, promises, disputes, tasks; IMAP poller (library only) | built; email replies are NOT read in production (no command runs the poller); live model NOT VERIFIED | `packages/inbound/test*`, `pnpm test:adversarial`, `pnpm demo:replies` |
+| Replies: WhatsApp and email inbound, classification, promises, disputes, tasks | built; email replies need a connected mailbox (`IMAP_ALLOW_TENANT_HOST`); real mail providers and live model NOT VERIFIED | `packages/inbound/test*`, `pnpm test:adversarial`, `pnpm demo:replies` |
 | Payments: payment links (Stripe, FakeGateway), bank transfers, proofs, receipts, ledger, reconciliation | built; live Stripe NOT VERIFIED | `packages/worker/test-db/payments*`, `pnpm payments:integrity`, `pnpm demo:payments` |
 | Staff dashboard, public pay and opt-out pages, REST API | built | e2e suites (`pnpm web:test:e2e`, `pnpm web:test:security`, `pnpm e2e:demo`), [docs/api.md](docs/api.md) |
 | Operations: health/ready, schema guard, heartbeats, watchdog, retention, erasure, backup drill | built | `packages/ops/test*`, `pnpm backup:drill`, [docs/runbook.md](docs/runbook.md) |
@@ -165,14 +165,14 @@ pnpm test:load                           # 5,000 invoices (slow, not in CI)
 - Email goes through the operator relay `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER`. The password
   is a Vault secret (`private.set_channel_secret(tenant, 'email', ...)`). Locally, `pnpm demo:send` uses
   Mailpit (SMTP 54325, web UI http://127.0.0.1:54324).
-- With `RESEND_API_KEY` set, email goes through the Resend API over HTTPS instead of SMTP (ADR 0054). Live Resend
+- With `RESEND_API_KEY` set, email goes through the Resend API over HTTPS instead of SMTP (ADR 0055). Live Resend
   NOT VERIFIED.
 - WhatsApp is wired only when `WHATSAPP_GRAPH_VERSION` is set (ADR 0020). The token is a Vault secret.
 - A message in an unknown state is never resent automatically (rule 17). See `docs/decisions/0013`–`0021`.
 - Deliverability: before sending from a real domain, the tenant's domain needs SPF, DKIM and DMARC records
   that cover the SMTP relay, otherwise reminders land in spam or are rejected. Email opts out through the footer
-  link and the one-click unsubscribe header (WhatsApp also through "Reply STOP"). Email REPLIES are not read in
-  production yet: the IMAP poller is built and tested but no production command runs it (docs/limitations.md).
+  link and the one-click unsubscribe header (WhatsApp also through "Reply STOP"). Email REPLIES are read only when
+  a business connects a mailbox, on a server that allows it (ADR 0054, docs/limitations.md).
 - Default reminder wording is polite and factual and is checked against a banned-wording list. It is **not
   legal advice**: debt-collection messaging rules differ by market, and each market needs its own review.
 

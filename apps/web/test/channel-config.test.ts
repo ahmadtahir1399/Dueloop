@@ -2,7 +2,7 @@
 // password and the WhatsApp token but had no way to set the sender address or the WhatsApp phone number id, so a
 // new tenant could not send email or WhatsApp without someone editing the database.
 import { describe, expect, it } from 'vitest';
-import { channelConfigFrom, senderDomainAllowed } from '../lib/channel-config.ts';
+import { channelConfigFrom, mailboxConfigFrom, senderDomainAllowed } from '../lib/channel-config.ts';
 
 describe('channelConfigFrom', () => {
   it('email: a safe sender address and a cleaned display name', () => {
@@ -62,5 +62,38 @@ describe('channelConfigFrom', () => {
 
   it('refuses any other channel', () => {
     expect(channelConfigFrom({ channel: 'slack' } as never)).toEqual({ ok: false, reason: 'Choose email or WhatsApp.' });
+  });
+});
+
+describe('mailboxConfigFrom', () => {
+  const base = { host: 'imap.shop.example', port: '993', user: 'billing@shop.example', mailbox: 'INBOX', replyTo: '' };
+
+  it('a mailbox, cleaned; the folder defaults to INBOX and an empty reply address is no reply address', () => {
+    expect(mailboxConfigFrom({ ...base, host: ' imap.shop.example ', mailbox: '  ' })).toEqual({
+      ok: true,
+      config: { host: 'imap.shop.example', port: 993, user: 'billing@shop.example', mailbox: 'INBOX' },
+      replyTo: null,
+    });
+    expect(mailboxConfigFrom({ ...base, replyTo: ' replies@shop.example ' })).toMatchObject({ ok: true, replyTo: 'replies@shop.example' });
+  });
+
+  it.each(['', 'imap shop', 'http://x.example', 'a/b', '127.0.0.1', '169.254.169.254', 'localhost'])('refuses the host %j', (host) => {
+    expect(mailboxConfigFrom({ ...base, host }).ok).toBe(false);
+  });
+
+  it.each(['', '0', '25', '587', '6379', '70000', 'abc'])('only the two encrypted IMAP ports: refuses %j', (port) => {
+    expect(mailboxConfigFrom({ ...base, port })).toEqual({ ok: false, reason: 'Choose port 993 or 143.' });
+  });
+
+  it('refuses control characters in the login and the folder (no IMAP command injection)', () => {
+    const crlf = String.fromCharCode(13, 10);
+    expect(mailboxConfigFrom({ ...base, user: `a${crlf}b` }).ok).toBe(false);
+    expect(mailboxConfigFrom({ ...base, mailbox: `INBOX${crlf}x LOGOUT` }).ok).toBe(false);
+    expect(mailboxConfigFrom({ ...base, user: '' }).ok).toBe(false);
+    expect(mailboxConfigFrom({ ...base, mailbox: 'x'.repeat(201) }).ok).toBe(false);
+  });
+
+  it.each(['replies', 'a b@shop.example', 'Shop <replies@shop.example>', 'a@shop.example, x@evil.example'])('refuses the reply address %j', (replyTo) => {
+    expect(mailboxConfigFrom({ ...base, replyTo }).ok).toBe(false);
   });
 });

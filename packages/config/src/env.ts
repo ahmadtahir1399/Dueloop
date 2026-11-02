@@ -3,7 +3,7 @@
 // list (`pnpm env:example`), and a test fails if the code reads a variable that is not here, or if the file and
 // the schema differ. Validation reports variable NAMES only, never values.
 
-export type Service = 'web' | 'worker' | 'webhooks' | 'processor' | 'cli' | 'demo' | 'test' | 'smoke';
+export type Service = 'web' | 'worker' | 'webhooks' | 'processor' | 'mailbox' | 'cli' | 'demo' | 'test' | 'smoke';
 
 export interface EnvVar {
   readonly name: string;
@@ -34,7 +34,7 @@ export const ENV: readonly EnvVar[] = [
   { name: 'SUPABASE_SECRET_KEY', secret: true, requiredBy: [], usedBy: ['web'], description: 'Alternative name for the server key (newer Supabase key format).', example: '' },
   { name: 'SUPABASE_DB_URL', secret: true, requiredBy: ['web'], usedBy: ['web', 'cli', 'test'], description: 'Direct Postgres URL for the web server trusted pipelines (contains the password).', example: '', pattern: PG_RE },
   { name: 'DATABASE_URL', secret: true, requiredBy: [], usedBy: ['web'], description: 'Fallback for SUPABASE_DB_URL in the web server.', example: '', pattern: PG_RE },
-  { name: 'WORKER_DATABASE_URL', secret: true, requiredBy: ['worker', 'webhooks', 'processor'], usedBy: ['worker', 'webhooks', 'processor', 'cli', 'demo'], description: 'Direct Postgres URL for the worker, processor, webhook runtime and CLIs. Without it they use the LOCAL stack.', example: '', pattern: PG_RE },
+  { name: 'WORKER_DATABASE_URL', secret: true, requiredBy: ['worker', 'webhooks', 'processor', 'mailbox'], usedBy: ['worker', 'webhooks', 'processor', 'mailbox', 'cli', 'demo'], description: 'Direct Postgres URL for the worker, processor, mailbox poller, webhook runtime and CLIs. Without it they use the LOCAL stack.', example: '', pattern: PG_RE },
   { name: 'SUPABASE_ANON_KEY', secret: false, requiredBy: [], usedBy: ['test'], description: 'Local anon key for integration tests (read from `supabase status` when unset).', example: '' },
   { name: 'SMTP_HOST', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Default SMTP host (a tenant account can override when SMTP_ALLOW_TENANT_HOST=true).', example: '127.0.0.1' },
   { name: 'SMTP_PORT', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Default SMTP port.', example: '54325', pattern: /^\d{1,5}$/ },
@@ -43,6 +43,7 @@ export const ENV: readonly EnvVar[] = [
   { name: 'SMTP_FROM_DOMAINS', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Comma-separated sender domains the operator SMTP host may send for (e.g. yourbusiness.example). Set it when several businesses share one server. Unset = any.', example: '' },
   { name: 'SMTP_USER', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Default SMTP user (operator mail server); its password is SMTP_PASSWORD. A business uses its own login and password only with its own server (SMTP_ALLOW_TENANT_HOST).', example: '' },
   { name: 'SMTP_ALLOW_TENANT_HOST', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'true = a business may use its own mail server (Email sender form) and its own email password. The worker then connects where a business says (SSRF): only for vetted deployments.', example: 'false', pattern: /^(true|false)$/ },
+  { name: 'IMAP_ALLOW_TENANT_HOST', secret: false, requiredBy: [], usedBy: ['mailbox', 'web'], description: 'true = a business may connect the mailbox its customers reply to, and the mailbox service reads it. The service then connects where a business says (SSRF): only for vetted deployments. Unset = email replies are not read.', example: 'false', pattern: /^(true|false)$/ },
   { name: 'RESEND_API_KEY', secret: true, requiredBy: [], usedBy: ['worker', 'cli'], description: 'Resend API key (needs a domain verified at Resend). Set = all email goes through the Resend API over HTTPS and SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER and SMTP_PASSWORD are not used; SMTP_FROM_DOMAINS still applies.', example: '' },
   { name: 'WHATSAPP_GRAPH_VERSION', secret: false, requiredBy: [], usedBy: ['worker', 'web'], description: 'Meta Graph API version; unset = no WhatsApp sending.', example: '' },
   { name: 'WHATSAPP_APP_SECRET', secret: true, requiredBy: [], usedBy: ['webhooks'], description: 'Meta app secret for webhook signatures; unset = WhatsApp webhook disabled.', example: '' },
@@ -69,8 +70,8 @@ export const ENV: readonly EnvVar[] = [
   { name: 'OPS_ALERT_EMAIL', secret: false, requiredBy: [], usedBy: ['cli'], description: 'Watchdog: where system findings are emailed (SMTP defaults). Unset = exit code and JSON only.', example: '' },
   { name: 'OPS_ALERT_FROM', secret: false, requiredBy: [], usedBy: ['cli'], description: 'Watchdog: sender address for ops alerts.', example: '' },
   { name: 'NEXT_OUTPUT', secret: false, requiredBy: [], usedBy: ['web'], description: 'Build-time only: `standalone` makes next build emit the traced server the web image runs (set by the Dockerfile).', example: '' },
-  { name: 'DUELOOP_SERVICE', secret: false, requiredBy: [], usedBy: ['worker', 'webhooks', 'processor'], description: 'Which service a services-image container runs (worker | processor | webhooks); picks the container healthcheck.', example: 'worker' },
-  { name: 'HEALTH_MAX_AGE', secret: false, requiredBy: [], usedBy: ['worker', 'processor'], description: 'Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300).', example: '300', pattern: /^\d{1,5}$/ },
+  { name: 'DUELOOP_SERVICE', secret: false, requiredBy: [], usedBy: ['worker', 'webhooks', 'processor', 'mailbox'], description: 'Which service a services-image container runs (worker | processor | mailbox | webhooks); picks the container healthcheck.', example: 'worker' },
+  { name: 'HEALTH_MAX_AGE', secret: false, requiredBy: [], usedBy: ['worker', 'processor', 'mailbox'], description: 'Container healthcheck: a heartbeat older than this many seconds is unhealthy (default 300).', example: '300', pattern: /^\d{1,5}$/ },
   { name: 'DEMO_WEB_PORT', secret: false, requiredBy: [], usedBy: ['demo'], description: 'pnpm demo: port of the demo web app (default 3000).', example: '3000', pattern: /^\d{1,5}$/ },
   { name: 'DEMO_WEBHOOKS_PORT', secret: false, requiredBy: [], usedBy: ['demo'], description: 'pnpm demo: port of the demo webhooks service (default 8787).', example: '8787', pattern: /^\d{1,5}$/ },
   { name: 'DEMO_RECORD', secret: false, requiredBy: [], usedBy: ['demo', 'test'], description: 'Set to 1 by pnpm demo:record: the e2e demo records video and keeps page DOMs for the leak check.', example: '' },

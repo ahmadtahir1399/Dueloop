@@ -1,4 +1,4 @@
-# 0054: Resend as an optional email sender over HTTPS
+# 0055: Resend as an optional email sender over HTTPS
 
 **Context.** The owner wants to host the app and already has Resend set up. Resend also offers SMTP, which needed no
 code, but some hosts block mail ports. The owner asked for a code change instead.
