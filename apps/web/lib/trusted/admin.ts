@@ -6,7 +6,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { verifyPhoneNumberId } from "@dueloop/adapters-whatsapp";
 import { checkBaseUrl } from "@dueloop/links";
 import { createClient } from "@supabase/supabase-js";
-import { channelConfigFrom, senderDomainAllowed, type ChannelConfigInput } from "@/lib/channel-config";
+import { channelConfigFrom, mailboxConfigFrom, senderDomainAllowed, type ChannelConfigInput, type MailboxInput } from "@/lib/channel-config";
 import type { TenantContext } from "@/lib/session";
 import { trustedPool } from "./db";
 import { serviceRoleKey, supabaseUrl } from "./env";
@@ -101,6 +101,31 @@ export async function setChannelConfig(ctx: TenantContext, input: ChannelConfigI
     throw e;
   }
   return { ok: true, value: confirmed };
+}
+
+/**
+ * Connects the mailbox customers reply to (ADR 0054). private.set_mailbox keeps the password with the server it was
+ * saved for: an empty password is accepted only while the host and login stay the same.
+ */
+export async function setMailbox(ctx: TenantContext, input: MailboxInput, password: string): Promise<AdminResult> {
+  if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can connect a mailbox." };
+  if (process.env.IMAP_ALLOW_TENANT_HOST !== "true") return { ok: false, reason: "This server does not read mailboxes." };
+  const v = mailboxConfigFrom(input);
+  if (!v.ok) return { ok: false, reason: v.reason };
+  if (password !== "" && password.length < 8) return { ok: false, reason: "Paste the mailbox password (for most providers, an app password)." };
+  try {
+    await trustedPool().query("select private.set_mailbox($1, $2::jsonb, $3, $4)", [ctx.tenant.id, JSON.stringify(v.config), password || null, v.replyTo]);
+  } catch (e) {
+    if ((e as { code?: string }).code === "22023") return { ok: false, reason: "Enter the password for this mailbox." };
+    throw e;
+  }
+  return { ok: true, value: null };
+}
+
+export async function disconnectMailbox(ctx: TenantContext): Promise<AdminResult> {
+  if (!(await isOwner(ctx))) return { ok: false, reason: "Only an owner can disconnect a mailbox." };
+  await trustedPool().query("select private.disconnect_mailbox($1)", [ctx.tenant.id]);
+  return { ok: true, value: null };
 }
 
 function webhookUrl(token: string): string | null {

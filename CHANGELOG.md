@@ -10,6 +10,13 @@ nothing is published (docs/release.md).
 
 ### Added
 
+- Customer email replies reach the inbox: the `mailbox` service (`pnpm mailbox`) reads a mailbox a business connects
+  in Settings > Integrations, read-only, and only new mail about its customers (ADR 0054). Off unless the operator
+  sets `IMAP_ALLOW_TENANT_HOST=true`. Migration 0027. Real mail providers are NOT VERIFIED.
+- Reply address: an optional Reply-To on reminders and receipts, for a sender with no mailbox behind it.
+- Resend as an optional way to send email: set `RESEND_API_KEY` and email goes through its HTTPS API instead of SMTP
+  (ADR 0055). The ops watchdog and doctor follow it, the demo refuses to run with the key set, and the secret scanner
+  knows the key shape. Not yet tried with a real Resend account.
 - OpenAI as a second, optional model provider: `CLASSIFIER=openai` and `PROOF_EXTRACTION=openai` with
   `OPENAI_API_KEY` (ADR 0053). Anthropic stays supported; with neither set, every reply still goes to a human.
 - Settings > Integrations: "Email sender" and "WhatsApp number" forms; Stripe can be connected first and its
@@ -25,6 +32,9 @@ nothing is published (docs/release.md).
 
 ### Fixed
 
+- AI summaries now show on the inbox thread, invoice and task pages. The pages read a key the pipeline never wrote,
+  and the e2e fixtures used that same wrong key, so the tests stayed green.
+- `pnpm demo` failed on the first run of a fresh clone: it wrote `.demo/build.json` before `.demo/` existed.
 - A new business could not send anything without database access: no screen for the sender address, the WhatsApp
   phone number id, templates or consent, and a parked invoice could only be resumed from the CLI.
 - Migration 0024: a WhatsApp template inserted by a member always starts "pending" (only an owner approves it).

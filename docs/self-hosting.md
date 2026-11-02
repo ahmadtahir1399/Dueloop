@@ -12,9 +12,10 @@
 | webhooks (WhatsApp, payment providers) | `services` | `node packages/webhooks/src/bin/webhooks.ts` | `GET /health`, `GET /ready` |
 | worker (reminders, payments processing, receipts, proofs) | `services` | `node packages/worker/src/bin/worker.ts --loop` | own heartbeat (`ops alive`) |
 | processor (inbound replies) | `services` | `node packages/worker/src/bin/inbound.ts --loop` | own heartbeat |
+| mailbox (reads connected mailboxes; idles unless `IMAP_ALLOW_TENANT_HOST=true`) | `services` | `node packages/worker/src/bin/mailbox.ts --loop` | own heartbeat |
 | Supabase (Postgres, Auth, Storage, PostgREST) | not ours | local CLI stack or a hosted project | `pnpm doctor` |
 
-One `services` image serves three commands, so the worker, processor and webhooks always run the same build. Both
+One `services` image serves four commands, so the worker, processor, mailbox and webhooks always run the same build. Both
 images: multi-stage, non-root (`node`, uid 1000), base pinned by tag and digest (bump procedure in the `Dockerfile`
 header), no tests, fixtures, demo code, seed data or env files (`.dockerignore`; scanned by `pnpm images:smoke`).
 

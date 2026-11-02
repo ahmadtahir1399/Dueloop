@@ -32,6 +32,7 @@ const nowIso = at.toUTC().toISO() ?? '';
 const today = at.toISODate() ?? '';
 const env: NodeJS.ProcessEnv = { ...process.env, DEMO_NOW: nowIso, SMTP_HOST: '127.0.0.1', SMTP_PORT: '54325', SMTP_SECURE: 'false', PAYMENTS_ALLOW_FAKE: 'true' };
 delete env.WORKER_DATABASE_URL;
+delete env.RESEND_API_KEY;
 const node = (script: string, args: string[] = [], okCodes = [0]) => {
   const r = spawnSync(process.execPath, [script, ...args], { env, encoding: 'utf8' });
   if (!okCodes.includes(r.status ?? -1)) fail(`${path.basename(script)} ${args[0] ?? ''} exited ${r.status}: ${(r.stderr || r.stdout).trim().slice(-400)}`);

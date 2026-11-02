@@ -18,6 +18,7 @@ export const SECRET_RULES: readonly SecretRule[] = [
   // OpenAI publishes no key-format spec; secret scanners match the shared "T3BlbkFJ" marker (GitGuardian's OpenAI
   // detectors, OpenRouter's secret-format guide) and the project/service-account/admin prefixes.
   { id: 'openai-api-key', re: /\bsk-(?:(?:proj|svcacct|admin)-[0-9A-Za-z_-]{20,}|[0-9A-Za-z_-]{8,}T3BlbkFJ[0-9A-Za-z_-]{8,})/ },
+  { id: 'resend-api-key', re: /\bre_[0-9A-Za-z_]{24,}/ },
   { id: 'aws-access-key-id', re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/ },
   { id: 'github-token', re: /\b(?:gh[pousr]_[0-9A-Za-z]{30,}|github_pat_[0-9A-Za-z_]{40,})/ },
   { id: 'slack-token', re: /\bxox[abprs]-[0-9A-Za-z-]{10,}/ },

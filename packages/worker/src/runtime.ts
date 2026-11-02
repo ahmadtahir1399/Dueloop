@@ -1,6 +1,6 @@
 // Composition root for the production worker and the ops CLIs. This is the ONLY place real adapters are
 // wired, and it can only ever construct NO_FAILPOINTS (tested): failpoints are unreachable in production.
-import { createSmtpChannel, smtpDefaultsFromEnv } from '@dueloop/adapters-email';
+import { emailChannelFromEnv, pgImapStore, pollMailbox } from '@dueloop/adapters-email';
 import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail } from '@dueloop/adapters-notify';
 import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
@@ -12,6 +12,7 @@ import { localEnv } from '../../db/scripts/local-env.ts';
 import { WorkerDb } from './db.ts';
 import { reasoningEffort } from './inbound-runtime.ts';
 import { createJsonLogger, type Logger } from './logger.ts';
+import type { MailboxDeps } from './mailbox.ts';
 import { DEFAULT_CONFIG, NO_FAILPOINTS, type Clock, type Notifier, type PaymentLinks, type PublicLinks, type WorkerConfig } from './ports.ts';
 import type { WorkerDeps } from './process.ts';
 
@@ -47,7 +48,7 @@ export function buildDeps(env: Env, db: WorkerDb, clock: Clock, overrides: Parti
   const logger = stdoutLogger(clock);
   const adapterTimeout = Math.max(1000, config.sendTimeoutMs - 2000); // below the worker's hard timeout
   const channels = new Map<string, OutboundChannel>();
-  const email = createSmtpChannel({ defaults: smtpDefaultsFromEnv(env), timeoutMs: adapterTimeout, allowTenantHost: env.SMTP_ALLOW_TENANT_HOST === 'true' });
+  const email = emailChannelFromEnv(env, adapterTimeout);
   channels.set('email', email);
   if (env.WHATSAPP_GRAPH_VERSION) channels.set('whatsapp', createWhatsAppChannel({ graphVersion: env.WHATSAPP_GRAPH_VERSION, timeoutMs: adapterTimeout }));
   const onError = (reason: string) => logger.warn('alert_delivery', { reason });
@@ -146,6 +147,11 @@ export function buildProofsDeps(env: Env, db: WorkerDb, clock: Clock): ProofsDep
     notifier: w.notifier,
     config: DEFAULT_PROOFS_CONFIG,
   };
+}
+
+export function buildMailboxDeps(env: Env, db: WorkerDb, clock: Clock): MailboxDeps {
+  const w = buildDeps(env, db, clock); // the same logger and Slack-or-email alert routing
+  return { store: pgImapStore(db.pool), db, clock, logger: w.logger, notifier: w.notifier, poll: pollMailbox };
 }
 
 export function buildPaymentsDeps(env: Env, db: WorkerDb, clock: Clock): PaymentsDeps {

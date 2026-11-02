@@ -4,7 +4,7 @@
 // pnpm demo:logs [name]                      the last lines of each demo process log (.demo/logs/)
 // Local only: refuses non-local URLs and live-looking keys (safety.ts). Writes only under .demo/ (gitignored).
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statfsSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statfsSync, writeFileSync } from 'node:fs';
 import { totalmem } from 'node:os';
 import path from 'node:path';
 import pg from 'pg';
@@ -109,6 +109,7 @@ async function start() {
     console.log('Building the web app (production build, local values inlined)...');
     const b = spawnSync(process.execPath, [nextBin, 'build'], { cwd: path.join(root, 'apps/web'), env, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
     if (b.status !== 0) fail(`web build failed:\n${(b.stdout + b.stderr).split('\n').slice(-15).join('\n')}`);
+    mkdirSync(DEMO_DIR, { recursive: true }); // a fresh clone has no .demo/ yet
     writeFileSync(buildInfo, JSON.stringify({ head }));
   }
   timings.web_build = secs(p);

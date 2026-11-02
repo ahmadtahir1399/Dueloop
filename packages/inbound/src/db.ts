@@ -222,7 +222,8 @@ export class InboundDb {
     }>(
       `select t.name, t.timezone, t.currency, t.quiet_start_hour, t.quiet_end_hour, t.promise_acceptance, t.classification_daily_cap,
               (select array_agg(h.on_date::text) from public.holidays h where h.tenant_id = t.id) as holidays,
-              (select array_agg(lower(ca.config ->> 'from_address')) from public.channel_accounts ca where ca.tenant_id = t.id and ca.config ? 'from_address') as own
+              (select array_agg(lower(o.address)) from public.channel_accounts ca, unnest(array[ca.config ->> 'from_address', ca.config ->> 'reply_to']) as o(address)
+               where ca.tenant_id = t.id and o.address is not null) as own
        from public.tenants t where t.id = $1`,
       [tenantId],
     );

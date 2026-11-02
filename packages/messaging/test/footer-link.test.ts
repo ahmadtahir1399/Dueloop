@@ -1,5 +1,5 @@
 // Prompt 6 (issue F/L): the footer is appended after rendering and carries the opt-out link when one was issued.
-// After review round 2: email replies are not read in production (no IMAP poller runs; ADR 0031 status), so an
+// After review round 2: email replies are read only where a business connected a mailbox (ADR 0054), so an
 // email footer must never tell the customer to "reply STOP". Email opts out through the link (and the RFC 8058
 // header); WhatsApp replies ARE processed, so WhatsApp keeps "Reply STOP".
 import { describe, expect, it } from 'vitest';

@@ -534,6 +534,9 @@ importers:
 
   packages/ops:
     dependencies:
+      '@dueloop/adapters-email':
+        specifier: workspace:*
+        version: link:../adapters-email
       '@dueloop/config':
         specifier: workspace:*
         version: link:../config

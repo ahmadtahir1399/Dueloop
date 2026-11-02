@@ -24,6 +24,8 @@ export interface EmailContent {
   readonly text: string;
   /** Our own RFC 5322 Message-ID, "<...@...>", derived from the idempotency key. */
   readonly messageId: string;
+  /** Where customer replies go when that is not the sender (the mailbox the poller reads, ADR 0054). */
+  readonly replyTo?: string;
   /**
    * Prompt 6 (issue F): the customer's opt-out URL for RFC 8058 one-click unsubscribe. Set only when it is https
    * (RFC 8058 requires one HTTPS URI); the adapter adds List-Unsubscribe and List-Unsubscribe-Post.

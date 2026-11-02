@@ -1,8 +1,8 @@
 // Opt-out footer, appended AFTER rendering and after any human edit, so an edit can never remove it.
 // Per channel and locale (language subtag); English is the default. Wording is not legal advice.
 //
-// Email never says "reply STOP": email replies are not read by the product in production (no IMAP poller runs,
-// ADR 0031), so that promise would be false and an opt-out would be lost. Email stops through the opt-out link
+// Email never says "reply STOP": reading email replies is optional per business and per server (ADR 0054), so that
+// promise could be false and an opt-out would be lost. Email stops through the opt-out link
 // (plus the RFC 8058 header the worker adds). Without a link (receipts, previews) it asks for a reply, which a
 // person at the business reads. WhatsApp replies ARE processed (webhooks + processor), so WhatsApp keeps STOP.
 import type { Channel } from '@dueloop/core';
