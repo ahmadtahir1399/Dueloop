@@ -3,6 +3,8 @@
 import { lookup } from 'node:dns/promises';
 import nodemailer from 'nodemailer';
 import type { EmailContent, OutboundChannel, OutboundEnvelope, SendOutcome } from '@dueloop/messaging';
+import { createResendChannel } from './resend.ts';
+import { fromDomainsFromEnv, senderAllowed } from './sender.ts';
 
 export interface SmtpSettings {
   readonly host: string;
@@ -112,17 +114,6 @@ export function smtpLogin(
   return { host: r.s.host, port: r.s.port, secure: r.s.secure, auth, requireTLS: auth !== undefined && !r.s.secure, tenantHost: r.tenantHost };
 }
 
-/**
- * The operator relay sends only for the domains in SMTP_FROM_DOMAINS (when set): otherwise any tenant owner could
- * send as any address (another tenant, a bank) through the operator's logged-in relay and pass its SPF/DKIM.
- */
-export function senderAllowed(fromAddress: string, defaults: SmtpSettings | null): boolean {
-  const allowed = defaults?.allowedFromDomains ?? [];
-  if (allowed.length === 0) return true;
-  const domain = fromAddress.split('@').at(-1)?.toLowerCase() ?? '';
-  return allowed.includes(domain);
-}
-
 export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel {
   return {
     channel: 'email',
@@ -183,11 +174,15 @@ export function createSmtpChannel(options: SmtpChannelOptions): OutboundChannel 
 /** SMTP_HOST / SMTP_PORT / SMTP_SECURE / SMTP_USER from the environment (the password is a Vault secret). */
 export function smtpDefaultsFromEnv(env: Readonly<Record<string, string | undefined>>): SmtpSettings | null {
   if (!env.SMTP_HOST) return null;
-  const allowedFromDomains = (env.SMTP_FROM_DOMAINS ?? '')
-    .split(',')
-    .map((d) => d.trim().toLowerCase())
-    .filter((d) => d !== '');
-  return { host: env.SMTP_HOST, port: Number(env.SMTP_PORT || 587), secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER || null, password: env.SMTP_PASSWORD || null, allowedFromDomains };
+  return { host: env.SMTP_HOST, port: Number(env.SMTP_PORT || 587), secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER || null, password: env.SMTP_PASSWORD || null, allowedFromDomains: fromDomainsFromEnv(env) };
+}
+
+/** RESEND_API_KEY set = Resend's HTTP API; otherwise SMTP. One account for every tenant either way. */
+export function emailChannelFromEnv(env: Readonly<Record<string, string | undefined>>, timeoutMs: number): OutboundChannel {
+  if (env.RESEND_API_KEY) return createResendChannel({ apiKey: env.RESEND_API_KEY, timeoutMs, allowedFromDomains: fromDomainsFromEnv(env) });
+  return createSmtpChannel({ defaults: smtpDefaultsFromEnv(env), timeoutMs, allowTenantHost: env.SMTP_ALLOW_TENANT_HOST === 'true' });
 }
 export * from './imap.ts';
 export * from './imap-store.ts';
+export * from './resend.ts';
+export * from './sender.ts';

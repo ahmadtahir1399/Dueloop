@@ -54,4 +54,11 @@ describe('environment schema', () => {
     expect(problems).toContain('PUBLIC_APP_URL is required for web');
     expect(problems).toContain('PAYMENTS_ALLOW_FAKE must not be true in a production build');
   });
+
+  it('a business mail server and Resend cannot both be switched on', () => {
+    const problem = 'SMTP_ALLOW_TENANT_HOST=true does not work with RESEND_API_KEY: unset one';
+    expect(validateEnv('worker', { RESEND_API_KEY: 're_x', SMTP_ALLOW_TENANT_HOST: 'true' })).toContain(problem);
+    expect(validateEnv('worker', { RESEND_API_KEY: 're_x' })).not.toContain(problem);
+    expect(validateEnv('worker', { SMTP_ALLOW_TENANT_HOST: 'true' })).not.toContain(problem);
+  });
 });

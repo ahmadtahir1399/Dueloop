@@ -165,6 +165,8 @@ pnpm test:load                           # 5,000 invoices (slow, not in CI)
 - Email goes through the operator relay `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER`. The password
   is a Vault secret (`private.set_channel_secret(tenant, 'email', ...)`). Locally, `pnpm demo:send` uses
   Mailpit (SMTP 54325, web UI http://127.0.0.1:54324).
+- With `RESEND_API_KEY` set, email goes through the Resend API over HTTPS instead of SMTP (ADR 0054). Live Resend
+  NOT VERIFIED.
 - WhatsApp is wired only when `WHATSAPP_GRAPH_VERSION` is set (ADR 0020). The token is a Vault secret.
 - A message in an unknown state is never resent automatically (rule 17). See `docs/decisions/0013`–`0021`.
 - Deliverability: before sending from a real domain, the tenant's domain needs SPF, DKIM and DMARC records

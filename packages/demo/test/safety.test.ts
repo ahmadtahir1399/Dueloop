@@ -26,6 +26,7 @@ describe('demo safety gate', () => {
     expect(safetyProblems({ X: live('sk_test_') })).toEqual([]);
     expect(safetyProblems({ ANTHROPIC_API_KEY: 'x' })[0]).toContain('ANTHROPIC_API_KEY is set');
     expect(safetyProblems({ OPENAI_API_KEY: 'x' })[0]).toContain('OPENAI_API_KEY is set');
+    expect(safetyProblems({ RESEND_API_KEY: 'x' })[0]).toContain('RESEND_API_KEY is set');
     expect(safetyProblems({ NODE_ENV: 'production' })).toHaveLength(1);
   });
   it('never echoes a value', () => {

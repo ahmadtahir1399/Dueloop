@@ -29,6 +29,7 @@ export function runtimeEnv(): NodeJS.ProcessEnv {
     SMTP_HOST: "127.0.0.1",
     SMTP_PORT: "54325",
     SMTP_SECURE: "false",
+    RESEND_API_KEY: "", // the local mail catcher, whatever the shell has set
     PUBLIC_APP_URL: BASE_URL,
     PAYMENTS_ALLOW_FAKE: "true",
   };

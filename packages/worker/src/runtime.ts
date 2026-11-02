@@ -1,6 +1,6 @@
 // Composition root for the production worker and the ops CLIs. This is the ONLY place real adapters are
 // wired, and it can only ever construct NO_FAILPOINTS (tested): failpoints are unreachable in production.
-import { createSmtpChannel, smtpDefaultsFromEnv } from '@dueloop/adapters-email';
+import { emailChannelFromEnv } from '@dueloop/adapters-email';
 import { createEmailAlertNotifier, createSlackNotifier, fanout, slackOrEmail } from '@dueloop/adapters-notify';
 import { createWhatsAppChannel } from '@dueloop/adapters-whatsapp';
 import { DEFAULT_RATE_LIMIT, TokenBucketLimiter, type OutboundChannel } from '@dueloop/messaging';
@@ -47,7 +47,7 @@ export function buildDeps(env: Env, db: WorkerDb, clock: Clock, overrides: Parti
   const logger = stdoutLogger(clock);
   const adapterTimeout = Math.max(1000, config.sendTimeoutMs - 2000); // below the worker's hard timeout
   const channels = new Map<string, OutboundChannel>();
-  const email = createSmtpChannel({ defaults: smtpDefaultsFromEnv(env), timeoutMs: adapterTimeout, allowTenantHost: env.SMTP_ALLOW_TENANT_HOST === 'true' });
+  const email = emailChannelFromEnv(env, adapterTimeout);
   channels.set('email', email);
   if (env.WHATSAPP_GRAPH_VERSION) channels.set('whatsapp', createWhatsAppChannel({ graphVersion: env.WHATSAPP_GRAPH_VERSION, timeoutMs: adapterTimeout }));
   const onError = (reason: string) => logger.warn('alert_delivery', { reason });

@@ -26,6 +26,7 @@ file that is committed, a log line, an image layer or a `NEXT_PUBLIC_` variable.
 | `SMTP_FROM_DOMAINS` | no | - | worker, web | Comma-separated sender domains the operator SMTP host may send for (e.g. yourbusiness.example). Set it when several businesses share one server. Unset = any. |
 | `SMTP_USER` | no | - | worker, web | Default SMTP user (operator mail server); its password is SMTP_PASSWORD. A business uses its own login and password only with its own server (SMTP_ALLOW_TENANT_HOST). |
 | `SMTP_ALLOW_TENANT_HOST` | no | - | worker, web | true = a business may use its own mail server (Email sender form) and its own email password. The worker then connects where a business says (SSRF): only for vetted deployments. |
+| `RESEND_API_KEY` | yes | - | worker, cli | Resend API key (needs a domain verified at Resend). Set = all email goes through the Resend API over HTTPS and SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER and SMTP_PASSWORD are not used; SMTP_FROM_DOMAINS still applies. |
 | `WHATSAPP_GRAPH_VERSION` | no | - | worker, web | Meta Graph API version; unset = no WhatsApp sending. |
 | `WHATSAPP_APP_SECRET` | yes | - | webhooks | Meta app secret for webhook signatures; unset = WhatsApp webhook disabled. |
 | `WHATSAPP_VERIFY_TOKEN` | yes | - | webhooks | Meta webhook verification token. |
