@@ -1,6 +1,6 @@
 // Container HEALTHCHECK for the services image (Dockerfile): DUELOOP_SERVICE picks what "healthy" means.
 //   webhooks          GET /health on its own port answers 200 (liveness; /ready is for the load balancer)
-//   worker|processor  this container wrote a heartbeat in the last HEALTH_MAX_AGE seconds (default 300)
+//   worker|processor|mailbox  this container wrote a heartbeat in the last HEALTH_MAX_AGE seconds (default 300)
 // Exit 0 = healthy, 1 = unhealthy (Docker HEALTHCHECK contract). Prints nothing (no values in container logs).
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';

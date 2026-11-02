@@ -35,6 +35,7 @@ USER node
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 CMD ["node", "packages/ops/src/bin/healthcheck.ts"]
 # Default command: the worker. Override per service (compose.selfhost.yml):
 #   node packages/worker/src/bin/inbound.ts --loop      (DUELOOP_SERVICE=processor)
+#   node packages/worker/src/bin/mailbox.ts --loop      (DUELOOP_SERVICE=mailbox)
 #   node packages/webhooks/src/bin/webhooks.ts          (DUELOOP_SERVICE=webhooks, PORT=8787)
 CMD ["node", "packages/worker/src/bin/worker.ts", "--loop"]
 

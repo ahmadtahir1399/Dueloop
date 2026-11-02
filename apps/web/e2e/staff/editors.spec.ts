@@ -1,5 +1,6 @@
 // Step 10: editors per role (issues K, L, M, N, O).
 import { expect, test } from "@playwright/test";
+import { cli } from "../support/cli";
 import { db } from "../support/db";
 import { authFile, DEMO_TENANT } from "../support/users";
 
@@ -149,6 +150,72 @@ test.describe("owner: channel settings", () => {
       for (const r of before) await db().query("update public.channel_accounts set config = $3, external_account_id = $4 where tenant_id = $1 and channel = $2", [DEMO_TENANT, r.channel, r.config, r.external_account_id]);
       if (!before.some((r) => r.channel === "whatsapp")) await db().query("delete from public.channel_accounts where tenant_id = $1 and channel = 'whatsapp'", [DEMO_TENANT]);
     }
+  });
+});
+
+// ADR 0054: a business connects the mailbox its customers reply to. The real poller then reports back on this screen.
+test.describe("owner: customer email replies", () => {
+  test.use({ storageState: authFile("owner") });
+
+  test("connect, see what the poller found, keep the password write-only, disconnect", async ({ page }) => {
+    const password = "mailbox-e2e-password-0001";
+    const account = async () => (await db().query("select imap_config, imap_secret_id, config from public.channel_accounts where tenant_id = $1 and channel = 'email'", [DEMO_TENANT])).rows[0];
+    try {
+      await page.goto("/settings/integrations");
+      await expect(page.getByTestId("mailbox-status")).toContainText("No mailbox connected");
+      const form = page.getByRole("form", { name: "Connect a mailbox" });
+
+      await form.getByLabel(/Mail server/).fill("127.0.0.1");
+      await form.getByLabel("Login").fill("billing@demo-agency.test");
+      await form.getByLabel("Password").fill(password);
+      await form.getByRole("button", { name: "Save mailbox" }).click();
+      await expect(form.getByRole("alert")).toContainText("host name");
+
+      await page.goto("/settings/integrations");
+      await form.getByLabel(/Mail server/).fill("imap.does-not-resolve.invalid");
+      await form.getByLabel("Login").fill("billing@demo-agency.test");
+      await form.getByLabel("Password").fill(password);
+      await form.getByLabel(/Reply address/).fill("replies@demo-agency.test");
+      await form.getByRole("button", { name: "Save mailbox" }).click();
+      await expect(form.getByRole("status")).toContainText("only mail that arrives from now on");
+      const saved = await account();
+      expect(saved.imap_config).toEqual({ host: "imap.does-not-resolve.invalid", port: 993, user: "billing@demo-agency.test", mailbox: "INBOX" });
+      expect(saved.config).toMatchObject({ reply_to: "replies@demo-agency.test" });
+
+      await page.goto("/settings/integrations");
+      await expect(page.getByTestId("mailbox-status")).toContainText("waiting for the first check");
+      expect(await page.content()).not.toContain(password);
+
+      // The real service, not a stand-in: this host resolves to nothing, so it must fail as a code, not crash.
+      const run = cli(["mailbox", "--once", "--tenant", DEMO_TENANT]);
+      expect(run.code, run.out).toBe(0);
+      expect(run.out).toContain('"failed":1');
+      expect(run.out).not.toContain(password);
+      await page.reload();
+      await expect(page.getByRole("alert").filter({ hasText: "cannot reach that mail server" })).toBeVisible();
+
+      // Another server must bring its own password: the saved one never follows a host change.
+      await form.getByLabel(/Mail server/).fill("imap.elsewhere.invalid");
+      await form.getByRole("button", { name: "Save mailbox" }).click();
+      await expect(form.getByRole("alert")).toContainText("Enter the password");
+      expect((await account()).imap_config).toMatchObject({ host: "imap.does-not-resolve.invalid" });
+
+      await page.getByRole("form", { name: "Disconnect the mailbox" }).getByRole("button", { name: "Disconnect" }).click();
+      await expect(page.getByTestId("mailbox-status")).toContainText("No mailbox connected");
+      expect(await account()).toMatchObject({ imap_config: null, imap_secret_id: null });
+    } finally {
+      await db().query("select private.disconnect_mailbox($1)", [DEMO_TENANT]);
+    }
+  });
+});
+
+test.describe("accountant: customer email replies", () => {
+  test.use({ storageState: authFile("accountant") });
+
+  test("sees the state, cannot connect a mailbox", async ({ page }) => {
+    await page.goto("/settings/integrations");
+    await expect(page.getByTestId("mailbox-status")).toBeVisible();
+    await expect(page.getByRole("form", { name: "Connect a mailbox" })).toHaveCount(0);
   });
 });
 

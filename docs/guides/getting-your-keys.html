@@ -212,10 +212,15 @@ SMTP_PASSWORD=(the app password)      # secret</pre>
   <div class="box ok"><strong>Templates are ready</strong>A new business gets standard English email reminders
     (friendly, nudge, firm, receipt). Read them in <b>Settings → Templates</b> and change the words if you like. If one is
     missing, that page shows an <b>Add the standard email templates</b> button.</div>
-  <div class="box warn"><strong>Email replies are not read by the app yet</strong>When a customer answers a reminder
-    email, the answer goes to your own inbox. Read it there and act on it yourself. Reminder emails have a stop link at
-    the bottom. Receipts ask the customer to reply instead, so watch your inbox for "stop" replies. WhatsApp replies
-    <i>are</i> read by the app.</div>
+  <div class="box warn"><strong>Email replies are read only if you connect a mailbox</strong>When a customer answers a
+    reminder email, the answer goes to your sender address, or to your <b>Reply address</b> if you set one. To have the
+    app read it, the server's operator sets <code>IMAP_ALLOW_TENANT_HOST=true</code>, and you fill in <b>Customer email
+    replies</b> in <b>Settings → Integrations</b>. Ask your email provider for its IMAP details; many need IMAP switched
+    on and an app password. Sending services often have no mailbox to read, so point the Reply address at one that does.
+    The app only reads: it never changes or deletes your mail. It reads new mail from your customers and replies to your
+    reminders, and leaves everything else alone. Without a connected mailbox, read replies there and act on them
+    yourself. Reminder emails have a stop link at the bottom. Receipts ask the customer to reply instead, so watch for
+    "stop" replies. This has not been tried with a real email provider yet. WhatsApp replies <i>are</i> read by the app.</div>
   <p class="small">Your own mail server instead of the server's: only if the operator sets
     <code>SMTP_ALLOW_TENANT_HOST=true</code>. Then the same box asks for your <b>Mail server</b>, <b>Port</b> and
     <b>Login</b>. The password goes in <b>Secret</b>, with <b>Channel</b> set to "email (password for your own mail
