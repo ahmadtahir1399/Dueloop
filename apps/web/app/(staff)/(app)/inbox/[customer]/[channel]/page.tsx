@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AiText, UntrustedText } from "@/components/untrusted-text";
+import { aiSummaryOf } from "@/lib/ai-summary";
 import { loadThread } from "@/lib/data/inbox";
 import { requirePermission } from "@/lib/session";
 import { formatInstant } from "@/lib/time";
@@ -11,8 +12,6 @@ export default async function ThreadPage({ params }: PageProps<"/inbox/[customer
   const d = await loadThread(ctx, customer, channel);
   if (!d) notFound();
   const tz = ctx.tenant.timezone;
-  const summary = (a: unknown): string | null =>
-    a && typeof a === "object" && "summary" in a && typeof (a as { summary: unknown }).summary === "string" ? (a as { summary: string }).summary : null;
   return (
     <div className="grid gap-4">
       <h1 className="text-xl font-semibold">
@@ -51,7 +50,7 @@ export default async function ThreadPage({ params }: PageProps<"/inbox/[customer
                 ))}
               </p>
             ) : null}
-            {m.direction === "in" && summary(m.analysis) ? <AiText text={summary(m.analysis)} /> : null}
+            {m.direction === "in" && aiSummaryOf(m.analysis) ? <AiText text={aiSummaryOf(m.analysis)} /> : null}
           </li>
         ))}
       </ol>

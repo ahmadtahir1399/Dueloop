@@ -20,6 +20,12 @@ export function isSafeAddress(address: string): boolean {
   return /^[^\s<>"(),;:\\@]+@[^\s<>"(),;:\\@]+\.[^\s<>"(),;:\\@]+$/.test(address) && address === sanitiseHeaderValue(address);
 }
 
+/** The Reply-To for an email account. An owner can write config directly, so an unsafe value is dropped here. */
+export function replyToOf(account: Readonly<Record<string, unknown>>): { replyTo: string } | Record<string, never> {
+  const address = account.reply_to;
+  return typeof address === 'string' && isSafeAddress(address) ? { replyTo: address } : {};
+}
+
 /** RFC 5322 Message-ID derived from the idempotency key: stable, unique per key, no PII. */
 export function messageIdFor(idempotencyKey: string, domain: string): string {
   const local = idempotencyKey.replace(/[^A-Za-z0-9-]/g, '.').replace(/\.+/g, '.');

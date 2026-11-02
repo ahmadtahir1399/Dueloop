@@ -17,7 +17,7 @@ async function scan(page: Page, name: string) {
 
 test.describe("staff pages (owner)", () => {
   test.use({ storageState: authFile("owner") });
-  for (const p of ["/", "/invoices", "/customers", "/approvals", "/tasks", "/import", "/settings", "/settings/policies", "/settings/templates"]) {
+  for (const p of ["/", "/invoices", "/customers", "/approvals", "/tasks", "/import", "/settings", "/settings/policies", "/settings/templates", "/settings/integrations"]) {
     test(`axe: ${p}`, async ({ page }) => {
       await page.goto(p);
       await page.waitForLoadState("networkidle");

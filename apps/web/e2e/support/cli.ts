@@ -14,6 +14,7 @@ const BIN: Record<string, string> = {
   promises: "packages/worker/src/bin/promises.ts",
   tenant: "packages/worker/src/bin/tenant.ts",
   worker: "packages/worker/src/bin/worker.ts",
+  mailbox: "packages/worker/src/bin/mailbox.ts",
   import: "packages/ingest/src/cli.ts",
 };
 
@@ -23,7 +24,7 @@ export function cli([name, ...args]: string[]): { code: number; out: string } {
   const r = spawnSync(process.execPath, [script, ...args], {
     cwd: repoRoot,
     encoding: "utf8",
-    env: { ...process.env, WORKER_DATABASE_URL: stack().dbUrl, SUPABASE_URL: stack().apiUrl, SUPABASE_SERVICE_ROLE_KEY: stack().serviceRoleKey },
+    env: { ...process.env, WORKER_DATABASE_URL: stack().dbUrl, SUPABASE_URL: stack().apiUrl, SUPABASE_SERVICE_ROLE_KEY: stack().serviceRoleKey, IMAP_ALLOW_TENANT_HOST: "true" },
     timeout: 120_000,
   });
   return { code: r.status ?? -1, out: `${r.stdout ?? ""}${r.stderr ?? ""}` };
