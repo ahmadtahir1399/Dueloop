@@ -14,6 +14,7 @@ const env = {
   NEXT_DIST_DIR: ".next-e2e",
   // The FakeGateway is test/demo only (packages/payments registry); never set in production.
   PAYMENTS_ALLOW_FAKE: "true",
+  IMAP_ALLOW_TENANT_HOST: "true",
   TRUST_PROXY_HOPS: "0",
   NODE_ENV: "production",
 };

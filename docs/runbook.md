@@ -45,6 +45,7 @@ an uptime monitor can page on. Thresholds are `DEFAULT_THRESHOLDS` in `packages/
 | `dead_letters` | a job failed repeatedly | read the reason in the dead letter (ids/codes only); fix the cause; `pnpm messages unpark <invoiceId>` |
 | `unprocessed_payment_events` | confirmations are waiting | is `pnpm payments process --loop` (or the worker) running? |
 | `unprocessed_inbound` | replies are waiting | is `pnpm inbound --loop` running? |
+| a business reports a `mailbox_failed` alert | its mailbox could not be read 3 times in a row; polling backs off to once an hour | the reason is in Settings > Integrations (`private.imap_cursors.last_error`); saving the mailbox again retries at once |
 | integrity finding | received != applied + credit somewhere | `pnpm payments:integrity`; do not edit ledger rows; open an issue with the ids |
 
 ## Backup
