@@ -6,7 +6,8 @@ import type { TenantContext } from "@/lib/session";
 
 export const PAGE_SIZE = 50;
 export const STATUSES = ["open", "overdue", "promised", "disputed", "escalated", "paid", "written_off", "cancelled"] as const;
-export const LIST_BUCKETS = ["not_due", "1-30", "31-60", "61-90", "91+", "closed"] as const;
+import { LIST_BUCKETS } from "@/domain/invoice";
+export { LIST_BUCKETS };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

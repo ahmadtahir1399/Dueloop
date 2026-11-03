@@ -1,27 +1,31 @@
 import Link from "next/link";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { can } from "@dueloop/authz";
 import { EmptyState } from "@/components/empty-state";
 import { UntrustedText } from "@/components/untrusted-text";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/field";
-import { SearchInput } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listCustomerPage, parseCustomerFilters } from "@/lib/data/customers";
 import { requirePermission } from "@/lib/session";
+import { CustomerListParams } from "@/domain/list-params";
+import { countText } from "@/features/lists/count-text";
+import { ClearFiltersButton, FilterBar, FilterCheckbox, FilterChips, FilterSearch, ListResults, ListScope } from "@/features/lists/list-scope";
+import { queryOf } from "@/features/lists/query";
 
 /** S08 Customers (existing columns, C-15). */
 export default async function CustomersPage({ searchParams }: PageProps<"/customers">) {
   const ctx = await requirePermission("customers.view");
-  const f = parseCustomerFilters(await searchParams);
+  const sp = await searchParams;
+  const p = CustomerListParams.parse(sp); // the page's view of the URL (§4.10)
+  const f = parseCustomerFilters(sp); // the query's own filters, unchanged (D10)
   const { rows, next } = await listCustomerPage(ctx, f);
   const keep = new URLSearchParams();
   if (f.q) keep.set("q", f.q);
   if (f.optedOut) keep.set("opted_out", "1");
   const filtered = keep.size > 0;
+  const chips = [...(p.q ? [{ key: "q", label: `Search: ${p.q}` }] : []), ...(p.opted_out ? [{ key: "opted_out", label: "Opted out only" }] : [])];
 
   return (
     <div className="grid gap-6">
@@ -38,24 +42,23 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
           ) : undefined
         }
       />
-      <form method="get" className="flex flex-wrap items-end gap-3" role="search" aria-label="Filter customers">
-        <div className="grid gap-1.5">
-          <Label htmlFor="q">Search</Label>
-          <SearchInput id="q" name="q" defaultValue={f.q ?? ""} placeholder="Name or email" className="w-64" maxLength={60} leading={<Search />} />
-        </div>
-        <Checkbox name="opted_out" value="1" defaultChecked={f.optedOut} label="Opted out only" />
-        <Button type="submit" variant="outline">
-          Filter
-        </Button>
-        {filtered ? (
-          <Button asChild variant="ghost">
-            <Link href="/customers">Clear filters</Link>
-          </Button>
-        ) : null}
-      </form>
+      <ListScope query={queryOf(sp)}>
+      <div className="grid gap-4">
+        <FilterBar label="Filter customers">
+          <FilterSearch id="q" label="Search" placeholder="Name or email" className="w-64" />
+          <FilterCheckbox name="opted_out" label="Opted out only" />
+        </FilterBar>
+        <FilterChips chips={chips} />
+        <p role="status" className="sr-only" data-testid="list-count">
+          {countText(rows.length, Boolean(next), "customer")}
+        </p>
+      </div>
+      <ListResults>
       {rows.length === 0 ? (
         filtered ? (
-          <EmptyState title="Nothing matches">Try another search or clear the filters.</EmptyState>
+          <EmptyState title="Nothing matches" action={<ClearFiltersButton keys={["q", "opted_out"]} />}>
+            Try another search or clear the filters.
+          </EmptyState>
         ) : (
           <EmptyState
             title="No customers yet"
@@ -130,6 +133,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
           </Link>
         </Button>
       ) : null}
+      </ListResults>
+      </ListScope>
     </div>
   );
 }

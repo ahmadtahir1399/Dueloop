@@ -77,7 +77,9 @@ function Input({ className, type, size = "md", leading, trailing, trailingWidth 
  */
 function SearchInput({ defaultValue, onChange, onKeyDown, hint, ...props }: Omit<InputProps, "type" | "trailing"> & { hint?: React.ReactNode }) {
   const ref = React.useRef<HTMLInputElement | null>(null)
-  const [hasText, setHasText] = React.useState(typeof defaultValue === "string" && defaultValue !== "")
+  const [typed, setHasText] = React.useState(typeof defaultValue === "string" && defaultValue !== "")
+  // Controlled (value given): the value decides; uncontrolled: what was typed.
+  const hasText = props.value !== undefined ? String(props.value) !== "" : typed
   const { ref: outerRef, ...rest } = props
   const setRef = (el: HTMLInputElement | null) => {
     ref.current = el

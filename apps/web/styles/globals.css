@@ -201,9 +201,13 @@
   .sheet-left[open]::backdrop { animation: fade-in var(--duration-slow) var(--ease-enter); }
   /* M13: skeleton pulse. */
   .skeleton-pulse { animation: skeleton 1200ms var(--ease-standard) infinite; }
+  /* MI15: a thin indeterminate bar above a list while a filter change loads (§4.10 rule 3). */
+  .list-progress { position: absolute; inset-inline: 0; top: calc(var(--space-2) * -1); height: 2px; overflow: hidden; border-radius: var(--radius-full); background: var(--color-primary-soft); }
+  .list-progress::after { content: ""; position: absolute; inset-block: 0; left: 0; width: 40%; border-radius: inherit; background: var(--color-primary); animation: list-progress 1200ms var(--ease-standard) infinite; }
   @media (prefers-reduced-motion: reduce) {
     .field-message-enter, .page-enter, .step-enter, .sheet-left[open] { animation: none; }
     .skeleton-pulse { animation: none; }
+    .list-progress::after { animation: none; width: 100%; }
   }
 }
 
@@ -226,6 +230,10 @@
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+@keyframes list-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
 }
 @keyframes skeleton {
   0%, 100% { opacity: 1; }

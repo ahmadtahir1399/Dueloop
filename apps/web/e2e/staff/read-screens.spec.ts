@@ -14,8 +14,8 @@ test("overview: KPI cards, ageing chart with a table alternative, local-day peri
   await expect(table).toBeVisible();
   await expect(table.getByRole("rowheader", { name: "1-30 days overdue" })).toBeVisible();
   await expect(page.getByTestId("period-range")).toContainText("Europe/London");
-  await choose(page.getByLabel("Period"), "Last 30 days");
-  await page.getByRole("button", { name: "Show" }).click();
+  // Since redesign 8c the period applies on change (no Show button, §4.10).
+  await choose(page.getByRole("combobox", { name: "Period" }), "Last 30 days");
   await expect(page).toHaveURL(/period=last_30/);
 });
 
@@ -23,7 +23,8 @@ test("invoices: filter, keyset pages, detail with timeline in the tenant zone", 
   await page.goto("/invoices?status=overdue");
   const rows = page.getByTestId("invoice-table").locator("tbody tr");
   await expect(rows.first()).toBeVisible();
-  for (const s of await rows.locator("td:nth-child(3)").allInnerTexts()) expect(s.trim()).toBe("overdue");
+  // Since the v1.1 redesign the status cell shows the StatusChip label ("Overdue"), not the raw enum.
+  for (const s of await rows.locator("td:nth-child(3)").allInnerTexts()) expect(s.trim()).toBe("Overdue");
   await page.getByRole("link", { name: "DA-0001" }).click();
   await expect(page.getByTestId("balance")).toContainText("£");
   await expect(page.getByTestId("timeline").locator("li").first()).toBeVisible();

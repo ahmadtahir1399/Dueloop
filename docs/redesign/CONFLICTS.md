@@ -266,7 +266,9 @@ above and below (`FIELD_HIT_SM`); an `<input>` cannot carry one, so `Input size=
 focuses it. Measured in `e2e/staff/fields.spec.ts` (header search, /overview period select). (d) CSS `:read-only` matches every
 non-editable element, buttons included, so the read-only style applies to text fields only, never to Select triggers.
 (e) The bridge maps `--popover` to `--color-surface` as §7.3 says; in dark mode that is the surface colour, not
-surface-raised.
+surface-raised. (f) New token `--duration-fast-exit: 100ms` (tokens.css), not in §3.7: the closing time of selects,
+popovers and the combobox (MI8 and MI22 give 100 ms; §3.7 says exits run at ~70% of the enter duration, and 70% of
+`duration-fast` is about 100 ms). It replaces the literal `duration-100` utilities.
 
 **C-45 · 8b: e2e results on the shared local DB (not reset).** Production build, `--project=e2e`, no global
 seeding (it is not idempotent; C-05 still open). Passed: `fields.spec` 5/5 (D22), `theme.spec` 4/4 (D21), and 21 of
@@ -296,6 +298,60 @@ scope (§10). Proposed fixes, neither of which loosens the CSP: (1) import sonne
 (`sonner/dist/styles.css`, listed in its package `exports`) into `globals.css` so it ships as a `'self'` file, and
 keep the runtime copy harmlessly blocked; (2) pass the request nonce to Motion through `<MotionConfig nonce>`
 (framer-motion 14.9 declares `nonce?: string` on MotionConfig) or avoid `popLayout`. Owner: 8d (motion).
+
+## Phase 8c · auto-applied filters (B4)
+
+**C-50 · 8c: param names stay as they are.** §4.10 proposes `?q=&status=&due=&from=&to=&page=`. The server already
+reads `q`, `status`, `bucket`, `customer`, `opted_out`, `period` and the keyset cursor `after` (inbox: `before`),
+and the CSV exports and existing links use the same names, so they are kept. `domain/list-params.ts` parses them with
+Zod (`.catch` falls back on bad values; status values come from core's `INVOICE_STATUSES`), and the data queries keep
+their own parsers (`lib/data/invoices.ts parseFilters`, `lib/data/customers.ts parseCustomerFilters`), unchanged
+(D10). There is no `page` param: pages are keyset cursors, and any filter change drops the cursor. The age bucket
+list moved from `lib/data/invoices.ts` (server-only) to `domain/invoice.ts` so client code can use it; the data
+layer re-exports the same list.
+
+**C-51 · 8c: no useSearchParams, so no Suspense boundary.** The spec's pattern reads `useSearchParams()` and wraps it in
+Suspense. Here the server page already parsed the URL, so it passes the query string to `<ListScope query>`; the
+controls show a pending change at once with React 19 `useOptimistic` and fall back to the URL when the navigation
+lands. (With `useSearchParams` the Suspense fallback rendered the controls outside their provider in dev.) The URL is
+still the only source of truth.
+
+**C-52 · 8c: what the count announcement can say.** The lists load one page and no total (C-14), and §10 forbids new
+queries. The polite live region (`data-testid="list-count"`) says "18 invoices" when everything fits on one page,
+"Showing the first 50 invoices; more on the next page" otherwise, and "No invoices match" when empty.
+
+**C-53 · 8c: without JavaScript.** Each filter bar is still a GET form with a `<noscript>` "Apply filters" button, so the
+search box and checkboxes work without JavaScript. The custom selects need JavaScript (C-32), as before.
+
+**C-54 · 8c: what Back restores.** Rule 1 says filter changes use `router.replace`, which adds no history entries. So
+Back does not step through filter changes one by one: it leaves the list. When you return to the list with Back (from a
+detail page, say), the list comes back with its latest filters, controls and results. `e2e/staff/lists.spec.ts` tests
+exactly that. If you want Back to undo each filter change, it is one word (`push`), but every keystroke burst would
+then add a history entry.
+
+**C-55 · 8c: no mobile filter sheet.** §4.10 rule 10 asks for a bottom sheet on mobile with a "Show 18 invoices" button.
+There is no Sheet component yet (the landing menu uses a `<dialog>`), and the bars are short (one search box, up to two
+selects), so on mobile they wrap onto two rows and still apply on each change. Not built; listed for a later phase.
+
+**C-56 · 8c: spec filters the server does not support (Q27).** Exposed only what the list queries already filter on:
+S06 invoices: search, status (select and tabs), age bucket, customer (from the customer page link, shown as a chip);
+S08 customers: search, opted-out only; S12 tasks: open / resolved; S13 proofs: to check / confirmed / rejected;
+S05 overview: period. Not exposed because no query supports them: S06 "Due" presets and a custom date range
+(`due`, `from`, `to`; the list has age buckets instead); S10 inbox channel and unread-only; S11 approvals
+"Expires soonest" sort and any filter; S14 unknown sends filters; S20 holidays filters. These pages have no filters
+and no Apply buttons to remove.
+
+**C-57 · 8c: MI15 / MI16 scope.** MI15 is built as the thin indeterminate bar (`.list-progress`) plus dimming the old
+rows while the server renders; the 20 ms row stagger on arrival is left to 8d. MI16 chips scale and fade in and out
+with Motion `layout`. Both carry `data-motion`.
+
+**C-58 · 8c: e2e results and two older expectations.** Production build, local DB not reset (C-05), auth states
+refreshed without fixture seeding. Passed: `lists.spec` 6/6 (D25), `read-screens.spec` 4/4, `fields.spec` 6/6,
+`theme.spec` 4/4, `parity.spec` 4/5. (a) `read-screens.spec` expected the raw status "overdue" in the invoice table;
+since v1.1 the cell shows the StatusChip label "Overdue", so the expectation was updated, and its period step no longer
+clicks "Show" (C-56). (b) `parity.spec` "reconcile unknown as sent" fails on this DB: it compares two invoices' event
+logs after the UI and the CLI reconcile, which depends on fixture state that earlier runs changed. 8c does not touch
+the unknown-sends screen or its form. Needs a reset DB to judge (C-05).
 
 ## Open questions answered by the code
 

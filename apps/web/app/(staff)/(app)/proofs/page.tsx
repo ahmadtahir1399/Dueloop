@@ -7,7 +7,10 @@ import { Chip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requirePermission } from "@/lib/session";
 import { formatInstant } from "@/lib/time";
-import { cn } from "cn";
+import { ProofListParams } from "@/domain/list-params";
+import { countText } from "@/features/lists/count-text";
+import { FilterTabs, ListResults, ListScope } from "@/features/lists/list-scope";
+import { queryOf } from "@/features/lists/query";
 
 const LABEL = { pending: "To check", confirmed: "Confirmed", rejected: "Rejected" } as const;
 
@@ -15,7 +18,7 @@ const LABEL = { pending: "To check", confirmed: "Confirmed", rejected: "Rejected
 export default async function ProofsPage({ searchParams }: PageProps<"/proofs">) {
   const ctx = await requirePermission("proofs.view");
   const sp = await searchParams;
-  const status = sp.status === "confirmed" || sp.status === "rejected" ? sp.status : "pending";
+  const { status } = ProofListParams.parse(sp); // URL is the source of truth (§4.10); bad values fall back to "pending"
   const { data, error } = await ctx.supabase
     .from("payment_proofs")
     .select("id, status, mime, size_bytes, original_name, created_at, duplicate_of, invoice_id, invoices(number), customers(display_name)")
@@ -29,18 +32,12 @@ export default async function ProofsPage({ searchParams }: PageProps<"/proofs">)
   return (
     <div className="grid gap-6">
       <PageHeader title="Payment proofs" description="A proof never marks anything paid. Only a human who checked the bank statement confirms money." />
-      <nav aria-label="Proof status" className="flex gap-1 border-b border-line">
-        {(["pending", "confirmed", "rejected"] as const).map((s) => (
-          <Link
-            key={s}
-            href={s === "pending" ? "/proofs" : `/proofs?status=${s}`}
-            aria-current={s === status ? "page" : undefined}
-            className={cn("inline-flex min-h-11 items-center border-b-2 px-3 t-body-sm font-medium", s === status ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink")}
-          >
-            {LABEL[s]}
-          </Link>
-        ))}
-      </nav>
+      <ListScope query={queryOf(sp)}>
+      <FilterTabs name="status" label="Proof status" tabs={(["pending", "confirmed", "rejected"] as const).map((st) => ({ label: LABEL[st], value: st === "pending" ? undefined : st }))} />
+      <p role="status" className="sr-only" data-testid="list-count">
+        {countText(rows.length, false, status === "pending" ? "proof" : `${status} proof`)}
+      </p>
+      <ListResults>
       {rows.length === 0 ? (
         <EmptyState title={status === "pending" ? "No proofs to check" : `No ${status} proofs`} icon={FileCheck}>
           {status === "pending" ? "Customers can upload proof from their pay page." : null}
@@ -81,6 +78,8 @@ export default async function ProofsPage({ searchParams }: PageProps<"/proofs">)
           </TableBody>
         </Table>
       )}
+      </ListResults>
+      </ListScope>
     </div>
   );
 }

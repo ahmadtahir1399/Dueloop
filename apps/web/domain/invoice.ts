@@ -16,4 +16,7 @@ export const LiveChannel = Channel.extract(["email", "whatsapp"]);
 export const Role = z.enum(ROLES);
 export type Role = z.infer<typeof Role>;
 
+/** Age buckets the invoice list filters on (lib/data/invoices reads the same list; issue R). */
+export const LIST_BUCKETS = ["not_due", "1-30", "31-60", "61-90", "91+", "closed"] as const;
+
 export const IsoDate = z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Use a valid date." });

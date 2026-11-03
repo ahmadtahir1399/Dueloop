@@ -6,7 +6,9 @@ import { AgeingChart } from "@/components/ageing-chart";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { KpiTile } from "@/components/ui/kpi-tile";
-import { ChoiceSelect } from "@/components/ui/choice-select";
+import { OverviewParams } from "@/domain/list-params";
+import { FilterBar, FilterSelect, ListResults, ListScope } from "@/features/lists/list-scope";
+import { queryOf } from "@/features/lists/query";
 import { PageHeader, SectionTitle } from "@/components/ui/page-header";
 import { Chip, type Tone } from "@/components/ui/status-chip";
 import { loadOverview } from "@/lib/data/overview";
@@ -14,7 +16,7 @@ import { formatMinor } from "@/lib/money";
 import { navFor, waitingTotal, type CounterKey } from "@/lib/nav";
 import { requirePermission } from "@/lib/session";
 import { loadCounters } from "@/lib/shell";
-import { formatDate, isPeriodKey, PERIODS, periodRange } from "@/lib/time";
+import { formatDate, PERIODS, periodRange } from "@/lib/time";
 
 const QUEUES: { key: CounterKey; href: string; chip: string; tone: Tone; what: (n: number) => string; action: string }[] = [
   { key: "approvals", href: "/approvals", chip: "Approval", tone: "info", what: (n) => `${n} reminder${n === 1 ? "" : "s"} waiting for approval`, action: "Review" },
@@ -31,7 +33,7 @@ function greeting(hour: number): string {
 export default async function OverviewPage({ searchParams }: PageProps<"/overview">) {
   const ctx = await requirePermission("overview.view");
   const sp = await searchParams;
-  const period = isPeriodKey(sp.period) ? sp.period : "this_month";
+  const { period } = OverviewParams.parse(sp); // URL is the source of truth (§4.10); bad values fall back
   const now = new Date();
   const { from, to } = periodRange(period, ctx.tenant.timezone, now);
   const [o, counters] = await Promise.all([loadOverview(ctx, from, to), loadCounters(ctx)]);
@@ -90,6 +92,7 @@ export default async function OverviewPage({ searchParams }: PageProps<"/overvie
         }
       />
 
+      <ListScope query={queryOf(sp)}>
       <section aria-labelledby="kpi-h" className="grid gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 id="kpi-h" className="sr-only">
@@ -98,16 +101,11 @@ export default async function OverviewPage({ searchParams }: PageProps<"/overvie
           <p className="t-caption text-ink-muted" data-testid="period-range">
             {formatDate(from)} – {formatDate(to)}, in {ctx.tenant.timezone} (the business&apos;s local days)
           </p>
-          <form method="get" className="flex items-center gap-2">
-            <label htmlFor="period" className="t-body-sm text-ink-muted">
-              Period
-            </label>
-            <ChoiceSelect id="period" name="period" defaultValue={period} size="sm" className="w-40" options={PERIODS.map((p) => ({ value: p.key, label: p.label }))} />
-            <Button type="submit" size="sm" variant="outline">
-              Show
-            </Button>
-          </form>
+          <FilterBar label="Choose the period" className="items-center">
+            <FilterSelect id="period" name="period" label="Period" inline size="sm" className="w-40" defaultValue="this_month" options={PERIODS.map((p) => ({ value: p.key, label: p.label }))} />
+          </FilterBar>
         </div>
+        <ListResults className="gap-3">
         <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 wide:grid-cols-4">
           <KpiTile
             testId="kpi-overdue"
@@ -137,7 +135,9 @@ export default async function OverviewPage({ searchParams }: PageProps<"/overvie
             sub={o.daysToPay ? `${o.daysToPay.invoices} invoices paid; ${o.daysToPay.avgDaysAfterDue} days after due on average` : "No invoices paid in this period"}
           />
         </div>
+        </ListResults>
       </section>
+      </ListScope>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section aria-labelledby="attention-h" className="card-edge grid content-start gap-2 rounded-xl border border-line bg-panel p-5">

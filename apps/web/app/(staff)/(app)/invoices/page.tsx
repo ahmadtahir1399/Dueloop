@@ -1,12 +1,9 @@
 import Link from "next/link";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { can } from "@dueloop/authz";
 import { EmptyState } from "@/components/empty-state";
 import { UntrustedText } from "@/components/untrusted-text";
 import { Button } from "@/components/ui/button";
-import { ChoiceSelect } from "@/components/ui/choice-select";
-import { SearchInput } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusChip, STATUS_VISUAL } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,7 +11,10 @@ import { LIST_BUCKETS, listInvoicePage, parseFilters, STATUSES } from "@/lib/dat
 import { formatMinor } from "@/lib/money";
 import { requirePermission } from "@/lib/session";
 import { formatDate } from "@/lib/time";
-import { cn } from "cn";
+import { ALL, InvoiceListParams } from "@/domain/list-params";
+import { ClearFiltersButton, FilterBar, FilterChips, FilterSearch, FilterSelect, FilterTabs, ListResults, ListScope } from "@/features/lists/list-scope";
+import { queryOf } from "@/features/lists/query";
+import { countText } from "@/features/lists/count-text";
 
 const BUCKET_TEXT: Record<string, string> = {
   not_due: "Not yet due",
@@ -38,21 +38,23 @@ const TABS: { label: string; status?: (typeof STATUSES)[number] }[] = [
 export default async function InvoicesPage({ searchParams }: PageProps<"/invoices">) {
   const ctx = await requirePermission("invoices.view");
   const sp = await searchParams;
+  // The URL is the source of truth (§4.10): the page's view of it, parsed with Zod (bad values fall back) ...
+  const p = InvoiceListParams.parse(sp);
+  // ... and the query's own validated filters, unchanged (no contract change, D10).
   const f = parseFilters(sp);
   const { rows, next } = await listInvoicePage(ctx, f);
+  const chips = [
+    ...(p.q ? [{ key: "q", label: `Search: ${p.q}` }] : []),
+    ...(p.status !== ALL ? [{ key: "status", label: STATUS_VISUAL[p.status].label }] : []),
+    ...(p.bucket !== ALL ? [{ key: "bucket", label: `Age: ${BUCKET_TEXT[p.bucket] ?? p.bucket}` }] : []),
+    ...(p.customer ? [{ key: "customer", label: `Customer: ${f.customer && rows[0] ? rows[0].customer_name : "one customer"}` }] : []),
+  ];
   const keep = new URLSearchParams();
   if (f.status) keep.set("status", f.status);
   if (f.bucket) keep.set("bucket", f.bucket);
   if (f.customer) keep.set("customer", f.customer);
   if (f.q) keep.set("q", f.q);
   const filtered = keep.size > 0;
-  const tabHref = (status?: string) => {
-    const p = new URLSearchParams(keep);
-    if (status) p.set("status", status);
-    else p.delete("status");
-    const s = p.toString();
-    return s ? `/invoices?${s}` : "/invoices";
-  };
 
   return (
     <div className="grid gap-6">
@@ -77,77 +79,25 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
         }
       />
 
+      <ListScope query={queryOf(sp)}>
       <div className="grid gap-4">
-        <form method="get" className="flex flex-wrap items-end gap-3" role="search" aria-label="Filter invoices">
-          <div className="grid gap-1.5">
-            <Label htmlFor="q">Search</Label>
-            <SearchInput id="q" name="q" defaultValue={f.q ?? ""} placeholder="Number or customer" className="w-64" maxLength={60} leading={<Search />} />
-          </div>
-          <div className="grid gap-1.5">
-            <label htmlFor="status" className="t-body-sm font-semibold text-ink">
-              Status
-            </label>
-            <ChoiceSelect
-              id="status"
-              name="status"
-              defaultValue={f.status ?? ""}
-              className="w-44"
-              options={[{ value: "", label: "Any" }, ...STATUSES.map((s) => ({ value: s, label: STATUS_VISUAL[s].label }))]}
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <label htmlFor="bucket" className="t-body-sm font-semibold text-ink">
-              Age
-            </label>
-            <ChoiceSelect
-              id="bucket"
-              name="bucket"
-              defaultValue={f.bucket ?? ""}
-              className="w-40"
-              options={[{ value: "", label: "Any" }, ...LIST_BUCKETS.map((b) => ({ value: b, label: BUCKET_TEXT[b] ?? b }))]}
-            />
-          </div>
-          {f.customer ? <input type="hidden" name="customer" value={f.customer} /> : null}
-          <Button type="submit" variant="outline">
-            Filter
-          </Button>
-          {filtered ? (
-            <Button asChild variant="ghost">
-              <Link href="/invoices">Clear filters</Link>
-            </Button>
-          ) : null}
-        </form>
-
-        <nav aria-label="Invoice status" className="-mb-px flex gap-1 overflow-x-auto border-b border-line">
-          {TABS.map((t) => {
-            const active = (f.status ?? undefined) === t.status;
-            return (
-              <Link
-                key={t.label}
-                href={tabHref(t.status)}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "inline-flex min-h-11 items-center border-b-2 px-3 t-body-sm font-medium whitespace-nowrap transition-colors-fast",
-                  active ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink",
-                )}
-              >
-                {t.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <FilterBar label="Filter invoices">
+          <FilterSearch id="q" label="Search" placeholder="Number or customer" className="w-64" />
+          <FilterSelect id="status" name="status" label="Status" className="w-44" options={STATUSES.map((st) => ({ value: st, label: STATUS_VISUAL[st].label }))} />
+          <FilterSelect id="bucket" name="bucket" label="Age" className="w-40" options={LIST_BUCKETS.map((bk) => ({ value: bk, label: BUCKET_TEXT[bk] ?? bk }))} />
+          {p.customer ? <input type="hidden" name="customer" value={p.customer} /> : null}
+        </FilterBar>
+        <FilterTabs name="status" label="Invoice status" tabs={TABS.map((t) => ({ label: t.label, value: t.status }))} />
+        <FilterChips chips={chips} />
+        <p role="status" className="sr-only" data-testid="list-count">
+          {countText(rows.length, Boolean(next), "invoice")}
+        </p>
       </div>
 
+      <ListResults>
       {rows.length === 0 ? (
         filtered ? (
-          <EmptyState
-            title="Nothing matches"
-            action={
-              <Button asChild variant="outline">
-                <Link href="/invoices">Clear filters</Link>
-              </Button>
-            }
-          >
+          <EmptyState title="Nothing matches" action={<ClearFiltersButton keys={["q", "status", "bucket", "customer"]} />}>
             Try another status or clear the filters.
           </EmptyState>
         ) : (
@@ -246,6 +196,8 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           ) : null}
         </div>
       </nav>
+      </ListResults>
+      </ListScope>
     </div>
   );
 }

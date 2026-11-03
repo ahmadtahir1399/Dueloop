@@ -47,6 +47,15 @@ FormData field names (request bodies unchanged). See C-34 for the forms that wer
   currencies (C-40, C-41). Raw checkboxes and textareas in app code replaced; `NativeSelect` removed.
 - D22: `test/fields.test.ts` (static scan, C-43) and `e2e/staff/fields.spec.ts` (keyboard + axe).
 
+## Auto-applied filters (Phase 8c, spec v1.2 §4.10)
+
+- Invoices, customers, tasks, proofs and the overview period apply filters on change; search after 300 ms (Enter at
+  once, Escape clears). No Apply, Filter or Show buttons. The URL is the source of truth (`domain/list-params.ts`).
+- `features/lists/`: `ListScope` (router.replace with scroll:false in a transition, optimistic control values),
+  `ListResults` (old rows stay, dimmed, MI15 bar, aria-busy), `FilterSearch`, `FilterSelect`, `FilterCheckbox`,
+  `FilterTabs`, `FilterChips` (MI16) and a polite count announcement.
+- D25: `e2e/staff/lists.spec.ts`. Decisions and unsupported filters: CONFLICTS C-50 to C-57.
+
 ## The Loop (3D)
 
 three 0.187 + @react-three/fiber 9.8.2, procedural geometry only, one canvas: hero ring of 12 instanced cards

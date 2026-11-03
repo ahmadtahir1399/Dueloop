@@ -8,13 +8,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requirePermission } from "@/lib/session";
 import { taskVisual } from "@/lib/task-labels";
 import { formatInstant } from "@/lib/time";
-import { cn } from "cn";
+import { TaskListParams } from "@/domain/list-params";
+import { countText } from "@/features/lists/count-text";
+import { FilterTabs, ListResults, ListScope } from "@/features/lists/list-scope";
+import { queryOf } from "@/features/lists/query";
 
 /** S12 Tasks: urgent (refunds, chargebacks) first, then oldest first. */
 export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   const ctx = await requirePermission("tasks.view");
   const sp = await searchParams;
-  const status = sp.status === "resolved" ? "resolved" : "open";
+  const { status } = TaskListParams.parse(sp); // URL is the source of truth (§4.10); bad values fall back to "open"
   const { data, error } = await ctx.supabase
     .from("tasks")
     .select("id, type, status, urgent, created_at, blocks_reminders_until, invoice_id, invoices(number), customers(display_name)")
@@ -26,25 +29,15 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   if (error) throw new Error("could not load tasks");
   const rows = data ?? [];
   const tz = ctx.tenant.timezone;
-  const tab = (key: "open" | "resolved", label: string, href: string) => (
-    <Link
-      href={href}
-      aria-current={status === key ? "page" : undefined}
-      className={cn(
-        "inline-flex min-h-11 items-center border-b-2 px-3 t-body-sm font-medium",
-        status === key ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink",
-      )}
-    >
-      {label}
-    </Link>
-  );
   return (
     <div className="grid gap-6">
       <PageHeader title="Tasks" description="Replies, claims and disputes that need a person. Urgent ones come first." />
-      <nav aria-label="Task status" className="flex gap-1 border-b border-line">
-        {tab("open", "Open", "/tasks")}
-        {tab("resolved", "Resolved", "/tasks?status=resolved")}
-      </nav>
+      <ListScope query={queryOf(sp)}>
+      <FilterTabs name="status" label="Task status" tabs={[{ label: "Open" }, { label: "Resolved", value: "resolved" }]} />
+      <p role="status" className="sr-only" data-testid="list-count">
+        {countText(rows.length, false, `${status} task`)}
+      </p>
+      <ListResults>
       {rows.length === 0 ? (
         <EmptyState title={status === "open" ? "No open tasks" : "No resolved tasks"} icon={ClipboardList}>
           {status === "open" ? "Unclear replies and payment claims will appear here." : null}
@@ -93,6 +86,8 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
           </TableBody>
         </Table>
       )}
+      </ListResults>
+      </ListScope>
     </div>
   );
 }
