@@ -356,12 +356,14 @@ clicks "Show" (C-56). (b) `parity.spec` "reconcile unknown as sent" fails on thi
 logs after the UI and the CLI reconcile, which depends on fixture state that earlier runs changed. 8c does not touch
 the unknown-sends screen or its form. Needs a reset DB to judge (C-05).
 
-**C-59 · 8c review fixes (4 November 2026).** Two blocking search bugs fixed, with e2e steps written first
-(`lists.spec.ts`): (1) the 300 ms search timer applied its patch to the query of the render it was created in, so a
+**C-59 · 8c review fixes (4 November 2026).** Two blocking search bugs fixed, with new e2e steps in `lists.spec.ts`
+(the countText unit test was run and seen failing before the fix; the e2e steps were not run against the old code, so
+whether they would have caught it is NOT VERIFIED; the stale-search step is timing-dependent): (1) the 300 ms search timer applied its patch to the query of the render it was created in, so a
 status or chip change made inside that window was silently dropped; `useListFilters` now builds every change on the
 latest query (a ref), so both survive. (2) Escape before the debounce fired left the typed text in the box; it now
-empties the box too. Also from the review: chips and the hidden customer field come from the query's own parser
-(`parseFilters` / `parseCustomerFilters`), so a chip shows exactly when the list is filtered (a 300-character or
+empties the box too. Also from the review: the search and customer chips and the hidden customer field come from the
+query's own parser (`parseFilters` / `parseCustomerFilters`; status, age and opted-out chips still use the Zod view,
+which accepts the same values today), so a search chip shows exactly when the list is searched (a 300-character or
 wildcard-only `q` no longer disagrees); `FilterTabs` takes the server's parsed value, so a bad `?status=` still marks
 the tab the list fell back to. Not changed, noted: the overview "messages sent / cost" figures sit outside
 `ListResults` (not dimmed while loading); `domain/list-params.ts` imports `lib/time` for the period list; the old

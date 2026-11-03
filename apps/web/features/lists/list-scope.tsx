@@ -108,6 +108,7 @@ export function FilterSearch({ id, name = "q", label, placeholder, maxLength = 6
             e.preventDefault();
             apply(e.currentTarget.value);
           } else if (e.key === "Escape") {
+            e.preventDefault(); // no native type="search" clear on top (it would fire a second, delayed change)
             setValue("");
             apply("");
           }
@@ -169,9 +170,10 @@ export function FilterCheckbox({ name, value = "1", label }: { name: string; val
  * value (including the optimistic one while a change loads) wins.
  */
 export function FilterTabs({ name, label, tabs, value }: { name: string; label: string; tabs: { label: string; value?: string }[]; value?: string }) {
-  const { params, pathname, setFilter } = useScope();
+  const { params, pathname, setFilter, isPending } = useScope();
   const raw = params.get(name) ?? undefined;
-  const current = tabs.some((t) => t.value === raw) ? raw : value;
+  // While a change loads, follow the optimistic URL (a select may have chosen a value no tab shows, so none is marked).
+  const current = isPending || tabs.some((t) => t.value === raw) ? raw : value;
   return (
     <nav aria-label={label} className="-mb-px flex gap-1 overflow-x-auto border-b border-line">
       {tabs.map((t) => {

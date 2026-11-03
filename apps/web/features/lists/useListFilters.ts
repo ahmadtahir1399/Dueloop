@@ -24,7 +24,7 @@ export function useListFilters(query: string) {
   const latest = useRef(shown);
   useLayoutEffect(() => {
     latest.current = shown;
-  }, [shown]);
+  }, [shown, isPending]); // also when a load settles, so a navigation that ends on the same query re-syncs the ref
   const setFilters = useCallback(
     (patch: FilterPatch) => {
       const base = latest.current;
