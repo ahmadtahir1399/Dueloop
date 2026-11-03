@@ -8,7 +8,7 @@ import { signInSchema, signUpSchema } from "@/forms/schemas";
 import { useActionForm } from "@/lib/use-action-form";
 import { signIn, signUp, type AuthState } from "./actions";
 
-function PasswordInput({ show, ...props }: React.ComponentProps<"input"> & { show: boolean }) {
+function PasswordInput({ show, ...props }: React.ComponentProps<typeof Input> & { show: boolean }) {
   return <Input type={show ? "text" : "password"} className="pr-20" {...props} />;
 }
 

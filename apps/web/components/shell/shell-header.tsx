@@ -1,6 +1,7 @@
 import { LogOut, Search } from "lucide-react";
 import { TenantSwitcher } from "@/components/tenant-switcher";
 import { ThemeMenu, ThemeToggle } from "@/components/theme-toggle";
+import { SearchInput } from "@/components/ui/input";
 import { Wordmark } from "@/components/ui/wordmark";
 import type { TenantSummary } from "@/lib/session";
 import { signOut } from "@/app/(staff)/sign-in/actions";
@@ -52,19 +53,17 @@ export function ShellHeader({
           <label htmlFor="shell-search" className="sr-only">
             Search invoices or customers
           </label>
-          <div className="relative">
-            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted" />
-            <input
+          <div className="w-56 lg:w-72">
+            <SearchInput
               id="shell-search"
               name="q"
-              type="search"
+              size="sm"
               maxLength={60}
               placeholder="Search invoices or customers"
-              className="h-10 w-56 rounded-sm border border-line-control bg-panel pr-16 pl-9 t-body-sm text-ink outline-none transition-colors-fast placeholder:text-ink-muted hover:border-line-strong focus-visible:border-brand lg:w-72"
+              className="t-body-sm"
+              leading={<Search />}
+              hint={<kbd className="rounded-xs border border-line px-1.5 t-caption text-ink-muted">Ctrl K</kbd>}
             />
-            <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-xs border border-line px-1.5 t-caption text-ink-muted">
-              Ctrl K
-            </kbd>
           </div>
           <SearchShortcut inputId="shell-search" />
         </form>

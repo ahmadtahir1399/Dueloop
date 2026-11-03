@@ -1,6 +1,6 @@
-import { isIanaZone } from "@dueloop/core";
 import { redirect } from "next/navigation";
 import { Wordmark } from "@/components/ui/wordmark";
+import { currencyOptions, zoneOptions } from "@/lib/field-options";
 import { requireUser } from "@/lib/session";
 import { OnboardingForm } from "./onboarding-form";
 
@@ -10,7 +10,7 @@ export default async function OnboardingPage() {
   const { data } = await supabase.from("memberships").select("tenant_id").eq("user_id", userId).limit(1);
   if (data?.length) redirect("/overview");
   // The same rule the database trigger and core use, applied to the runtime's zone list.
-  const zones = Intl.supportedValuesOf("timeZone").filter(isIanaZone);
+  const zones = zoneOptions().map((o) => o.value);
   return (
     <div className="grid min-h-svh content-start gap-10 gutter py-8">
       <Wordmark />
@@ -20,7 +20,7 @@ export default async function OnboardingPage() {
           <p className="t-body-md text-ink-muted">You will be its owner. You can invite your team later.</p>
         </div>
         <div className="card-edge rounded-2xl border border-line bg-panel p-6">
-          <OnboardingForm zones={zones} defaultZone={zones.includes("Asia/Karachi") ? "Asia/Karachi" : (zones[0] ?? "UTC")} />
+          <OnboardingForm zones={zones} currencies={currencyOptions()} defaultZone={zones.includes("Asia/Karachi") ? "Asia/Karachi" : (zones[0] ?? "UTC")} />
         </div>
       </main>
     </div>

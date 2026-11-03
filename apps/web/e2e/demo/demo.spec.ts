@@ -82,7 +82,7 @@ test("the 7-step demo, end to end", async ({ page, context }) => {
   // London's window was open but Karachi's was not).
   await page.getByRole("button", { name: "Continue" }).click(); // redesign: onboarding is shown as two steps
   await choose(page.getByLabel("Time zone"), "Europe/London");
-  await page.getByLabel("Main currency").fill("GBP");
+  await choose(page.getByLabel("Main currency"), /^GBP/);
   await page.getByRole("button", { name: /Create/ }).click();
   await page.waitForURL((u) => u.pathname === "/overview" || u.pathname === "/import");
   const created = (await db().query<{ id: string; timezone: string }>("select id, timezone from public.tenants where name = 'Fresh Demo Co' order by created_at desc limit 1")).rows[0];

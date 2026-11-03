@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -364,10 +365,12 @@ export function ImportWizard({ defaultCurrency }: { defaultCurrency: string }) {
             ) : null}
             <div className="flex flex-wrap items-center gap-3">
               {preview.invalid > 0 ? (
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={skipInvalid} onChange={(e) => setSkipInvalid(e.target.checked)} />
-                  Skip the {preview.invalid} rows with errors and import the rest
-                </label>
+                <Checkbox
+                  checked={skipInvalid}
+                  onChange={(e) => setSkipInvalid(e.target.checked)}
+                  label={<>Skip the {preview.invalid} rows with errors and import the rest</>}
+                  className="t-body-sm"
+                />
               ) : null}
               <Button onClick={onCommit} disabled={pending || (preview.invalid > 0 && !skipInvalid) || committed?.ok === true}>
                 {committed?.ok ? "Imported" : "Import"}

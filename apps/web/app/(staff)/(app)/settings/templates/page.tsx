@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { missingStandardTemplates } from "@/lib/default-templates";
 import { requirePermission } from "@/lib/session";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { addStandardTemplatesAction, newWhatsAppTemplateAction } from "./actions";
 import { TemplateForm } from "./template-form";
 import { ChoiceSelect } from "@/components/ui/choice-select";
@@ -88,7 +89,7 @@ export default async function TemplatesPage() {
               </label>
               <label className="grid gap-1">
                 Text (variables like {"{{customer_name}}"})
-                <textarea name="body" required maxLength={5000} rows={4} dir="auto" className="rounded-sm border border-line-strong bg-panel p-3 text-ink" />
+                <Textarea name="body" required maxLength={5000} rows={4} />
               </label>
               <Button type="submit" className="w-fit">
                 Add WhatsApp template

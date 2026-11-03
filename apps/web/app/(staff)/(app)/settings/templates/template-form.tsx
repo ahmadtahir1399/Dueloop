@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { templateAction, type TemplateState } from "./actions";
 
 export function TemplateForm(p: { id: string; channel: string; subject: string | null; body: string; status: string | null; canEdit: boolean; canApprove: boolean }) {
@@ -26,7 +27,7 @@ export function TemplateForm(p: { id: string; channel: string; subject: string |
       ) : null}
       <label className="grid gap-1 text-sm">
         Body (variables like {"{{invoice_number}}"}; unknown variables are refused)
-        <textarea name="body" defaultValue={v.body} rows={8} maxLength={5000} dir="auto" className="rounded-sm border border-line-strong bg-panel p-3 text-ink text-sm" disabled={!p.canEdit} />
+        <Textarea name="body" defaultValue={v.body} rows={8} maxLength={5000} className="min-h-48 t-body-sm" disabled={!p.canEdit} />
       </label>
       {p.channel === "whatsapp" ? (
         <p className="t-caption text-ink-muted">WhatsApp sends only the text Meta approved; no footer is added. Include an opt-out line such as "Reply STOP to stop these reminders." in it.</p>

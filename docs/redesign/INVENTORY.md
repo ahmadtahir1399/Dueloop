@@ -13,7 +13,7 @@ Produced 2 November 2026 on branch `redesign/phase-0` (same commit as `main`, f0
 | UI runtime | react / react-dom | **19.3.0** | => `@react-three/fiber` major **9** (A2 holds) |
 | Language | typescript | 6.0.3 (root) | strict, `noUncheckedIndexedAccess` |
 | Styling | tailwindcss / @tailwindcss/turbopack | 4.3.3 | **Tailwind v4** with `@theme inline` in `app/(staff)/globals.css`; `tw-animate-css` 1.4.0 |
-| Component kit | shadcn (style `radix-nova`) 4.22.1, radix-ui 1.8.1, class-variance-authority 0.7.1 | | 13 shadcn primitives in `components/ui/` |
+| Component kit | shadcn (style `radix-nova`) 4.22.1, radix-ui 1.8.1, class-variance-authority 0.7.1 | | 13 shadcn primitives in `components/ui/`. **Primitive library: Radix** (from the existing `components.json`, §7.3 step 2; Phase 8b added no dependency). 8b added `popover` (8a), `textarea` and a Radix-based `combobox` (CONFLICTS C-40) |
 | Icons | lucide-react | 1.61.0 | already present: keep (spec §7) |
 | Toasts | sonner | 2.0.8 | used via `components/ui/sonner.tsx` |
 | Theme | next-themes | 0.4.6 | only read by `components/ui/sonner.tsx`; no ThemeProvider mounted, no theme switch |

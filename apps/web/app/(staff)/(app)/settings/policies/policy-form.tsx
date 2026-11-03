@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { policyAction, type PolicyState } from "./actions";
 import { ChoiceSelect } from "@/components/ui/choice-select";
@@ -62,7 +63,7 @@ export function PolicyForm(p: { id: string; name: string; isDefault: boolean; st
               <td>
                 <Input name="step_template" aria-label={`Template for ${s.id || "a new step"}`} defaultValue={s.templateKey} className="w-32" disabled={!p.canEdit} />
               </td>
-              <td>{s.id ? <input type="checkbox" name="step_remove" value={s.id} aria-label={`Remove ${s.id}`} disabled={!p.canEdit} /> : null}</td>
+              <td>{s.id ? <Checkbox name="step_remove" value={s.id} disabled={!p.canEdit} label={<span className="sr-only">Remove {s.id}</span>} className="py-0" /> : null}</td>
             </tr>
           ))}
         </tbody>
@@ -89,9 +90,7 @@ export function PolicyForm(p: { id: string; name: string; isDefault: boolean; st
               {l.invoiceNumber}: {l.outcome}
             </p>
           ))}
-          <label className="mt-2 flex items-center gap-2">
-            <input type="checkbox" name="confirm" value="1" /> I checked the impact
-          </label>
+          <Checkbox name="confirm" value="1" label="I checked the impact" className="mt-2" />
         </div>
       ) : null}
       {state.error ? <p role="alert" className="text-sm text-destructive">{state.error}</p> : null}

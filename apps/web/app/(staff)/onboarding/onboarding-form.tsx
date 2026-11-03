@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
-import { RhfSelect } from "@/components/ui/choice-select";
+import { RhfSelect, type Choice } from "@/components/ui/choice-select";
+import { RhfCombobox } from "@/components/ui/combobox";
 import { Field, FormError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Stepper } from "@/components/ui/stepper";
@@ -17,7 +18,7 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({ value: String(h), l
  * S04 Onboarding (F04): one form, shown as two steps (Business · Time & money). Only the fields the existing
  * create_tenant call accepts (no country; CONFLICTS C-21). Without JavaScript both steps show and post together.
  */
-export function OnboardingForm({ zones, defaultZone }: { zones: string[]; defaultZone: string }) {
+export function OnboardingForm({ zones, currencies, defaultZone }: { zones: string[]; currencies: Choice[]; defaultZone: string }) {
   const [step, setStep] = useState(0);
   const { form, state, pending, formProps, errorId } = useActionForm<OnboardingState, typeof onboardingSchema>({
     schema: onboardingSchema,
@@ -45,11 +46,11 @@ export function OnboardingForm({ zones, defaultZone }: { zones: string[]; defaul
       <div className={step === 1 ? "step-enter grid gap-4" : "hidden"}>
         <Field id="timezone" label="Time zone" error={e.timezone?.message as string | undefined}>
           {(a) => (
-            <RhfSelect control={form.control} name="timezone" field={a} options={zones.map((z) => ({ value: z, label: z }))} />
+            <RhfCombobox control={form.control} name="timezone" field={a} options={zones.map((z) => ({ value: z, label: z }))} searchLabel="Search time zones" />
           )}
         </Field>
-        <Field id="currency" label="Main currency" help="A 3-letter code, like PKR or USD." error={e.currency?.message as string | undefined}>
-          {(a) => <Input {...a} maxLength={3} className="w-32 uppercase" {...form.register("currency")} />}
+        <Field id="currency" label="Main currency" help="Search by code or name, like PKR or rupee." error={e.currency?.message as string | undefined}>
+          {(a) => <RhfCombobox control={form.control} name="currency" field={a} options={currencies} placeholder="Choose a currency" searchLabel="Search currencies" />}
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field id="quietStart" label="No messages from" error={e.quietStart?.message as string | undefined}>

@@ -5,7 +5,8 @@ import { EmptyState } from "@/components/empty-state";
 import { UntrustedText } from "@/components/untrusted-text";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,13 +40,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
       />
       <form method="get" className="flex flex-wrap items-end gap-3" role="search" aria-label="Filter customers">
         <div className="grid gap-1.5">
-          <label htmlFor="q" className="t-body-sm font-semibold text-ink">
-            Search
-          </label>
-          <div className="relative">
-            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted" />
-            <Input id="q" name="q" defaultValue={f.q ?? ""} placeholder="Name or email" className="w-64 pl-9" maxLength={60} />
-          </div>
+          <Label htmlFor="q">Search</Label>
+          <SearchInput id="q" name="q" defaultValue={f.q ?? ""} placeholder="Name or email" className="w-64" maxLength={60} leading={<Search />} />
         </div>
         <Checkbox name="opted_out" value="1" defaultChecked={f.optedOut} label="Opted out only" />
         <Button type="submit" variant="outline">

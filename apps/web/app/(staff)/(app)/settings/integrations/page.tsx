@@ -2,6 +2,7 @@ import { can } from "@dueloop/authz";
 import { SecretOnceForm } from "@/components/action-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { mailboxStatus } from "@/lib/data/mailbox";
 import { requirePermission } from "@/lib/session";
@@ -128,10 +129,7 @@ export default async function IntegrationsPage() {
                       Login
                       <Input name="smtp_user" autoComplete="off" defaultValue={configOf(channels.data, "email", "smtp_user")} />
                     </label>
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" name="smtp_secure" defaultChecked={configValue(channels.data, "email", "smtp_secure") === true} />
-                      TLS from the start (port 465)
-                    </label>
+                    <Checkbox name="smtp_secure" defaultChecked={configValue(channels.data, "email", "smtp_secure") === true} label="TLS from the start (port 465)" />
                   </fieldset>
                 ) : null}
                 <Button type="submit" className="w-fit">

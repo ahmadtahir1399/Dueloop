@@ -38,6 +38,15 @@ steps), Sign in / Sign up (beat-0 still), 404 / error / loading. Customer pay an
 React Hook Form + Zod (`forms/schemas.ts`, `lib/use-action-form.ts`) on the existing server actions, with the same
 FormData field names (request bodies unchanged). See C-34 for the forms that were not moved.
 
+## Fields (Phase 8b, spec v1.2 §7.3)
+
+- One field system on shadcn/ui (Radix): `Input` (with leading icon and trailing slot, `SearchInput` with clear ×),
+  `Textarea` (auto-grow, counter), `Select`, `Label`, all on one shared shell (`components/ui/field-shell.ts`).
+- shadcn variables bridged to the tokens exactly as §7.3's table (locked by `test/shadcn-bridge.test.ts`).
+- `ChoiceSelect` rebuilt on the Select parts (same hidden-input posting); searchable `Combobox` for time zones and
+  currencies (C-40, C-41). Raw checkboxes and textareas in app code replaced; `NativeSelect` removed.
+- D22: `test/fields.test.ts` (static scan, C-43) and `e2e/staff/fields.spec.ts` (keyboard + axe).
+
 ## The Loop (3D)
 
 three 0.187 + @react-three/fiber 9.8.2, procedural geometry only, one canvas: hero ring of 12 instanced cards

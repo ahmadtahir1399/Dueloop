@@ -62,12 +62,16 @@ test.describe("accountant", () => {
 test.describe("owner", () => {
   test.use({ storageState: authFile("owner") });
 
-  test("settings are validated by core (bad zone refused); holidays add and remove", async ({ page }) => {
+  test("settings offer only IANA zones (redesign 8b combobox); holidays add and remove", async ({ page }) => {
     await page.goto("/settings");
     const f = page.getByRole("form", { name: "Change settings" });
-    await f.getByLabel(/Time zone/).fill("GMT+5");
-    await f.getByRole("button", { name: "Save settings" }).click();
-    await expect(f.getByRole("alert")).toContainText("IANA");
+    // Since 8b the time zone is a searchable list of IANA zones, so a made-up zone cannot be chosen at all. The server-side
+    // refusal is unchanged and covered by core's isIanaZone tests (docs/redesign/CONFLICTS.md C-42).
+    await f.getByLabel("Time zone").click();
+    await page.getByRole("combobox", { name: "Search time zones" }).fill("Mars/Olympus");
+    await expect(page.getByRole("listbox")).toContainText("No matches");
+    await page.keyboard.press("Escape");
+    await expect(f.getByLabel("Time zone")).toBeFocused();
     await page.goto("/settings/holidays");
     await page.getByLabel("Date").fill("2026-12-26");
     await page.getByLabel("Label").fill("Boxing Day <b>x</b>");

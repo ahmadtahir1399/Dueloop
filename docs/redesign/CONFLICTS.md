@@ -232,6 +232,48 @@ asks for. Customer pages (S25–S28) are plain HTML with no control, unchanged.
 0027) because `main` now ships `0027_mailbox`. I applied only that pending migration to the local stack with
 `supabase migration up --local` (no reset, no data removed). C-05's question about resetting the DB is still open.
 
+**C-40 · 8b: Combobox without Base UI.** §7.3 asks for "shadcn's current Combobox recipe". `shadcn view combobox`
+(radix-nova, 3 Nov 2026) builds it on `@base-ui/react`, while every shadcn component here uses Radix (`components.json`
+style radix-nova, `radix-ui` 1.8.1). §7.3 step 2 says never mix the two, and Base UI is not installed. So
+`components/ui/combobox.tsx` follows the recipe's shape (trigger → popover with a search box and a list) on Radix
+Popover with the ARIA 1.2 combobox + listbox pattern. No dependency was added.
+
+**C-41 · 8b: time zone and currency are now chosen from lists.** Onboarding's currency and Settings' time zone were
+free-text fields; they are Comboboxes now (§7.2: searchable time zones and currencies). The options come from the
+server runtime's ICU data (`lib/field-options.ts`): IANA zones filtered by core's `isIanaZone`, ISO 4217 codes from
+`Intl.supportedValuesOf("currency")`. Field names and value shapes posted to the server actions are unchanged
+(`timezone` = IANA name, `currency` = 3-letter code); a currency is now always sent upper-case.
+
+**C-42 · 8b: one e2e step changed with the time zone field.** `e2e/staff/editors.spec.ts` typed "GMT+5" into the
+free-text time zone to see the server refuse it. That value can no longer be chosen in the UI, so the step now checks
+the list offers no made-up zone. The server-side refusal is unchanged (core `isIanaZone`, the DB trigger and their
+tests). `e2e/demo/demo.spec.ts` picks the currency from the list instead of typing it.
+
+**C-43 · 8b: what D22's scan covers.** `apps/web/test/fields.test.ts` scans `app/`, `components/` and `features/`:
+no native `<select>` anywhere; no raw `<textarea>` or `<input>` outside `components/ui/`, except `type="hidden"` and
+the native radios of the theme control (§3.1.4 requires native radios). Not covered: `app/(public)/**` and
+`lib/public/**` (customer pages are server-built HTML strings, §4.7, unchanged) and the WebGL scene.
+
+**C-44 · 8b: details of the field styling.** (a) The 2 px error edge is a 1 px border plus a 1 px inset shadow, so the
+text does not move when a field turns invalid. (b) The focus ring is an outline whose colour fades in (MI5), drawn
+2 px outside the field. (c) The "sm" height (36 px) has no extended 44 px hit area for text inputs (an `<input>`
+cannot carry a pseudo-element); it is used only in the desktop header search. (d) CSS `:read-only` matches every
+non-editable element, buttons included, so the read-only style applies to text fields only, never to Select triggers.
+(e) The bridge maps `--popover` to `--color-surface` as §7.3 says; in dark mode that is the surface colour, not
+surface-raised.
+
+**C-45 · 8b: e2e results on the shared local DB (not reset).** Production build, `--project=e2e`, no global
+seeding (it is not idempotent; C-05 still open). Passed: `fields.spec` 5/5 (D22), `theme.spec` 4/4 (D21), and 21 of
+24 in `consent`, `editors` (without the "last owner" test) and `import-export`. Failing, not caused by 8b (the files
+involved are unchanged in 8b, or the server answered "Saved"):
+(a) `consent.spec` "Say how" and (b) `import-export.spec` kill switch "Type PAUSE": both expect `role="alert"` for a
+validation message, but since v1.1 those are client-side field messages without that role; (c) `editors.spec` Stripe
+two-step: the form saves, then `payment_accounts.enabled` stays false in this DB; (d) `actions.spec` expects
+"Applied to the invoice: £1.00", but v1.1 renders it as a dt/dd pair; its other tests need approvals that earlier
+runs already consumed. Also: `editors.spec` "the last owner cannot be demoted" leaves `owner@e2e.test` demoted when
+run against a non-reset DB, which failed every later owner test in the first run; I set both seeded Demo Agency owners
+back to `owner` in the local DB. These suites need a reset DB (C-05) to give a clean answer.
+
 ## Open questions answered by the code
 
 | # | Answer |

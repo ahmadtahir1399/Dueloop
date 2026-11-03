@@ -7,6 +7,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Popover } from "radix-ui";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { cn } from "cn";
+import { FIELD_READONLY, FIELD_SHELL } from "@/components/ui/field-shell";
 
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -119,13 +120,17 @@ export const DatePicker = forwardRef<HTMLInputElement, InputProps>(function Date
           }}
           defaultValue={defaultValue}
           type="text"
+          data-slot="input"
+          data-motion="MI5"
           inputMode="numeric"
           autoComplete="off"
           placeholder="YYYY-MM-DD"
           pattern="\d{4}-\d{2}-\d{2}"
           aria-invalid={invalid || props["aria-invalid"] || undefined}
           className={cn(
-            "h-11 w-full min-w-0 rounded-sm border border-line-strong bg-panel pr-12 pl-3 t-body-md text-ink tabular-nums transition-colors-fast outline-none placeholder:text-ink-muted hover:border-ink focus-visible:border-brand aria-invalid:border-error-ink",
+            FIELD_SHELL,
+            FIELD_READONLY,
+            "h-11 pr-12 pl-3 tabular-nums",
             className,
           )}
         />

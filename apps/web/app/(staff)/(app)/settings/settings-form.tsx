@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RhfSelect } from "@/components/ui/choice-select";
+import { RhfSelect, type Choice } from "@/components/ui/choice-select";
+import { RhfCombobox } from "@/components/ui/combobox";
 import { Checkbox, Field, FormError, FormSuccess, Textarea } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { settingsSchema } from "@/forms/schemas";
@@ -36,7 +37,7 @@ const PROMISE: Record<string, string> = {
  * F13 (the one SettingsForm pattern, C7): fields + a save bar that becomes sticky with "Unsaved changes" when the
  * form is dirty (M4). Leaving with unsaved changes asks first. The server action is unchanged.
  */
-export function SettingsForm({ values, currency }: { values: SettingsValues; currency: string }) {
+export function SettingsForm({ values, currency, zones }: { values: SettingsValues; currency: string; zones: Choice[] }) {
   const { form, state, pending, formProps, errorId } = useActionForm<ActionState, typeof settingsSchema>({
     schema: settingsSchema,
     action: settingsAction,
@@ -59,8 +60,8 @@ export function SettingsForm({ values, currency }: { values: SettingsValues; cur
   return (
     <form {...formProps} aria-label="Change settings" className="grid gap-5">
       <FormError id={errorId} message={state.error} />
-      <Field id="set-timezone" label="Time zone (IANA name, e.g. Europe/London)" error={msg("timezone")}>
-        {(a) => <Input {...a} {...form.register("timezone")} />}
+      <Field id="set-timezone" label="Time zone" help="Search by city, like London or Karachi." error={msg("timezone")}>
+        {(a) => <RhfCombobox control={form.control} name="timezone" field={a} options={zones} searchLabel="Search time zones" />}
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="set-quiet-start" label="Quiet from (hour, 0-23)" error={msg("quiet_start")}>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { PageHeader, SectionTitle } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/status-chip";
+import { zoneOptions } from "@/lib/field-options";
 import { formatMinor } from "@/lib/money";
 import { requirePermission } from "@/lib/session";
 import { loadGlobalPause } from "@/lib/shell";
@@ -43,6 +44,7 @@ export default async function SettingsPage() {
         {mayEdit ? (
           <SettingsForm
             currency={t.currency}
+            zones={zoneOptions(t.timezone)}
             values={{
               timezone: t.timezone,
               quiet_start: String(t.quiet_start_hour),
