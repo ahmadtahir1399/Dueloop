@@ -106,7 +106,7 @@ export default async function OverviewPage({ searchParams }: PageProps<"/overvie
           </FilterBar>
         </div>
         <ListResults className="gap-3">
-        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 wide:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 min-[368px]:grid-cols-2 wide:grid-cols-4">
           <KpiTile
             testId="kpi-overdue"
             label="Overdue now"
