@@ -184,10 +184,14 @@ export default async function IntegrationsPage() {
                   </label>
                   <label className="grid gap-1">
                     Port
-                    <select name="imap_port" className="h-9 rounded-md border bg-background px-2" defaultValue={String((imap as { port?: unknown } | null)?.port ?? "993")}>
-                      <option value="993">993 (TLS, the usual choice)</option>
-                      <option value="143">143 (STARTTLS)</option>
-                    </select>
+                    <ChoiceSelect
+                      name="imap_port"
+                      defaultValue={String((imap as { port?: unknown } | null)?.port ?? "993")}
+                      options={[
+                        { value: "993", label: "993 (TLS, the usual choice)" },
+                        { value: "143", label: "143 (STARTTLS)" },
+                      ]}
+                    />
                   </label>
                   <label className="grid gap-1">
                     Login
