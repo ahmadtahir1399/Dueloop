@@ -1,4 +1,4 @@
-// D1 and §3.1.2: contrast pairs pass, forbidden pairs fail, and the two dark-mode blocks in tokens.css are identical.
+// D1 and §3.1.2: contrast pairs pass, forbidden pairs fail, and the dark block in tokens.css covers every light token.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { check, contrast, DARK, FORBIDDEN, LIGHT } from '../lib/contrast.ts';
@@ -34,11 +34,14 @@ describe('contrast (WCAG 2.x)', () => {
 });
 
 describe('tokens.css', () => {
-  it('the OS-dark block and the explicit data-theme=dark block are identical', () => {
-    const os = decls(block(':root:not([data-theme="light"])'));
-    const explicit = decls(block(':root[data-theme="dark"]'));
-    expect(os.length).toBeGreaterThan(30);
-    expect(explicit).toEqual(os);
+  it('one class-based dark block (§3.1.4) overrides every light semantic token, and nothing else selects a theme', () => {
+    const names = (body: string) => decls(body.replace(/\/\*[\s\S]*?\*\//g, '')).map((d) => d.split(':')[0]);
+    const light = names(block(':root,\n.light'));
+    const dark = names(block('\n.dark {'));
+    expect(light.length).toBeGreaterThan(30);
+    expect(dark).toEqual(light.filter((n) => n !== '--elev-0')); // elev-0 is "none" in both themes
+    expect(css).not.toContain('prefers-color-scheme');
+    expect(css).not.toContain('data-theme');
   });
   it('every colour used in a checked pair is a token value', () => {
     for (const p of [...LIGHT, ...DARK]) {

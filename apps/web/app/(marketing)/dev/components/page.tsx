@@ -22,7 +22,7 @@ export default function DevComponentsPage() {
     <main className="mx-auto grid max-w-5xl gap-10 p-8">
       <h1 className="t-display-lg">Components</h1>
       {(["light", "dark"] as const).map((theme) => (
-        <section key={theme} data-theme={theme} aria-label={`${theme} theme`} className="grid gap-6 rounded-2xl bg-canvas p-6 text-ink" style={{ colorScheme: theme }}>
+        <section key={theme} aria-label={`${theme} theme`} className={`${theme} grid gap-6 rounded-2xl bg-canvas p-6 text-ink`}>
           <h2 className="t-heading-lg capitalize">{theme}</h2>
           <div className="flex flex-wrap gap-3">
             <Button>Primary</Button>

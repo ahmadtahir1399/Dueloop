@@ -12,9 +12,10 @@ Built 2–3 November 2026 from REDESIGN.md v1.1 (see [CONFLICTS.md](CONFLICTS.md
 ## Foundations
 
 - `apps/web/styles/tokens.css`: every token from §3 (colour, type, spacing, radius, elevation, z-index, motion), light
-  and dark (OS or `dl-theme` cookie). shadcn variables map onto the tokens.
+  and dark (one `.dark` block since v1.2). shadcn variables map onto the tokens.
 - Fonts: Inter and Bricolage Grotesque through `next/font/google` (self-hosted at build time).
-- Theme control (System / Light / Dark) in the account menu; stored in a cookie, rendered by the server.
+- Theme control (System / Light / Dark): v1.2 (Phase 8a) rebuilt it on next-themes with the CSP nonce, in a ◐ header
+  popover, the account menu and the landing header; the choice is kept in `localStorage` (`dl-theme`). See C-36.
 - `node apps/web/scripts/check-contrast.ts` (also `pnpm contrast:check`): every §3.1.3 pair, matching the spec's
   numbers to two decimals; forbidden pairs asserted to fail.
 

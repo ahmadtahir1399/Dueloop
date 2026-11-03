@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { connection } from "next/server";
 import { Toaster } from "@/components/ui/sonner";
 import { MotionProvider } from "@/components/motion/motion-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 import { fontVariables } from "@/app/fonts";
-import { dataTheme, parseTheme, THEME_COOKIE } from "@/lib/theme";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -14,16 +14,19 @@ export const metadata: Metadata = {
 };
 
 // Every page renders per request so the proxy's CSP nonce reaches the framework scripts (Next.js CSP guide,
-// "Forcing dynamic rendering"). The theme comes from the dl-theme cookie, so the server renders data-theme and
-// there is no flash and no inline script. Fonts are self-hosted by next/font.
+// "Forcing dynamic rendering"). The theme is next-themes (§3.1.4): its pre-paint script gets the same nonce (the
+// proxy passes it as x-nonce), so the stored choice applies before first paint. suppressHydrationWarning is for the
+// class that script sets on <html> (next-themes and shadcn docs). Fonts are self-hosted by next/font.
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   await connection();
-  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html lang="en" data-theme={dataTheme(theme)} className={fontVariables}>
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
       <body className="min-h-svh bg-canvas font-sans text-ink antialiased">
-        <MotionProvider>{children}</MotionProvider>
-        <Toaster theme={theme} />
+        <ThemeProvider nonce={nonce}>
+          <MotionProvider>{children}</MotionProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

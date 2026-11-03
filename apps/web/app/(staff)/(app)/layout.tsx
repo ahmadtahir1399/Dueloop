@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { can } from "@dueloop/authz";
 import { AppNav } from "@/components/app-nav";
@@ -9,13 +8,12 @@ import { Wordmark } from "@/components/ui/wordmark";
 import { navFor } from "@/lib/nav";
 import { requireTenant } from "@/lib/session";
 import { loadCounters, loadGlobalPause } from "@/lib/shell";
-import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 
 // App shell (redesign §4.2): inverse sidebar (264 px desktop, 72 px rail on tablet, a sheet on mobile), header,
 // paused banner, content max 1280 px. Role-hidden items are not rendered at all (C8); the database decides.
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const ctx = await requireTenant();
-  const [counters, globalPaused, jar] = await Promise.all([loadCounters(ctx), loadGlobalPause(ctx), cookies()]);
+  const [counters, globalPaused] = await Promise.all([loadCounters(ctx), loadGlobalPause(ctx)]);
   const links = navFor(ctx.role).map(({ href, label, group, icon, counter }) => (counter ? { href, label, group, icon, counter } : { href, label, group, icon }));
   const sending = <SendingStatus paused={ctx.tenant.outboundPaused || globalPaused} canToggle={can(ctx.role, "killswitch.toggle")} quietStart={ctx.tenant.quietStartHour} quietEnd={ctx.tenant.quietEndHour} />;
   return (
@@ -40,7 +38,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           tenants={ctx.tenants}
           currentTenant={ctx.tenant.id}
           tenantName={ctx.tenant.name}
-          theme={parseTheme(jar.get(THEME_COOKIE)?.value)}
           links={links}
           counters={counters}
           sending={sending}

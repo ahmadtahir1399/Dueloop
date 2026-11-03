@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ThemeMenu, ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 import { cn } from "cn";
 
@@ -65,6 +66,7 @@ export function LandingHeader() {
             ))}
           </ul>
         </nav>
+        <ThemeMenu inverse={!solid} />
         <Link href="/sign-in" className="inline-flex min-h-11 items-center rounded-md px-2 t-body-sm font-semibold hover:underline">
           Sign in
         </Link>
@@ -116,6 +118,12 @@ export function LandingHeader() {
           <Link href="/sign-up" className="press inline-flex min-h-11 items-center justify-center rounded-md bg-brand px-4 font-semibold text-on-brand">
             Create account
           </Link>
+          <div className="grid gap-2">
+            <p aria-hidden="true" className="t-label">
+              Theme
+            </p>
+            <ThemeToggle />
+          </div>
         </div>
       </dialog>
     </header>

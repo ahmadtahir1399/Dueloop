@@ -51,7 +51,7 @@ so the spec does not break the CSP. But the build machine/CI must reach Google F
 Docker build has network access, or vendor the font files and use `next/font/local`. Public pages (S25–S28) keep the
 system font (§4.7, low-bandwidth budget in `e2e/lowbandwidth`).
 
-**C-09 · Theme mechanism.** The existing dark variant is the `.dark` class (`globals.css:5,93`) from shadcn, and
+**C-09 · Theme mechanism · SUPERSEDED by v1.2 (C-36).** The existing dark variant is the `.dark` class (`globals.css:5,93`) from shadcn, and
 `next-themes` is installed but unmounted. The spec wants `data-theme` + cookie `dl-theme`. Proposal: switch the
 custom variant to `[data-theme=dark]` + the `prefers-color-scheme` rule, set by the server from the cookie (no inline
 script, so no nonce issue), and drop `next-themes` from `sonner.tsx` (theme comes from the same cookie).
@@ -157,7 +157,7 @@ C-17), PAUSE/RESUME kept (C-20), required reject reason and the Preview → Conf
 **C-28 · Damping constant.** §6.2.2 gives λ = 6 and also "settles in about 120 ms"; λ = 6 needs ~0.5 s. The scene
 uses λ = 25 for camera, card and pointer (≈120 ms). `keyframes.damp` defaults to 6.
 
-**C-29 · The committed spec is v1.0 · OPEN.** `docs/redesign/REDESIGN.md` in the repo is **v1.0** (no landing page,
+**C-29 · The committed spec is v1.0 · RESOLVED in Phase 8a: v1.2 is now committed.** `docs/redesign/REDESIGN.md` in the repo is **v1.0** (no landing page,
 no §4.9 or §6.2). The build follows **v1.1**, which the user supplied in the chat. Please commit v1.1 over the file.
 `test/landing-copy.test.ts` reports its copy check as **skipped** until §4.9.4 is in the file.
 
@@ -191,6 +191,46 @@ other form in §5.3 uses RHF + zodResolver. D11 is therefore **partial**.
 queue items do not animate out (M5) or move focus to the next item; S10 is not a split view; S15 stays a page;
 Lighthouse (D6/D19), bundle size (D8), Core Web Vitals (D7) and the full Playwright suites need the production build
 and a DB reset (C-05, C-06) and were **not run**.
+
+## Phase 8 (spec v1.2, 3 November 2026)
+
+**C-36 · 8a: why the theme buttons "did not work" (B5) · FIXED.** Reproduced on the v1.1 build (commit 21aa649), with
+a dev server and with a production build (`next start`, real nonce CSP), both against the local stack. Findings:
+
+1. **The only control was hidden, and only in the staff app.** System / Light / Dark lived inside the avatar
+   `<details>` menu (`components/shell/shell-header.tsx`, v1.1). There was no ◐ header button (§3.1.4), and no
+   control at all on the landing page, sign-in, sign-up or onboarding.
+2. **The landing page ignored the choice.** Its root layout (`app/(marketing)/layout.tsx`, v1.1) never read the
+   `dl-theme` cookie and rendered `<html>` without `data-theme`, so S32 always followed the OS. Picking Light in the
+   app did nothing on the landing page.
+3. **Every click was a full server round trip with no feedback.** The buttons submitted a Server Action that set an
+   httpOnly cookie; Next.js then re-rendered the whole current page on the server (every data query of that page)
+   before anything changed, including the pressed state. Measured on this machine with a local database: 350–435 ms
+   per click in dev, 2.1 s for the first click on the production build, then about 50 ms. In one real mouse test the
+   screen had still not changed 2 s after the click. A second click while one was pending aborted the first
+   (`POST /overview … ERR_ABORTED` in the network log). NOT MEASURED: the hosted VM (1 OCPU, remote Supabase), where
+   each click also waits for that page's remote queries, so the delay is longer there.
+
+What was **not** the cause (checked): the CSS (`[data-theme]` blocks and the `@custom-variant` matched each other), the
+CSP (the cookie approach had no inline script), and hydration (no mismatch warnings). The cookie's `Secure` flag is
+fine on `localhost` and on the HTTPS demo.
+
+**Fix (spec §3.1.4, v1.2):** next-themes 0.4.6 (`components/theme-provider.tsx`) with `attribute="class"`,
+`defaultTheme="system"`, `enableSystem`, `storageKey="dl-theme"`, `disableTransitionOnChange` and the request's CSP
+nonce (both root layouts read the proxy's `x-nonce` header). next-themes 0.4.6 puts that nonce on its pre-paint
+`<script>` and on its transition-blocking `<style>` (checked in `node_modules/next-themes/dist/index.mjs`). Tokens: one
+`.dark` block; `@custom-variant dark (&:is(.dark *))` (the line shadcn generated for this repo, in git history). The
+`ThemeToggle` (native radios in a fieldset) changes the class on the client at once, with no server call. It sits in a
+◐ header popover, in the account menu, in the landing header and in the landing menu sheet. Removed: the `dl-theme`
+cookie, `setTheme` server action and `lib/theme.ts`. Proved by `e2e/staff/theme.spec.ts` (D21).
+
+**C-37 · Theme needs JavaScript now.** next-themes applies the stored choice with a script. Without JavaScript the app
+follows the OS only (the default, System); the v1.1 cookie worked without JavaScript. This is what §3.1.4 v1.2
+asks for. Customer pages (S25–S28) are plain HTML with no control, unchanged.
+
+**C-38 · Local database migrated forward to 0027.** `next start` refused to run (rule 45: schema 0026, build expects
+0027) because `main` now ships `0027_mailbox`. I applied only that pending migration to the local stack with
+`supabase migration up --local` (no reset, no data removed). C-05's question about resetting the DB is still open.
 
 ## Open questions answered by the code
 

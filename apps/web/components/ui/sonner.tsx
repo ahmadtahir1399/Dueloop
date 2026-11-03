@@ -1,14 +1,16 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
-// The theme comes from the dl-theme cookie (read by the root layout), so toasts match the page without a client store.
-const Toaster = ({ theme = "system", ...props }: ToasterProps) => {
+// Toasts follow the same next-themes choice as the page (§3.1.4), as in shadcn's generated Toaster.
+const Toaster = ({ ...props }: ToasterProps) => {
+  const { theme = "system" } = useTheme()
 
   return (
     <Sonner
-      theme={theme}
+      theme={theme as ToasterProps["theme"]}
       position="bottom-right"
       duration={5000}
       className="toaster group"

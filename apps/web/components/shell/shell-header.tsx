@@ -1,9 +1,8 @@
-import { LogOut, Monitor, Moon, Search, Sun } from "lucide-react";
+import { LogOut, Search } from "lucide-react";
 import { TenantSwitcher } from "@/components/tenant-switcher";
+import { ThemeMenu, ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/ui/wordmark";
 import type { TenantSummary } from "@/lib/session";
-import type { ThemeChoice } from "@/lib/theme";
-import { setTheme } from "@/app/(staff)/(app)/_shell/actions";
 import { signOut } from "@/app/(staff)/sign-in/actions";
 import { MobileNav } from "./mobile-nav";
 import { SearchShortcut } from "./search-shortcut";
@@ -11,15 +10,10 @@ import type { NavLink } from "@/components/app-nav";
 import type { CounterKey } from "@/lib/nav";
 import Link from "next/link";
 
-const THEME_OPTIONS: { value: ThemeChoice; label: string; icon: typeof Sun }[] = [
-  { value: "system", label: "System", icon: Monitor },
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-];
-
 /**
  * App header (§4.2): business switcher (only for > 1 business), search (⌘K / Ctrl K focuses it; it searches the
- * existing invoice list filter, Q5), theme control, account. Plain forms: everything works without JavaScript.
+ * existing invoice list filter, Q5), theme control (◐ popover, and again in the account menu; §3.1.4), account.
+ * Search, business switch and sign-out are plain forms that work without JavaScript; the theme needs it (next-themes).
  */
 export function ShellHeader({
   email,
@@ -27,7 +21,6 @@ export function ShellHeader({
   tenants,
   currentTenant,
   tenantName,
-  theme,
   links,
   counters,
   sending,
@@ -37,7 +30,6 @@ export function ShellHeader({
   tenants: TenantSummary[];
   currentTenant: string;
   tenantName: string;
-  theme: ThemeChoice;
   links: NavLink[];
   counters: Partial<Record<CounterKey, number>>;
   sending: React.ReactNode;
@@ -76,6 +68,7 @@ export function ShellHeader({
           </div>
           <SearchShortcut inputId="shell-search" />
         </form>
+        <ThemeMenu />
         <span data-testid="whoami" className="sr-only">
           {email} · <span>{role}</span>
         </span>
@@ -93,26 +86,12 @@ export function ShellHeader({
               <p className="t-body-sm font-semibold break-all text-ink">{email}</p>
               <p className="t-caption text-ink-muted capitalize">{role}</p>
             </div>
-            <form action={setTheme} className="grid gap-2">
-              <fieldset>
-                <legend className="t-label mb-2">Theme</legend>
-                <div className="grid grid-cols-3 gap-1 rounded-md bg-sunken p-1">
-                  {THEME_OPTIONS.map((o) => (
-                    <button
-                      key={o.value}
-                      type="submit"
-                      name="theme"
-                      value={o.value}
-                      aria-pressed={theme === o.value}
-                      className="press flex min-h-9 items-center justify-center gap-1.5 rounded-sm t-caption text-ink-muted aria-pressed:bg-panel aria-pressed:text-ink aria-pressed:shadow-elev-1"
-                    >
-                      <o.icon aria-hidden="true" className="size-3.5" />
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-            </form>
+            <div className="grid gap-2">
+              <p aria-hidden="true" className="t-label">
+                Theme
+              </p>
+              <ThemeToggle />
+            </div>
             <form action={signOut}>
               <button type="submit" className="press flex min-h-11 w-full items-center gap-2 rounded-md px-2 t-body-sm font-medium text-ink hover:bg-sunken">
                 <LogOut aria-hidden="true" className="size-4" />

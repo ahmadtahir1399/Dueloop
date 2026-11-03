@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { connection } from "next/server";
+import { ThemeProvider } from "@/components/theme-provider";
 import { fontVariables } from "@/app/fonts";
 import { COPY } from "@/features/landing/copy";
 import "@/styles/globals.css";
@@ -22,11 +24,15 @@ export const metadata: Metadata = {
   },
 };
 
+// Theme: the same next-themes provider and stored choice as the app (§3.1.4), with the request's CSP nonce.
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
   await connection();
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html lang="en" className={fontVariables}>
-      <body className="min-h-svh bg-canvas font-sans text-ink antialiased">{children}</body>
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
+      <body className="min-h-svh bg-canvas font-sans text-ink antialiased">
+        <ThemeProvider nonce={nonce}>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

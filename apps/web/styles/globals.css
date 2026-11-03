@@ -3,17 +3,9 @@
 @import "shadcn/tailwind.css";
 @import "./tokens.css";
 
-/* Dark mode: the explicit choice (data-theme on <html>, from the dl-theme cookie) or the OS when no choice is set. */
-@custom-variant dark {
-  &:where([data-theme="dark"], [data-theme="dark"] *) {
-    @slot;
-  }
-  @media (prefers-color-scheme: dark) {
-    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
-      @slot;
-    }
-  }
-}
+/* Dark mode (§3.1.4): the .dark class that next-themes puts on <html>, the same class the tokens use. This is the
+ * line shadcn generated for this repo (see git history of this file). */
+@custom-variant dark (&:is(.dark *));
 
 /*
  * Tailwind utility names → semantic tokens (tokens.css). Utility names differ from token names on purpose

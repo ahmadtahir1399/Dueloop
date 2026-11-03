@@ -3,6 +3,7 @@
  * shadows, z-index and motion values are written as literals (plus features/landing/three/* for the 3D scene).
  * Components use the semantic tokens (--color-text-muted), never the primitive scales (--green-600) or raw hex.
  * Contrast pairs are checked by scripts/check-contrast.ts (D1); light/dark parity by test/tokens.test.ts.
+ * Theme switching (§3.1.4): next-themes sets class="light" or class="dark" on <html>; nothing else selects a theme.
  */
 
 :root {
@@ -61,8 +62,12 @@
   --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
   --ease-settle: cubic-bezier(0.34, 1.36, 0.64, 1);
   --ease-linear: linear;
+}
 
-  /* ---- Semantic colour, light (§3.1.2) ---- */
+/* ---- Semantic colour, light (§3.1.2) ----
+ * `.light` lets one section show the light values inside a dark page (the /dev galleries show both side by side). */
+:root,
+.light {
   color-scheme: light;
   --color-bg: #F7F8F6;
   --color-surface: #FFFFFF;
@@ -120,104 +125,55 @@
   :root { --gutter: 40px; }
 }
 
-/* ---- Semantic colour, dark ----
- * Two blocks with IDENTICAL bodies: one follows the OS (unless the user picked light), one is the explicit choice.
- * test/tokens.test.ts fails if they drift apart. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --color-bg: #0C110E;
-    --color-surface: #141A16;
-    --color-surface-sunken: #0C110E;
-    --color-surface-raised: #1B231E;
-    --color-surface-inverse: #0A2318;
-    --color-surface-inverse-raised: #164831;
-    --color-border: #2A332D;
-    --color-border-strong: #6B776F;
-    --color-border-control: #6B776F;
-    --color-text: #E8EDE9;
-    --color-text-secondary: #C3C9C1;
-    --color-text-muted: #9AA59D;
-    --color-text-subtle: #9AA59D;
-    --color-text-inverse: #FFFFFF;
-    --color-text-inverse-muted: #ADDBC0;
-    --color-primary: #4DA477;
-    --color-primary-hover: #7DC29C;
-    --color-primary-active: #ADDBC0;
-    --color-on-primary: #0A2318;
-    --color-primary-soft: #123A28;
-    --color-primary-soft-text: #ADDBC0;
-    --color-selected: #123A28;
-    --color-link: #7DC29C;
-    --color-accent: #C8F169;
-    --color-on-accent: #0A2318;
-    --color-focus-ring: #C8F169;
-    --color-focus-ring-inverse: #C8F169;
-    --color-success-text: #7DC29C; --color-success-bg: #10261A; --color-success-border: #1F4A33;
-    --color-warning-text: #F2C14E; --color-warning-bg: #2A2110; --color-warning-border: #4A3A12;
-    --color-error-text: #FF8A7A; --color-error-bg: #2C1412; --color-error-border: #5A2420;
-    --color-info-text: #8CB4FF; --color-info-bg: #131D33; --color-info-border: #25365C;
-    --color-escalated-text: #0E120F; --color-escalated-bg: #E8EDE9;
-    --color-neutral-chip-text: #C3C9C1; --color-neutral-chip-bg: #2A302A;
-    --color-destructive: #FF8A7A;
-    --color-destructive-hover: #FFB1A6;
-    --color-on-destructive: #2C1412;
-    --color-chart-1: #4DA477;
-    --color-chart-2: #6B776F;
-    --color-chart-track: #2A332D;
-    --color-scrim: rgb(0 0 0 / 0.6);
-    --elev-1: 0 0 0 1px #2A332D;
-    --elev-2: 0 0 0 1px #2A332D, 0 4px 12px rgb(0 0 0 / .4);
-    --elev-3: 0 0 0 1px #2A332D, 0 12px 32px rgb(0 0 0 / .5);
-    --elev-4: 0 0 0 1px #2A332D, 0 24px 64px rgb(0 0 0 / .6);
-  }
-}
-:root[data-theme="dark"], [data-theme="dark"] {
-    color-scheme: dark;
-    --color-bg: #0C110E;
-    --color-surface: #141A16;
-    --color-surface-sunken: #0C110E;
-    --color-surface-raised: #1B231E;
-    --color-surface-inverse: #0A2318;
-    --color-surface-inverse-raised: #164831;
-    --color-border: #2A332D;
-    --color-border-strong: #6B776F;
-    --color-border-control: #6B776F;
-    --color-text: #E8EDE9;
-    --color-text-secondary: #C3C9C1;
-    --color-text-muted: #9AA59D;
-    --color-text-subtle: #9AA59D;
-    --color-text-inverse: #FFFFFF;
-    --color-text-inverse-muted: #ADDBC0;
-    --color-primary: #4DA477;
-    --color-primary-hover: #7DC29C;
-    --color-primary-active: #ADDBC0;
-    --color-on-primary: #0A2318;
-    --color-primary-soft: #123A28;
-    --color-primary-soft-text: #ADDBC0;
-    --color-selected: #123A28;
-    --color-link: #7DC29C;
-    --color-accent: #C8F169;
-    --color-on-accent: #0A2318;
-    --color-focus-ring: #C8F169;
-    --color-focus-ring-inverse: #C8F169;
-    --color-success-text: #7DC29C; --color-success-bg: #10261A; --color-success-border: #1F4A33;
-    --color-warning-text: #F2C14E; --color-warning-bg: #2A2110; --color-warning-border: #4A3A12;
-    --color-error-text: #FF8A7A; --color-error-bg: #2C1412; --color-error-border: #5A2420;
-    --color-info-text: #8CB4FF; --color-info-bg: #131D33; --color-info-border: #25365C;
-    --color-escalated-text: #0E120F; --color-escalated-bg: #E8EDE9;
-    --color-neutral-chip-text: #C3C9C1; --color-neutral-chip-bg: #2A302A;
-    --color-destructive: #FF8A7A;
-    --color-destructive-hover: #FFB1A6;
-    --color-on-destructive: #2C1412;
-    --color-chart-1: #4DA477;
-    --color-chart-2: #6B776F;
-    --color-chart-track: #2A332D;
-    --color-scrim: rgb(0 0 0 / 0.6);
-    --elev-1: 0 0 0 1px #2A332D;
-    --elev-2: 0 0 0 1px #2A332D, 0 4px 12px rgb(0 0 0 / .4);
-    --elev-3: 0 0 0 1px #2A332D, 0 12px 32px rgb(0 0 0 / .5);
-    --elev-4: 0 0 0 1px #2A332D, 0 24px 64px rgb(0 0 0 / .6);
+/* ---- Semantic colour, dark (§3.1.2, v1.2 §3.1.4) ----
+ * One class-based block. next-themes puts .dark on <html> for an explicit Dark choice AND when System resolves to
+ * dark, so following the OS is its job, not a media query here. */
+.dark {
+  color-scheme: dark;
+  --color-bg: #0C110E;
+  --color-surface: #141A16;
+  --color-surface-sunken: #0C110E;
+  --color-surface-raised: #1B231E;
+  --color-surface-inverse: #0A2318;
+  --color-surface-inverse-raised: #164831;
+  --color-border: #2A332D;
+  --color-border-strong: #6B776F;
+  --color-border-control: #6B776F;
+  --color-text: #E8EDE9;
+  --color-text-secondary: #C3C9C1;
+  --color-text-muted: #9AA59D;
+  --color-text-subtle: #9AA59D;
+  --color-text-inverse: #FFFFFF;
+  --color-text-inverse-muted: #ADDBC0;
+  --color-primary: #4DA477;
+  --color-primary-hover: #7DC29C;
+  --color-primary-active: #ADDBC0;
+  --color-on-primary: #0A2318;
+  --color-primary-soft: #123A28;
+  --color-primary-soft-text: #ADDBC0;
+  --color-selected: #123A28;
+  --color-link: #7DC29C;
+  --color-accent: #C8F169;
+  --color-on-accent: #0A2318;
+  --color-focus-ring: #C8F169;
+  --color-focus-ring-inverse: #C8F169;
+  --color-success-text: #7DC29C; --color-success-bg: #10261A; --color-success-border: #1F4A33;
+  --color-warning-text: #F2C14E; --color-warning-bg: #2A2110; --color-warning-border: #4A3A12;
+  --color-error-text: #FF8A7A; --color-error-bg: #2C1412; --color-error-border: #5A2420;
+  --color-info-text: #8CB4FF; --color-info-bg: #131D33; --color-info-border: #25365C;
+  --color-escalated-text: #0E120F; --color-escalated-bg: #E8EDE9;
+  --color-neutral-chip-text: #C3C9C1; --color-neutral-chip-bg: #2A302A;
+  --color-destructive: #FF8A7A;
+  --color-destructive-hover: #FFB1A6;
+  --color-on-destructive: #2C1412;
+  --color-chart-1: #4DA477;
+  --color-chart-2: #6B776F;
+  --color-chart-track: #2A332D;
+  --color-scrim: rgb(0 0 0 / 0.6);
+  --elev-1: 0 0 0 1px #2A332D;
+  --elev-2: 0 0 0 1px #2A332D, 0 4px 12px rgb(0 0 0 / .4);
+  --elev-3: 0 0 0 1px #2A332D, 0 12px 32px rgb(0 0 0 / .5);
+  --elev-4: 0 0 0 1px #2A332D, 0 24px 64px rgb(0 0 0 / .6);
 }
 
 /* ---- Reduced motion (§3.7, §6.4): transform/layout durations collapse; opacity/colour keep `fast`. ---- */

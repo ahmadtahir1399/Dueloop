@@ -16,7 +16,7 @@ export default function DevTokensPage() {
       <h1 className="t-display-lg">Tokens</h1>
       <div className="grid gap-8 lg:grid-cols-2">
         {(["light", "dark"] as const).map((theme) => (
-          <section key={theme} data-theme={theme} className="grid gap-2 rounded-xl bg-canvas p-6 text-ink" style={{ colorScheme: theme }}>
+          <section key={theme} className={`${theme} grid gap-2 rounded-xl bg-canvas p-6 text-ink`}>
             <h2 className="t-heading-lg">{theme}</h2>
             <ul className="grid grid-cols-2 gap-2 t-caption sm:grid-cols-3">
               {names.map((n) => (
