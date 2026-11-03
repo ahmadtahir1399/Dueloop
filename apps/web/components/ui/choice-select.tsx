@@ -31,6 +31,7 @@ export function ChoiceSelect({
   ariaLabel,
   disabled,
   size = "md",
+  ref,
 }: {
   id?: string;
   name?: string;
@@ -45,6 +46,8 @@ export function ChoiceSelect({
   ariaLabel?: string;
   disabled?: boolean;
   size?: FieldSize;
+  /** The trigger, so React Hook Form can focus it on a validation error. */
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
   const [inner, setInner] = useState(defaultValue ?? options[0]?.value ?? "");
   const current = value ?? inner;
@@ -64,7 +67,7 @@ export function ChoiceSelect({
         }}
         disabled={disabled}
       >
-        <SelectTrigger id={id} size={size} aria-label={ariaLabel} aria-describedby={describedBy} aria-invalid={invalid || undefined} className={className}>
+        <SelectTrigger ref={ref} id={id} size={size} aria-label={ariaLabel} aria-describedby={describedBy} aria-invalid={invalid || undefined} className={className}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -98,6 +101,7 @@ export function RhfSelect({
   const { field: f } = useController({ control, name });
   return (
     <ChoiceSelect
+      ref={f.ref}
       id={field.id}
       name={name}
       options={options}

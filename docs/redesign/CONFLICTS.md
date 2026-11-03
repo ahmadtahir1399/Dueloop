@@ -242,12 +242,17 @@ Popover with the ARIA 1.2 combobox + listbox pattern. No dependency was added.
 free-text fields; they are Comboboxes now (§7.2: searchable time zones and currencies). The options come from the
 server runtime's ICU data (`lib/field-options.ts`): IANA zones filtered by core's `isIanaZone`, ISO 4217 codes from
 `Intl.supportedValuesOf("currency")`. Field names and value shapes posted to the server actions are unchanged
-(`timezone` = IANA name, `currency` = 3-letter code); a currency is now always sent upper-case.
+(`timezone` = IANA name, `currency` = 3-letter code); a currency is now always sent upper-case. **These two fields now
+need JavaScript**: without it the trigger cannot open and the hidden input posts the current value (Settings: the saved
+zone; Onboarding: the default zone and an empty currency, which the server refuses with its usual message).
 
 **C-42 · 8b: one e2e step changed with the time zone field.** `e2e/staff/editors.spec.ts` typed "GMT+5" into the
 free-text time zone to see the server refuse it. That value can no longer be chosen in the UI, so the step now checks
-the list offers no made-up zone. The server-side refusal is unchanged (core `isIanaZone`, the DB trigger and their
-tests). `e2e/demo/demo.spec.ts` picks the currency from the list instead of typing it.
+the list offers no made-up zone. The server-side refusal is unchanged and is now also covered at the action boundary
+by `apps/web/test/settings-timezone.test.ts`: core `validateSettings` (what `settingsAction` calls) refuses non-IANA
+zones, and the action returns that error before calling `save_tenant_settings` (checked on the action source, since
+the root Vitest config has no `@/` alias to import the action itself). The DB trigger keeps its pgTAP test
+(`supabase/tests/issues/issue_i_timezone.test.sql`). `e2e/demo/demo.spec.ts` picks the currency from the list instead of typing it.
 
 **C-43 · 8b: what D22's scan covers.** `apps/web/test/fields.test.ts` scans `app/`, `components/` and `features/`:
 no native `<select>` anywhere; no raw `<textarea>` or `<input>` outside `components/ui/`, except `type="hidden"` and
@@ -256,8 +261,9 @@ the native radios of the theme control (§3.1.4 requires native radios). Not cov
 
 **C-44 · 8b: details of the field styling.** (a) The 2 px error edge is a 1 px border plus a 1 px inset shadow, so the
 text does not move when a field turns invalid. (b) The focus ring is an outline whose colour fades in (MI5), drawn
-2 px outside the field. (c) The "sm" height (36 px) has no extended 44 px hit area for text inputs (an `<input>`
-cannot carry a pseudo-element); it is used only in the desktop header search. (d) CSS `:read-only` matches every
+2 px outside the field. (c) The "sm" height (36 px) keeps a 44 px hit area: Select/Combobox triggers get an invisible pseudo-element 4 px
+above and below (`FIELD_HIT_SM`); an `<input>` cannot carry one, so `Input size="sm"` sits in a 44 px box that
+focuses it. Measured in `e2e/staff/fields.spec.ts` (header search, /overview period select). (d) CSS `:read-only` matches every
 non-editable element, buttons included, so the read-only style applies to text fields only, never to Select triggers.
 (e) The bridge maps `--popover` to `--color-surface` as §7.3 says; in dark mode that is the surface colour, not
 surface-raised.
@@ -273,6 +279,23 @@ two-step: the form saves, then `payment_accounts.enabled` stays false in this DB
 runs already consumed. Also: `editors.spec` "the last owner cannot be demoted" leaves `owner@e2e.test` demoted when
 run against a non-reset DB, which failed every later owner test in the first run; I set both seeded Demo Agency owners
 back to `owner` in the local DB. These suites need a reset DB (C-05) to give a clean answer.
+
+**C-46 · 8b: two design notes for D22.** (a) The token bridge in `globals.css` is defined once, in `:root`: the shadcn
+variables point at our semantic tokens, and those tokens switch under `.dark` (tokens.css), so no second `.dark`
+copy of the bridge is needed. (b) `components/ui/date-picker.tsx` is a typeable text input with a calendar (C-32). It
+is not built from `ui/input` (it manages its own ref and the calendar trigger) but uses the same `FIELD_SHELL`; as a
+`components/ui` file it is outside the D22 raw-input scan by design, and `test/fields.test.ts` checks it uses the shell.
+
+**C-47 · Toasts lose their styling under the production CSP · OPEN (proposed fix below; CSP unchanged).** Checked on
+the production build (`next start`, nonce CSP, `style-src 'self' 'nonce-…'`, no `'unsafe-inline'`): sonner 2.0.8
+injects its stylesheet at runtime with a plain `<style>` element (`__insertCSS` in `sonner/dist/index.js`, no nonce
+support), and the browser blocks it ("Applying inline style violates … style-src"), so the element exists with no
+rules applied: toasts render unstyled and unpositioned. The same console error also appears for Motion's runtime
+`<style>` (AnimatePresence `mode="popLayout"`, used by the 8a ThemeMenu icon). Not changed here: the CSP is out of
+scope (§10). Proposed fixes, neither of which loosens the CSP: (1) import sonner's static stylesheet
+(`sonner/dist/styles.css`, listed in its package `exports`) into `globals.css` so it ships as a `'self'` file, and
+keep the runtime copy harmlessly blocked; (2) pass the request nonce to Motion through `<MotionConfig nonce>`
+(framer-motion 14.9 declares `nonce?: string` on MotionConfig) or avoid `popLayout`. Owner: 8d (motion).
 
 ## Open questions answered by the code
 

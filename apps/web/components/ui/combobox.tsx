@@ -3,17 +3,20 @@
 // Searchable select (§7.2 Combobox: time zones, currencies). shadcn's current Combobox recipe is built on Base UI
 // (`shadcn view combobox` lists @base-ui/react), and this repo's shadcn components use Radix; §7.3 says never mix the
 // two (CONFLICTS C-40). So this follows the recipe's shape (a trigger that opens a popover with a search box and a
-// list) on Radix Popover and the ARIA 1.2 combobox + listbox pattern:
-//   trigger   a button with the Input shell; Enter/Space/ArrowDown open; chevron turns (MI8)
+// list) on Radix Popover:
+//   trigger   role=combobox (like Radix SelectTrigger), so its name is the field label and its text is the chosen
+//             value; Radix adds aria-expanded, aria-controls and aria-haspopup="dialog", which matches the popup
+//   popup     Radix Popover content (role=dialog), labelled by the search label
 //   search    role=combobox, aria-controls the listbox, aria-activedescendant the highlighted option
-//   keys      ArrowUp/Down, Home/End, Enter picks, Escape closes and focus returns to the trigger (Radix Popover)
+//   keys      Enter/Space/ArrowDown open; ArrowUp/Down move; Enter picks; Escape or Tab close, and focus returns to
+//             the trigger (Radix Popover); Home/End stay with the text box
 // The value posts through a hidden <input name>, like ChoiceSelect.
 import { Check, ChevronDown, Search } from "lucide-react";
 import { Popover } from "radix-ui";
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useController, type Control, type FieldValues } from "react-hook-form";
 import { cn } from "cn";
-import { FIELD_HEIGHT, FIELD_SHELL, type FieldSize } from "@/components/ui/field-shell";
+import { FIELD_HEIGHT, FIELD_HIT_SM, FIELD_SHELL, type FieldSize } from "@/components/ui/field-shell";
 import type { Choice } from "@/components/ui/choice-select";
 
 export function Combobox({
@@ -29,6 +32,7 @@ export function Combobox({
   invalid,
   describedBy,
   size = "md",
+  ref,
 }: {
   id?: string;
   name?: string;
@@ -42,6 +46,8 @@ export function Combobox({
   invalid?: boolean;
   describedBy?: string;
   size?: FieldSize;
+  /** The trigger, so React Hook Form can focus it on a validation error. */
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
   const [inner, setInner] = useState(defaultValue ?? "");
   const current = value ?? inner;
@@ -49,7 +55,7 @@ export function Combobox({
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listId = useId();
-  const listRef = useRef<HTMLUListElement>(null);
+  const statusId = useId();
   const selected = options.find((o) => o.value === current);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -82,9 +88,10 @@ export function Combobox({
       {name ? <input type="hidden" name={name} value={current} /> : null}
       <Popover.Root open={open} onOpenChange={openList}>
         <Popover.Trigger
+          ref={ref}
           id={id}
           type="button"
-          aria-haspopup="listbox"
+          role="combobox"
           aria-describedby={describedBy}
           aria-invalid={invalid || undefined}
           data-motion="MI8"
@@ -97,6 +104,7 @@ export function Combobox({
           className={cn(
             FIELD_SHELL,
             FIELD_HEIGHT[size],
+            size === "sm" ? FIELD_HIT_SM : null,
             "group/combo flex items-center justify-between gap-2 px-3 text-left data-[state=open]:border-brand",
             className,
           )}
@@ -106,6 +114,7 @@ export function Combobox({
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
+            aria-label={searchLabel}
             align="start"
             sideOffset={6}
             onOpenAutoFocus={(e) => {
@@ -115,7 +124,7 @@ export function Combobox({
             className={cn(
               "z-(--z-dropdown) w-(--radix-popover-trigger-width) min-w-64 overflow-hidden rounded-lg border border-line bg-panel text-ink shadow-elev-2",
               "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-(--duration-fast)",
-              "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:duration-100",
+              "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:duration-(--duration-fast-exit)",
               "data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 motion-reduce:animate-none",
             )}
           >
@@ -124,8 +133,9 @@ export function Combobox({
               <input
                 role="combobox"
                 aria-label={searchLabel}
-                aria-expanded="true"
-                aria-controls={listId}
+                aria-expanded={shown.length > 0}
+                aria-controls={shown.length > 0 ? listId : undefined}
+                aria-describedby={shown.length > 0 ? undefined : statusId}
                 aria-autocomplete="list"
                 aria-activedescendant={shown.length ? optionId(active) : undefined}
                 value={query}
@@ -136,12 +146,11 @@ export function Combobox({
                 onKeyDown={(e) => {
                   if (e.key === "ArrowDown") move(active + 1);
                   else if (e.key === "ArrowUp") move(active - 1);
-                  else if (e.key === "Home") move(0);
-                  else if (e.key === "End") move(shown.length - 1);
                   else if (e.key === "Enter") {
                     const o = shown[active];
                     if (o) pick(o.value);
-                  } else return;
+                  } else if (e.key === "Tab") setOpen(false);
+                  else return;
                   e.preventDefault();
                 }}
                 autoComplete="off"
@@ -150,13 +159,13 @@ export function Combobox({
                 placeholder={`${searchLabel}…`}
               />
             </div>
-            <ul ref={listRef} id={listId} role="listbox" aria-label={searchLabel} className="max-h-80 overflow-y-auto p-1">
-              {shown.length === 0 ? (
-                <li role="presentation" className="px-3 py-2 t-body-sm text-ink-muted">
-                  No matches for &ldquo;{query}&rdquo;
-                </li>
-              ) : (
-                shown.map((o, i) => {
+            {shown.length === 0 ? (
+              <p id={statusId} role="status" className="px-4 py-3 t-body-sm text-ink-muted">
+                No matches for &ldquo;{query}&rdquo;
+              </p>
+            ) : (
+              <ul id={listId} role="listbox" aria-label={searchLabel} className="max-h-80 overflow-y-auto p-1">
+                {shown.map((o, i) => {
                   const isSel = o.value === current;
                   return (
                     <li
@@ -180,9 +189,9 @@ export function Combobox({
                       ) : null}
                     </li>
                   );
-                })
-              )}
-            </ul>
+                })}
+              </ul>
+            )}
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
@@ -211,6 +220,7 @@ export function RhfCombobox({
   const { field: f } = useController({ control, name });
   return (
     <Combobox
+      ref={f.ref}
       id={field.id}
       name={name}
       options={options}

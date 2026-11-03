@@ -16,9 +16,15 @@ type InputProps = Omit<React.ComponentProps<"input">, "size"> & {
   trailingWidth?: number
 }
 
-function Input({ className, type, size = "md", leading, trailing, trailingWidth = 3, style, ...props }: InputProps) {
+function Input({ className, type, size = "md", leading, trailing, trailingWidth = 3, style, ref, ...props }: InputProps) {
+  const own = React.useRef<HTMLInputElement | null>(null)
   const field = (
     <input
+      ref={(el) => {
+        own.current = el
+        if (typeof ref === "function") ref(el)
+        else if (ref) ref.current = el
+      }}
       type={type}
       data-slot="input"
       data-motion="MI5"
@@ -34,16 +40,33 @@ function Input({ className, type, size = "md", leading, trailing, trailingWidth 
       {...props}
     />
   )
-  if (!leading && !trailing) return field
+  const group =
+    !leading && !trailing ? (
+      field
+    ) : (
+      <div data-slot="input-group" className="relative w-full min-w-0">
+        {leading ? (
+          <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-ink-muted [&_svg]:size-4">
+            {leading}
+          </span>
+        ) : null}
+        {field}
+        {trailing ? <span className="absolute inset-y-0 right-1 flex items-center">{trailing}</span> : null}
+      </div>
+    )
+  if (size !== "sm") return group
+  // A 36 px field keeps a 44 px hit area (§7.3): the 4 px band above and below focuses the field.
   return (
-    <div data-slot="input-group" className="relative w-full min-w-0">
-      {leading ? (
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-ink-muted [&_svg]:size-4">
-          {leading}
-        </span>
-      ) : null}
-      {field}
-      {trailing ? <span className="absolute inset-y-0 right-1 flex items-center">{trailing}</span> : null}
+    <div
+      data-slot="input-hit"
+      className="flex min-h-11 w-full min-w-0 cursor-text items-center"
+      onPointerDown={(e) => {
+        if (e.target !== e.currentTarget) return
+        e.preventDefault()
+        own.current?.focus()
+      }}
+    >
+      {group}
     </div>
   )
 }

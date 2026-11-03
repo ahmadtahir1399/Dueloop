@@ -53,6 +53,7 @@
   /* ---- Motion (§3.7) ---- */
   --duration-instant: 80ms; --duration-fast: 140ms; --duration-base: 220ms; --duration-slow: 320ms;
   --duration-slower: 480ms; --duration-scene: 900ms; --duration-ambient: 60000ms;
+  --duration-fast-exit: 100ms; /* closing a select/menu/popover: ~70% of fast (§3.7 ease-exit rule; MI8, MI22) */
   --duration-transform-fast: var(--duration-fast);
   --duration-transform-base: var(--duration-base);
   --duration-transform-slow: var(--duration-slow);

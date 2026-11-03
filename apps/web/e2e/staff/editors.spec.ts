@@ -67,11 +67,12 @@ test.describe("owner", () => {
     const f = page.getByRole("form", { name: "Change settings" });
     // Since 8b the time zone is a searchable list of IANA zones, so a made-up zone cannot be chosen at all. The server-side
     // refusal is unchanged and covered by core's isIanaZone tests (docs/redesign/CONFLICTS.md C-42).
-    await f.getByLabel("Time zone").click();
+    const zone = f.getByRole("combobox", { name: "Time zone", exact: true });
+    await zone.click();
     await page.getByRole("combobox", { name: "Search time zones" }).fill("Mars/Olympus");
-    await expect(page.getByRole("listbox")).toContainText("No matches");
+    await expect(page.getByRole("dialog", { name: "Search time zones" }).getByRole("status")).toContainText("No matches");
     await page.keyboard.press("Escape");
-    await expect(f.getByLabel("Time zone")).toBeFocused();
+    await expect(zone).toBeFocused();
     await page.goto("/settings/holidays");
     await page.getByLabel("Date").fill("2026-12-26");
     await page.getByLabel("Label").fill("Boxing Day <b>x</b>");

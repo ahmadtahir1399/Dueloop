@@ -4,7 +4,7 @@ import * as React from "react"
 import { cn } from "cn"
 import { Select as SelectPrimitive } from "radix-ui"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
-import { FIELD_HEIGHT, FIELD_SHELL, type FieldSize } from "@/components/ui/field-shell"
+import { FIELD_HEIGHT, FIELD_HIT_SM, FIELD_SHELL, type FieldSize } from "@/components/ui/field-shell"
 
 // shadcn/ui Select (radix-nova, Radix primitives: the library this repo's components.json already uses) restyled to
 // Dueloop (§7.3). Trigger = the Input shell; chevron turns 180° while open; content = surface, radius-lg, elev-2,
@@ -53,6 +53,7 @@ function SelectTrigger({
       className={cn(
         FIELD_SHELL,
         FIELD_HEIGHT[size],
+        size === "sm" ? FIELD_HIT_SM : null,
         "group/select flex items-center justify-between gap-2 px-3 text-left whitespace-nowrap select-none data-[state=open]:border-brand data-placeholder:text-ink-muted",
         "*:data-[slot=select-value]:truncate [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
@@ -82,7 +83,7 @@ function SelectContent({
         className={cn(
           "relative z-(--z-dropdown) max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-hidden rounded-lg border border-line bg-panel text-ink shadow-elev-2",
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:duration-(--duration-fast) data-open:ease-(--ease-enter)",
-          "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:duration-100 data-closed:ease-(--ease-exit)",
+          "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:duration-(--duration-fast-exit) data-closed:ease-(--ease-exit)",
           "data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1",
           "motion-reduce:data-open:zoom-in-100 motion-reduce:data-open:slide-in-from-top-0 motion-reduce:data-closed:zoom-out-100",
           className

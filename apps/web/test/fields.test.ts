@@ -68,9 +68,17 @@ describe('D22: one field system (shadcn Input / Textarea / Select)', () => {
     expect(hits).toEqual([]);
   });
 
-  it('text fields come from @/components/ui/input (Field/MoneyInput/SearchInput build on it)', () => {
-    const field = readFileSync(path.join(WEB, 'components/ui/field.tsx'), 'utf8');
-    expect(field).toContain('from "@/components/ui/input"');
-    expect(readFileSync(path.join(WEB, 'components/ui/choice-select.tsx'), 'utf8')).toContain('from "@/components/ui/select"');
+  it('no code outside components/ui builds its own select, popover or field from the primitive library', () => {
+    // One primitive library (§7.3 step 2) wrapped once: app code may only use the styled parts in components/ui.
+    const hits = sources.filter((f) => !UI.test(f.rel) && /from ["'](radix-ui|@radix-ui\/[^"']+|@base-ui\/react[^"']*)["']/.test(f.src)).map((f) => f.rel);
+    expect(hits).toEqual([]);
+  });
+
+  it('every field in components/ui is drawn from the one shared shell (FIELD_SHELL)', () => {
+    // date-picker.tsx is a typeable text input with a calendar (C-32); it is not built from ui/input but shares the
+    // shell, which is what this checks (CONFLICTS C-46).
+    for (const f of ['input.tsx', 'textarea.tsx', 'select.tsx', 'combobox.tsx', 'date-picker.tsx']) {
+      expect(readFileSync(path.join(WEB, 'components/ui', f), 'utf8'), f).toMatch(/FIELD_SHELL/);
+    }
   });
 });

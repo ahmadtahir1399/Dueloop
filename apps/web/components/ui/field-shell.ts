@@ -21,3 +21,11 @@ export const FIELD_READONLY = "read-only:bg-sunken read-only:hover:border-input"
 /** Heights: md 44 px (forms); sm 36 px for dense desktop filter bars. */
 export const FIELD_HEIGHT = { md: "h-11", sm: "h-9" } as const;
 export type FieldSize = keyof typeof FIELD_HEIGHT;
+
+/**
+ * The 36 px "sm" size still has a 44 px hit area (§7.3, §3.3 minimum target): an invisible pseudo-element that reaches
+ * 44 px tall. For buttons (Select/Combobox triggers). Text inputs cannot carry a pseudo-element, so Input wraps an sm
+ * field in a 44 px box that focuses it instead (components/ui/input.tsx).
+ */
+// The inset is measured from the padding box (inside the 1 px border), so it is computed to make exactly 2.75rem.
+export const FIELD_HIT_SM = "relative after:absolute after:inset-x-0 after:inset-y-[calc((100%-2.75rem)/2)]";
