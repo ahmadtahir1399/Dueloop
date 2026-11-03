@@ -9,7 +9,7 @@
     "node": ">=24.12.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @dueloop/web dev",
+    "dev": "node init && pnpm --filter @dueloop/web dev",
     "lint": "eslint .",
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
     "test": "vitest run",
