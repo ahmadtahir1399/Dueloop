@@ -24,14 +24,9 @@ Result line from the last run: `7 passed`.
 
 ## Screenshots
 
-Desktop 1440×900, Tier 2, from the live page (not stills):
-
-| Beat 0 (hero) | Beat 3 (Approve) | Beat 7 (Close) |
-|---|---|---|
-| ![beat 0](qa/landing-desktop-beat-0.png) | ![beat 3](qa/landing-desktop-beat-3.png) | ![beat 7](qa/landing-desktop-beat-7.png) |
-
-Mobile 390×844: [hero](qa/landing-mobile-hero.png), [beat 5](qa/landing-mobile-beat-5.png). Sign in with the beat-0
-still: [sign-in-desktop.png](qa/sign-in-desktop.png).
+Screenshots of beats 0, 3 and 7 (desktop 1440×900, Tier 2), mobile 390×844 and Sign in were taken from the live
+page during the build and reviewed in the session. They are not committed (the repo audit allows no binary files
+except the runtime stills). To reproduce: run the dev server and the landing spec above, or open `/` and scroll.
 
 ## Stills (§6.2.6)
 

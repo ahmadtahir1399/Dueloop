@@ -12,8 +12,30 @@ import { scanHistory, scanText, scanTree, treeFiles } from '../secrets.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const LARGE_BYTES = 1024 * 1024;
-/** Tracked binaries are allowed only here (none today); everything else must be text or generated at test time. */
-const BINARY_ALLOW: ReadonlySet<string> = new Set([]);
+/**
+ * Tracked binaries are allowed only here; everything else must be text or generated at test time.
+ * The landing-page stills are runtime assets served by the web app (redesign §6.2.6). They are rendered from the
+ * real 3D scene by apps/web/scripts/render-loop-stills.ts and contain no data; listed one by one on purpose.
+ */
+const BINARY_ALLOW: ReadonlySet<string> = new Set([
+  'apps/web/public/landing/loop-beat-0.webp',
+  'apps/web/public/landing/loop-beat-0-600.webp',
+  'apps/web/public/landing/loop-beat-1.webp',
+  'apps/web/public/landing/loop-beat-1-600.webp',
+  'apps/web/public/landing/loop-beat-2.webp',
+  'apps/web/public/landing/loop-beat-2-600.webp',
+  'apps/web/public/landing/loop-beat-3.webp',
+  'apps/web/public/landing/loop-beat-3-600.webp',
+  'apps/web/public/landing/loop-beat-4.webp',
+  'apps/web/public/landing/loop-beat-4-600.webp',
+  'apps/web/public/landing/loop-beat-5.webp',
+  'apps/web/public/landing/loop-beat-5-600.webp',
+  'apps/web/public/landing/loop-beat-6.webp',
+  'apps/web/public/landing/loop-beat-6-600.webp',
+  'apps/web/public/landing/loop-beat-7.webp',
+  'apps/web/public/landing/loop-beat-7-600.webp',
+  'apps/web/public/landing/og-beat-7.png',
+]);
 /** User-facing documents where claims are audited (ADRs and reports are engineering records, not sales material). */
 const CLAIM_DOCS = (files: string[]) => files.filter((f) => /^(README|SECURITY|CONTRIBUTING|CHANGELOG)\.md$/.test(f) || /^docs\/[^/]+\.md$/.test(f));
 

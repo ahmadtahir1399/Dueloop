@@ -10,14 +10,14 @@ const action = (rel: string) => readFileSync(new URL(`../app/(staff)/${rel}`, im
 
 describe('auth', () => {
   it('sign in', () => {
-    expect(F.signInSchema.safeParse({ email: 'a@b.co', password: 'x' }).success).toBe(true);
+    expect(F.signInSchema.safeParse({ email: 'a@example.test', password: 'x' }).success).toBe(true);
     expect(msg(F.signInSchema.safeParse({ email: 'nope', password: 'x' }), 'email')).toBe('Enter an email address like name@example.com.');
     expect(msg(F.signInSchema.safeParse({ email: '', password: 'x' }), 'email')).toBe('Enter your email address.');
   });
   it('sign up', () => {
-    expect(F.signUpSchema.safeParse({ email: 'a@b.co', password: '12345678', confirmPassword: '12345678' }).success).toBe(true);
-    expect(msg(F.signUpSchema.safeParse({ email: 'a@b.co', password: 'short', confirmPassword: 'short' }), 'password')).toBe('Use at least 8 characters.');
-    expect(msg(F.signUpSchema.safeParse({ email: 'a@b.co', password: '12345678', confirmPassword: '87654321' }), 'confirmPassword')).toBe("The passwords don't match.");
+    expect(F.signUpSchema.safeParse({ email: 'a@example.test', password: '12345678', confirmPassword: '12345678' }).success).toBe(true);
+    expect(msg(F.signUpSchema.safeParse({ email: 'a@example.test', password: 'short', confirmPassword: 'short' }), 'password')).toBe('Use at least 8 characters.');
+    expect(msg(F.signUpSchema.safeParse({ email: 'a@example.test', password: '12345678', confirmPassword: '87654321' }), 'confirmPassword')).toBe("The passwords don't match.");
     const src = action('sign-in/actions.ts');
     for (const k of ['email', 'password']) expect(src).toContain(`"${k}"`);
   });
@@ -93,8 +93,8 @@ describe('setup', () => {
     expect(F.onboardingSchema.safeParse({ name: '', timezone: 'Asia/Karachi', currency: 'PKR', quietStart: '20', quietEnd: '9' }).success).toBe(false);
     expect(F.holidaySchema.safeParse({ date: '2026-12-25' }).success).toBe(true);
     expect(F.holidaySchema.safeParse({ date: '25/12/2026' }).success).toBe(false);
-    expect(F.inviteSchema.safeParse({ email: 'a@b.co', role: 'collector' }).success).toBe(true);
-    expect(F.inviteSchema.safeParse({ email: 'a@b.co', role: 'admin' }).success).toBe(false);
+    expect(F.inviteSchema.safeParse({ email: 'a@example.test', role: 'collector' }).success).toBe(true);
+    expect(F.inviteSchema.safeParse({ email: 'a@example.test', role: 'admin' }).success).toBe(false);
     expect(F.apiKeySchema.safeParse({ name: '' }).success).toBe(false);
   });
 });
