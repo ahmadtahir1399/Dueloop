@@ -106,8 +106,8 @@ export function scriptFindings(pkgFile: string, scripts: Record<string, string>)
 }
 
 // ---- licence presence per the owner's decision ---------------------------------------------------------------
-/** The owner's decision (prompt 7 facts). null = blank: NO licence file may exist until they decide. */
-export const LICENCE_DECISION: string | null = null;
+/** The owner's decision: MIT (LICENSE added by the owner, 2026-11-02). null = blank: NO licence file may exist. */
+export const LICENCE_DECISION: string | null = 'MIT';
 
 export function licenceFindings(root: string): Finding[] {
   const files = ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENCE', 'LICENCE.md', 'COPYING'].filter((f) => existsSync(path.join(root, f)));
