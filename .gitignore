@@ -3,10 +3,9 @@ coverage/
 *.log
 .DS_Store
 # Secrets and local env: only the generated example is committed.
-.env
-.env.*
 !.env.example
 *.pem
+temp_auto_push.bat
 # Demo state (prompt 7): logs, pids, per-run credentials, recordings, drill output.
 .demo/
 # Playwright output anywhere in the tree.
@@ -16,3 +15,6 @@ playwright-report/
 .reports/
 # Rendered from docs/guides/*.html by `pnpm guide:pdf`; binaries are not committed (repo:audit).
 docs/guides/*.pdf
+.gitignore
+branch_structure.json
+config.bat
