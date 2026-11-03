@@ -245,12 +245,14 @@
 
 /* ---- Landing page (S32) ---- */
 @layer components {
-  /* Desktop: the hero row's inverse band spans both columns behind the transparent header. */
-  @media (min-width: 1024px) {
-    .story { background: linear-gradient(to bottom, var(--color-surface-inverse) 0, var(--color-surface-inverse) 100svh, var(--color-bg) 100svh); }
-  }
-  /* Stage background cross-fades inverse → page bg as beat 0 → 1 (--stage-mix is written by the scroll handler). */
-  .stage { background: color-mix(in oklab, var(--color-surface-inverse), var(--color-bg) var(--stage-mix, 0%)); }
+  /*
+   * The story (hero + "How it works") has ONE background for both columns: inverse while the hero is read, fading
+   * to the page background between beat 0 and 1 (--stage-mix, written by the scroll handler). The 3D stage is
+   * transparent on top of it, so there is no box and no seam. Text between the two follows the same mix.
+   */
+  .story { background: color-mix(in oklab, var(--color-surface-inverse), var(--color-bg) var(--stage-mix, 0%)); }
+  .story-ink { color: color-mix(in oklab, var(--color-text-inverse), var(--color-text) var(--stage-mix, 0%)); }
+  .story-accent { color: color-mix(in oklab, var(--color-accent), var(--color-primary) var(--stage-mix, 0%)); }
   .still { transition: opacity var(--duration-fast) var(--ease-standard); }
   .canvas-fade { transition: opacity var(--duration-slow) var(--ease-standard); }
   .reveal { animation: reveal-in var(--duration-transform-base) var(--ease-enter) both; animation-timeline: view(); animation-range: entry 0% entry 40%; }

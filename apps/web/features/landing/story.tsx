@@ -60,8 +60,8 @@ export function StoryWrapper({ hero, steps }: { hero: React.ReactNode; steps: re
       beatRef.current = b;
       const whole = Math.min(7, Math.floor(b));
       setBeat((prev) => (prev === whole ? prev : whole));
-      // Stage background: inverse (hero) → page background between beat 0 and 1 (no React render).
-      stage.current?.style.setProperty("--stage-mix", `${Math.min(1, Math.max(0, b - 0.45) / 0.55) * 100}%`);
+      // One background for the whole story: inverse (hero) → page background between beat 0 and 1 (no React render).
+      wrapper.current?.style.setProperty("--stage-mix", `${Math.min(1, Math.max(0, b - 0.45) / 0.55) * 100}%`);
       invalidateRef.current();
     };
     const onScroll = () => {
@@ -116,15 +116,15 @@ export function StoryWrapper({ hero, steps }: { hero: React.ReactNode; steps: re
           }}
           data-story-block={0}
           id="top"
-          className="on-inverse row-start-1 flex min-h-[calc(100svh-56px)] lg:col-start-1 flex-col justify-center gap-6 bg-inverse gutter py-16 text-ink-inverse lg:min-h-svh lg:bg-transparent lg:pt-28 lg:pr-12 lg:pl-[max(var(--gutter),calc((100vw-var(--content-max))/2+var(--gutter)))]"
+          className="on-inverse row-start-1 flex min-h-[calc(100svh-56px)] lg:col-start-1 flex-col justify-center gap-6 gutter py-16 text-ink-inverse lg:min-h-svh lg:pt-28 lg:pr-12 lg:pl-[max(var(--gutter),calc((100vw-var(--content-max))/2+var(--gutter)))]"
         >
           {hero}
         </div>
         <div className="row-start-3 gutter lg:col-start-1 lg:row-start-2 lg:pr-12 lg:pl-[max(var(--gutter),calc((100vw-var(--content-max))/2+var(--gutter)))]">
-          <h2 id="how" tabIndex={-1} className="pt-16 t-label text-brand">
+          <h2 id="how" tabIndex={-1} className="story-accent pt-16 t-label">
             How it works
           </h2>
-          <p className="t-display-lg mt-2 max-w-md">From import to paid, in seven calm steps.</p>
+          <p className="story-ink t-display-lg mt-2 max-w-md">From import to paid, in seven calm steps.</p>
           <ol className="mt-6 grid">
             {steps.map((s, i) => (
               <li
@@ -158,7 +158,7 @@ export function StoryWrapper({ hero, steps }: { hero: React.ReactNode; steps: re
           ref={stage}
           data-tier={tier ?? "pending"}
           data-3d-state={state}
-          className="stage relative h-full w-full overflow-hidden lg:rounded-2xl"
+          className="stage relative h-full w-full overflow-hidden"
         >
           {/* Tier 0 and the server render: one still per beat (cross-fade on beat change; instant with reduced motion). */}
           <div className={cn("absolute inset-0 grid place-items-center", live && ready && "opacity-0")} aria-hidden="true">

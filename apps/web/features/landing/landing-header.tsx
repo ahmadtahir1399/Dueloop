@@ -18,10 +18,13 @@ const LINKS = [
  * hero has scrolled past. Links move focus to the section heading. Tablet/mobile: links in a menu sheet.
  */
 export function LandingHeader() {
-  const [solid, setSolid] = useState(false);
+  // "top": transparent over the hero; "hero": scrolled but still over the hero, solid inverse so nothing shows
+  // through; "page": past the hero, page surface with a border (M24).
+  const [mode, setMode] = useState<"top" | "hero" | "page">("top");
+  const solid = mode === "page";
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    const onScroll = () => setSolid(window.scrollY > window.innerHeight * 0.8);
+    const onScroll = () => setMode(window.scrollY < 8 ? "top" : window.scrollY < window.innerHeight * 0.45 ? "hero" : "page");
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -40,7 +43,11 @@ export function LandingHeader() {
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-(--z-header) transition-colors-fast",
-        solid ? "border-b border-line bg-canvas text-ink shadow-elev-1" : "on-inverse border-b border-transparent bg-transparent text-ink-inverse",
+        mode === "page"
+          ? "border-b border-line bg-canvas text-ink shadow-elev-1"
+          : mode === "hero"
+            ? "on-inverse border-b border-inverse-raised bg-inverse text-ink-inverse"
+            : "on-inverse border-b border-transparent bg-transparent text-ink-inverse",
       )}
     >
       <div className="mx-auto flex h-14 max-w-(--content-max) items-center gap-4 gutter lg:h-[72px]">
