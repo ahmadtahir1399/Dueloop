@@ -318,7 +318,9 @@ still the only source of truth.
 
 **C-52 · 8c: what the count announcement can say.** The lists load one page and no total (C-14), and §10 forbids new
 queries. The polite live region (`data-testid="list-count"`) says "18 invoices" when everything fits on one page,
-"Showing the first 50 invoices; more on the next page" otherwise, and "No invoices match" when empty.
+"Showing the first 50 invoices; more on the next page" otherwise, and "No invoices match" when empty. After the
+8c review: an unfiltered view says "No open tasks" (no "match"), and tasks/proofs, which load at most 200 rows with no
+next page, say "Showing the first 200 open tasks" at the cap instead of claiming an exact count.
 
 **C-53 · 8c: without JavaScript.** Each filter bar is still a GET form with a `<noscript>` "Apply filters" button, so the
 search box and checkboxes work without JavaScript. The custom selects need JavaScript (C-32), as before.
@@ -327,7 +329,8 @@ search box and checkboxes work without JavaScript. The custom selects need JavaS
 Back does not step through filter changes one by one: it leaves the list. When you return to the list with Back (from a
 detail page, say), the list comes back with its latest filters, controls and results. `e2e/staff/lists.spec.ts` tests
 exactly that. If you want Back to undo each filter change, it is one word (`push`), but every keystroke burst would
-then add a history entry.
+then add a history entry. **Status: NEEDS USER CONFIRMATION** (8c review): D25's "Back restores the
+previous filters" can also be read as "Back undoes each filter change"; the spec does not settle it.
 
 **C-55 · 8c: no mobile filter sheet.** §4.10 rule 10 asks for a bottom sheet on mobile with a "Show 18 invoices" button.
 There is no Sheet component yet (the landing menu uses a `<dialog>`), and the bars are short (one search box, up to two
@@ -352,6 +355,18 @@ since v1.1 the cell shows the StatusChip label "Overdue", so the expectation was
 clicks "Show" (C-56). (b) `parity.spec` "reconcile unknown as sent" fails on this DB: it compares two invoices' event
 logs after the UI and the CLI reconcile, which depends on fixture state that earlier runs changed. 8c does not touch
 the unknown-sends screen or its form. Needs a reset DB to judge (C-05).
+
+**C-59 · 8c review fixes (4 November 2026).** Two blocking search bugs fixed, with e2e steps written first
+(`lists.spec.ts`): (1) the 300 ms search timer applied its patch to the query of the render it was created in, so a
+status or chip change made inside that window was silently dropped; `useListFilters` now builds every change on the
+latest query (a ref), so both survive. (2) Escape before the debounce fired left the typed text in the box; it now
+empties the box too. Also from the review: chips and the hidden customer field come from the query's own parser
+(`parseFilters` / `parseCustomerFilters`), so a chip shows exactly when the list is filtered (a 300-character or
+wildcard-only `q` no longer disagrees); `FilterTabs` takes the server's parsed value, so a bad `?status=` still marks
+the tab the list fell back to. Not changed, noted: the overview "messages sent / cost" figures sit outside
+`ListResults` (not dimmed while loading); `domain/list-params.ts` imports `lib/time` for the period list; the old
+`STATUSES` copy in `lib/data/invoices.ts` (identical to core's today); chips are server-built so they trail the
+optimistic controls during a load; the search box keeps its fixed width on mobile.
 
 ## Open questions answered by the code
 

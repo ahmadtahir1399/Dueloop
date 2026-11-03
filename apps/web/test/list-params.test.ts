@@ -52,4 +52,8 @@ describe('list URLs (§4.10 rules 1, 2, 11)', () => {
     expect(countText(50, true, 'invoice')).toBe('Showing the first 50 invoices; more on the next page');
     expect(countText(0, false, 'invoice')).toBe('No invoices match');
   });
+  it('does not say "match" on an unfiltered view, nor "next page" on a capped list without paging', () => {
+    expect(countText(0, false, 'open task', { filtered: false })).toBe('No open tasks');
+    expect(countText(200, true, 'open task', { paged: false })).toBe('Showing the first 200 open tasks');
+  });
 });

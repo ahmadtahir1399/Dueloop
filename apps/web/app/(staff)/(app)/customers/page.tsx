@@ -25,7 +25,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
   if (f.q) keep.set("q", f.q);
   if (f.optedOut) keep.set("opted_out", "1");
   const filtered = keep.size > 0;
-  const chips = [...(p.q ? [{ key: "q", label: `Search: ${p.q}` }] : []), ...(p.opted_out ? [{ key: "opted_out", label: "Opted out only" }] : [])];
+  const chips = [...(f.q ? [{ key: "q", label: `Search: ${f.q}` }] : []), ...(p.opted_out ? [{ key: "opted_out", label: "Opted out only" }] : [])];
 
   return (
     <div className="grid gap-6">
@@ -50,7 +50,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
         </FilterBar>
         <FilterChips chips={chips} />
         <p role="status" className="sr-only" data-testid="list-count">
-          {countText(rows.length, Boolean(next), "customer")}
+          {countText(rows.length, Boolean(next), "customer", { filtered })}
         </p>
       </div>
       <ListResults>

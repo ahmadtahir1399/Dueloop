@@ -33,9 +33,9 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
     <div className="grid gap-6">
       <PageHeader title="Tasks" description="Replies, claims and disputes that need a person. Urgent ones come first." />
       <ListScope query={queryOf(sp)}>
-      <FilterTabs name="status" label="Task status" tabs={[{ label: "Open" }, { label: "Resolved", value: "resolved" }]} />
+      <FilterTabs name="status" label="Task status" value={status === "open" ? undefined : status} tabs={[{ label: "Open" }, { label: "Resolved", value: "resolved" }]} />
       <p role="status" className="sr-only" data-testid="list-count">
-        {countText(rows.length, false, `${status} task`)}
+        {countText(rows.length, rows.length >= 200, `${status} task`, { filtered: status !== "open", paged: false })}
       </p>
       <ListResults>
       {rows.length === 0 ? (

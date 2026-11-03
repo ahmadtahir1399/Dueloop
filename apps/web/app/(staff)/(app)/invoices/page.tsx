@@ -44,10 +44,10 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
   const f = parseFilters(sp);
   const { rows, next } = await listInvoicePage(ctx, f);
   const chips = [
-    ...(p.q ? [{ key: "q", label: `Search: ${p.q}` }] : []),
+    ...(f.q ? [{ key: "q", label: `Search: ${f.q}` }] : []),
     ...(p.status !== ALL ? [{ key: "status", label: STATUS_VISUAL[p.status].label }] : []),
     ...(p.bucket !== ALL ? [{ key: "bucket", label: `Age: ${BUCKET_TEXT[p.bucket] ?? p.bucket}` }] : []),
-    ...(p.customer ? [{ key: "customer", label: `Customer: ${f.customer && rows[0] ? rows[0].customer_name : "one customer"}` }] : []),
+    ...(f.customer ? [{ key: "customer", label: `Customer: ${rows[0] ? rows[0].customer_name : "one customer"}` }] : []),
   ];
   const keep = new URLSearchParams();
   if (f.status) keep.set("status", f.status);
@@ -85,12 +85,12 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           <FilterSearch id="q" label="Search" placeholder="Number or customer" className="w-64" />
           <FilterSelect id="status" name="status" label="Status" className="w-44" options={STATUSES.map((st) => ({ value: st, label: STATUS_VISUAL[st].label }))} />
           <FilterSelect id="bucket" name="bucket" label="Age" className="w-40" options={LIST_BUCKETS.map((bk) => ({ value: bk, label: BUCKET_TEXT[bk] ?? bk }))} />
-          {p.customer ? <input type="hidden" name="customer" value={p.customer} /> : null}
+          {f.customer ? <input type="hidden" name="customer" value={f.customer} /> : null}
         </FilterBar>
-        <FilterTabs name="status" label="Invoice status" tabs={TABS.map((t) => ({ label: t.label, value: t.status }))} />
+        <FilterTabs name="status" label="Invoice status" value={f.status} tabs={TABS.map((t) => ({ label: t.label, value: t.status }))} />
         <FilterChips chips={chips} />
         <p role="status" className="sr-only" data-testid="list-count">
-          {countText(rows.length, Boolean(next), "invoice")}
+          {countText(rows.length, Boolean(next), "invoice", { filtered })}
         </p>
       </div>
 

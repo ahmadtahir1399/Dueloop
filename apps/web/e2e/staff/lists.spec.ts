@@ -71,6 +71,33 @@ test("invoices: select, search burst, chips, count, scroll and Back (D25)", asyn
   await expect(page.getByRole("list", { name: "Active filters" })).toHaveCount(0);
 });
 
+test("a pending search never overwrites a newer filter; Escape clears unapplied text (8c review)", async ({ page }) => {
+  await page.goto("/invoices");
+  await expect(page.getByTestId("invoice-table").locator("tbody tr").first()).toBeVisible();
+  const search = page.getByLabel("Search", { exact: true });
+  // Type, then choose a status inside the 300 ms window: both must end up in the URL.
+  await search.pressSequentially("DA", { delay: 20 });
+  await choose(page.getByRole("combobox", { name: "Status" }), "Overdue");
+  await page.waitForTimeout(600);
+  await expect(page).toHaveURL(/status=overdue/);
+  await expect(page).toHaveURL(/q=DA/);
+
+  // Escape before the debounce fires: the box is emptied and the URL keeps no search.
+  await page.goto("/invoices");
+  await search.pressSequentially("zz", { delay: 20 });
+  await search.press("Escape");
+  await expect(search).toHaveValue("");
+  await page.waitForTimeout(500);
+  await expect(page).not.toHaveURL(/q=/);
+});
+
+test("a bad status still marks the tab the server fell back to (8c review)", async ({ page }) => {
+  await page.goto("/tasks?status=zzz");
+  await expect(page.getByRole("navigation", { name: "Task status" }).getByRole("link", { name: "Open" })).toHaveAttribute("aria-current", "page");
+  await page.goto("/invoices?status=bogus");
+  await expect(page.getByRole("navigation", { name: "Invoice status" }).getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
+});
+
 test("customers: checkbox applies at once; Back restores it (D25)", async ({ page }) => {
   await page.goto("/customers");
   await noApplyButtons(page);

@@ -33,9 +33,9 @@ export default async function ProofsPage({ searchParams }: PageProps<"/proofs">)
     <div className="grid gap-6">
       <PageHeader title="Payment proofs" description="A proof never marks anything paid. Only a human who checked the bank statement confirms money." />
       <ListScope query={queryOf(sp)}>
-      <FilterTabs name="status" label="Proof status" tabs={(["pending", "confirmed", "rejected"] as const).map((st) => ({ label: LABEL[st], value: st === "pending" ? undefined : st }))} />
+      <FilterTabs name="status" label="Proof status" value={status === "pending" ? undefined : status} tabs={(["pending", "confirmed", "rejected"] as const).map((st) => ({ label: LABEL[st], value: st === "pending" ? undefined : st }))} />
       <p role="status" className="sr-only" data-testid="list-count">
-        {countText(rows.length, false, status === "pending" ? "proof" : `${status} proof`)}
+        {countText(rows.length, rows.length >= 200, status === "pending" ? "proof" : `${status} proof`, { filtered: status !== "pending", paged: false })}
       </p>
       <ListResults>
       {rows.length === 0 ? (

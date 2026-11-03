@@ -107,7 +107,10 @@ export function FilterSearch({ id, name = "q", label, placeholder, maxLength = 6
           if (e.key === "Enter") {
             e.preventDefault();
             apply(e.currentTarget.value);
-          } else if (e.key === "Escape") apply("");
+          } else if (e.key === "Escape") {
+            setValue("");
+            apply("");
+          }
         }}
       />
     </div>
@@ -160,10 +163,15 @@ export function FilterCheckbox({ name, value = "1", label }: { name: string; val
   return <Checkbox name={name} value={value} checked={params.get(name) === value} onChange={(e) => setFilter(name, e.currentTarget.checked ? value : undefined)} label={label} />;
 }
 
-/** Status tabs: real links (shareable, open in a new tab), applied in place on a plain click. */
-export function FilterTabs({ name, label, tabs }: { name: string; label: string; tabs: { label: string; value?: string }[] }) {
+/**
+ * Status tabs: real links (shareable, open in a new tab), applied in place on a plain click. `value` is the server's
+ * parsed value (undefined = the default tab), so a bad URL still marks the tab the list fell back to. A known URL
+ * value (including the optimistic one while a change loads) wins.
+ */
+export function FilterTabs({ name, label, tabs, value }: { name: string; label: string; tabs: { label: string; value?: string }[]; value?: string }) {
   const { params, pathname, setFilter } = useScope();
-  const current = params.get(name) ?? undefined;
+  const raw = params.get(name) ?? undefined;
+  const current = tabs.some((t) => t.value === raw) ? raw : value;
   return (
     <nav aria-label={label} className="-mb-px flex gap-1 overflow-x-auto border-b border-line">
       {tabs.map((t) => {
