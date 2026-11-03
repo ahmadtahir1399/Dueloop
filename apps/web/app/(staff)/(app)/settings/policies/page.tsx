@@ -9,9 +9,9 @@ export default async function PoliciesPage() {
   const policies = await listPolicies(ctx);
   const canEdit = can(ctx.role, "policies.edit");
   return (
-    <div className="grid gap-4">
-      <h1 className="text-xl font-semibold">Reminder policies</h1>
-      <p className="text-sm text-muted-foreground">
+    <div className="grid gap-6">
+      <h1 className="t-display-lg text-ink">Reminder policies</h1>
+      <p className="t-body-sm text-ink-muted">
         Changing days or channel affects only steps not yet sent. A step that was sent is never sent again: the system remembers sent steps by
         their id, and ids never change.
       </p>

@@ -29,7 +29,7 @@ export async function updateSession(request: NextRequest, requestHeaders: Header
 
   if (protect && !data?.claims) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
+    redirectUrl.pathname = "/sign-in";
     redirectUrl.search = "";
     // Carry refreshed session cookies and cache headers over (Supabase docs). Next 16.4's
     // ResponseCookies has no setAll(), so copy them one by one.

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Stepper } from "@/components/ui/stepper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,8 +163,10 @@ export function ImportWizard({ defaultCurrency }: { defaultCurrency: string }) {
   const columnOptions = [{ value: NONE, label: "— not in this file —" }, ...(header ?? []).map((h) => ({ value: h, label: h }))];
   const missingRequired = mapping ? FIELDS.filter((f) => f.required && mapping[f.key] === NONE) : [];
 
+  const step = committed?.ok ? 3 : preview ? 2 : header ? 1 : 0;
   return (
     <div className="grid gap-6">
+      <Stepper steps={["Upload", "Match columns", "Preview", "Done"]} current={step} label="Import steps" />
       <Card>
         <CardHeader>
           <CardTitle>1. Choose a CSV file</CardTitle>
@@ -378,7 +381,7 @@ export function ImportWizard({ defaultCurrency }: { defaultCurrency: string }) {
       ) : null}
 
       {committed?.ok ? (
-        <Alert>
+        <Alert variant="success" role="status">
           <AlertTitle>Import complete</AlertTitle>
           <AlertDescription>
             {committed.counts.invoices.created} invoices created, {committed.counts.invoices.updated} updated, {committed.counts.invoices.unchanged} unchanged.{" "}

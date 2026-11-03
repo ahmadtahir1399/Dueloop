@@ -2,35 +2,32 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { Slot } from "radix-ui"
+import { LoaderCircle } from "lucide-react"
 
+// Buttons (§7.2): one filled primary per view; secondary is outlined; destructive is filled red and only for
+// stop/remove actions. md is 44 px; sm is 36 px with its hit area extended to 44 px (::after), desktop-dense only.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "press group/button relative inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-transparent font-medium whitespace-nowrap select-none transition-colors-fast disabled:pointer-events-none disabled:bg-sunken disabled:text-ink-muted aria-disabled:cursor-not-allowed aria-disabled:bg-sunken aria-disabled:text-ink-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
-        destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "bg-brand text-on-brand hover:bg-brand-hover active:bg-brand-active",
+        outline: "border-line-control bg-panel text-ink hover:border-line-strong hover:bg-sunken",
+        secondary: "border-line-control bg-panel text-ink hover:border-line-strong hover:bg-sunken",
+        ghost: "bg-transparent text-link hover:bg-brand-soft",
+        destructive: "bg-danger text-on-danger hover:bg-danger-hover",
+        accent: "bg-lime text-on-lime hover:brightness-95",
+        link: "h-auto px-0 text-link underline underline-offset-4 hover:no-underline",
       },
       size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
+        default: "h-11 px-4 t-body-md",
+        sm: "h-9 px-3 t-body-sm after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']",
+        xs: "h-9 px-3 t-body-sm after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']",
+        lg: "h-13 px-6 t-body-lg",
+        icon: "size-11",
+        "icon-xs": "size-9",
+        "icon-sm": "size-9",
+        "icon-lg": "size-13",
       },
     },
     defaultVariants: {
@@ -45,21 +42,44 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  loading = false,
+  loadingLabel = "Saving…",
+  children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    /** Shows a spinner and the verb label; the button keeps its place and blocks a double submit. */
+    loading?: boolean
+    loadingLabel?: string
   }) {
   const Comp = asChild ? Slot.Root : "button"
-
+  if (asChild) {
+    return (
+      <Comp data-slot="button" data-variant={variant} data-size={size} className={cn(buttonVariants({ variant, size }), className)} {...props}>
+        {children}
+      </Comp>
+    )
+  }
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      aria-busy={loading || undefined}
+      className={cn(buttonVariants({ variant, size }), className)}
       {...props}
-    />
+      disabled={props.disabled || loading}
+    >
+      {loading ? (
+        <>
+          <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+          {loadingLabel}
+        </>
+      ) : (
+        children
+      )}
+    </Comp>
   )
 }
 

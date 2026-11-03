@@ -39,6 +39,12 @@ export default defineConfig({
     // `pnpm demo:record` sets DEMO_RECORD=1: video of the same run (Playwright docs, "Videos": use.video { mode, size }).
     { name: "demo", testDir: "./e2e/demo", use: { ...devices["Desktop Chrome"], video: process.env.DEMO_RECORD === "1" ? { mode: "on", size: { width: 1280, height: 720 } } : "off" }, timeout: 600_000 },
     { name: "perf", testDir: "./e2e/perf", use: { ...devices["Desktop Chrome"] } },
+    // Landing page + real-time 3D (redesign D15–D18). Software WebGL so it runs headless and in CI.
+    {
+      name: "landing",
+      testDir: "./e2e/landing",
+      use: { ...devices["Desktop Chrome"], launchOptions: { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } },
+    },
   ],
   webServer: {
     // The server log goes to a file the security suite scans for secrets, tokens and contact details.

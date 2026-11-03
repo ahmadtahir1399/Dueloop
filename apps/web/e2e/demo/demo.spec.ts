@@ -22,6 +22,7 @@ import {
   workerOnce,
 } from "../support/demo-runtime";
 import { BASE_URL, stack } from "../support/stack";
+import { choose } from "../support/choice";
 
 const DOMAIN = "@freshdemo.example.test";
 const table: { step: string; assertion: string; result: string }[] = [];
@@ -47,7 +48,7 @@ async function signUpOwner(page: Page) {
   const password = randomBytes(18).toString("base64url"); // per-run random, never printed
   const c = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   if (c.error) throw new Error("could not create the demo owner");
-  await page.goto("/login");
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -79,11 +80,11 @@ test("the 7-step demo, end to end", async ({ page, context }) => {
   // The injected clock (demoClock) is a moment inside a London send window, so the tenant must be in London too.
   // Onboarding defaults to Asia/Karachi; leaving it there made the run depend on the time of day (it failed once
   // London's window was open but Karachi's was not).
-  await page.getByLabel("Time zone").click();
-  await page.getByRole("option", { name: "Europe/London", exact: true }).click();
+  await page.getByRole("button", { name: "Continue" }).click(); // redesign: onboarding is shown as two steps
+  await choose(page.getByLabel("Time zone"), "Europe/London");
   await page.getByLabel("Main currency").fill("GBP");
   await page.getByRole("button", { name: /Create/ }).click();
-  await page.waitForURL((u) => u.pathname === "/" || u.pathname === "/import");
+  await page.waitForURL((u) => u.pathname === "/overview" || u.pathname === "/import");
   const created = (await db().query<{ id: string; timezone: string }>("select id, timezone from public.tenants where name = 'Fresh Demo Co' order by created_at desc limit 1")).rows[0];
   const tenant = created?.id ?? "";
   expect(tenant).not.toBe("");

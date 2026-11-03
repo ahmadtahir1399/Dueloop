@@ -1,11 +1,16 @@
 import Link from "next/link";
+import { ClipboardList } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { UntrustedText } from "@/components/untrusted-text";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { Chip } from "@/components/ui/status-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requirePermission } from "@/lib/session";
+import { taskVisual } from "@/lib/task-labels";
 import { formatInstant } from "@/lib/time";
+import { cn } from "cn";
 
+/** S12 Tasks: urgent (refunds, chargebacks) first, then oldest first. */
 export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   const ctx = await requirePermission("tasks.view");
   const sp = await searchParams;
@@ -21,23 +26,32 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   if (error) throw new Error("could not load tasks");
   const rows = data ?? [];
   const tz = ctx.tenant.timezone;
+  const tab = (key: "open" | "resolved", label: string, href: string) => (
+    <Link
+      href={href}
+      aria-current={status === key ? "page" : undefined}
+      className={cn(
+        "inline-flex min-h-11 items-center border-b-2 px-3 t-body-sm font-medium",
+        status === key ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink",
+      )}
+    >
+      {label}
+    </Link>
+  );
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">Tasks</h1>
-        <nav aria-label="Task status" className="flex gap-2 text-sm">
-          <Link href="/tasks" aria-current={status === "open" ? "page" : undefined} className={status === "open" ? "font-semibold" : "underline"}>
-            Open
-          </Link>
-          <Link href="/tasks?status=resolved" aria-current={status === "resolved" ? "page" : undefined} className={status === "resolved" ? "font-semibold" : "underline"}>
-            Resolved
-          </Link>
-        </nav>
-      </div>
+    <div className="grid gap-6">
+      <PageHeader title="Tasks" description="Replies, claims and disputes that need a person. Urgent ones come first." />
+      <nav aria-label="Task status" className="flex gap-1 border-b border-line">
+        {tab("open", "Open", "/tasks")}
+        {tab("resolved", "Resolved", "/tasks?status=resolved")}
+      </nav>
       {rows.length === 0 ? (
-        <EmptyState title={status === "open" ? "No open tasks" : "No resolved tasks"} />
+        <EmptyState title={status === "open" ? "No open tasks" : "No resolved tasks"} icon={ClipboardList}>
+          {status === "open" ? "Unclear replies and payment claims will appear here." : null}
+        </EmptyState>
       ) : (
         <Table data-testid="task-table">
+          <caption className="sr-only">Tasks</caption>
           <TableHeader>
             <TableRow>
               <TableHead scope="col">Task</TableHead>
@@ -48,26 +62,34 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((t) => (
-              <TableRow key={t.id} data-task={t.type}>
-                <TableCell>
-                  <Link className="underline" href={`/tasks/${t.id}`}>
-                    {t.type.replaceAll("_", " ")}
-                  </Link>
-                  {t.urgent ? (
-                    <Badge variant="destructive" className="ml-2">
-                      urgent
-                    </Badge>
-                  ) : null}
-                </TableCell>
-                <TableCell>{t.invoices?.number ? <UntrustedText text={t.invoices.number} /> : "—"}</TableCell>
-                <TableCell>
-                  <UntrustedText text={t.customers?.display_name} />
-                </TableCell>
-                <TableCell>{formatInstant(t.created_at, tz)}</TableCell>
-                <TableCell>{t.status === "open" && t.blocks_reminders_until ? `paused until ${formatInstant(t.blocks_reminders_until, tz)}` : "—"}</TableCell>
-              </TableRow>
-            ))}
+            {rows.map((t) => {
+              const v = taskVisual(t.type);
+              return (
+                <TableRow key={t.id} data-task={t.type}>
+                  <TableCell>
+                    <span className="flex items-center gap-2">
+                      <Chip tone={v.tone} size="sm">
+                        {v.label}
+                      </Chip>
+                      <Link className="font-semibold text-link underline" href={`/tasks/${t.id}`}>
+                        Open<span className="sr-only"> task: {v.label}</span>
+                      </Link>
+                      {t.urgent ? (
+                        <Chip tone="error" size="sm">
+                          urgent
+                        </Chip>
+                      ) : null}
+                    </span>
+                  </TableCell>
+                  <TableCell>{t.invoices?.number ? <UntrustedText text={t.invoices.number} /> : "—"}</TableCell>
+                  <TableCell className="max-w-56 truncate">
+                    <UntrustedText text={t.customers?.display_name} />
+                  </TableCell>
+                  <TableCell className="tabular-nums">{formatInstant(t.created_at, tz)}</TableCell>
+                  <TableCell className="text-ink-muted">{t.status === "open" && t.blocks_reminders_until ? `paused until ${formatInstant(t.blocks_reminders_until, tz)}` : "—"}</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}

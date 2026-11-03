@@ -36,5 +36,5 @@ export async function createBusiness(_prev: OnboardingState, formData: FormData)
   if (typeof tenantId === "string") {
     await supabase.from("templates").upsert(standardTemplateRows(tenantId), { onConflict: "tenant_id,template_key,channel,locale", ignoreDuplicates: true });
   }
-  redirect("/");
+  redirect("/overview");
 }

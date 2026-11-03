@@ -1,13 +1,19 @@
 "use client";
 
 // Human-entered payment (manual or from a proof): amount, date and bank reference are typed by the person, never
-// pre-filled. "Preview" shows the plan computed by the prompt 5 pipeline; "Confirm" re-plans on the server and
-// records only if the numbers are unchanged (the fingerprint). Amounts are shown from minor-unit TEXT.
-import { useActionState, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+// pre-filled (rule 31: extracted text never becomes an amount). "Preview" shows the plan computed by the prompt 5
+// pipeline; "Confirm" re-plans on the server and records only if the numbers are unchanged (the fingerprint).
+// React Hook Form + Zod checks the fields first (§5.4); the server action is unchanged and stays the authority.
 import { Button } from "@/components/ui/button";
+import { Banner } from "@/components/ui/banner";
+import { RhfSelect } from "@/components/ui/choice-select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Checkbox, Field, FormError, MoneyInput } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { amountExample } from "@/domain/money";
+import { paymentSchema } from "@/forms/schemas";
 import { formatMinor } from "@/lib/money";
+import { useActionForm } from "@/lib/use-action-form";
 
 export interface PlanView {
   invoiceNumber: string;
@@ -33,103 +39,95 @@ export function PaymentPlanForm({
   hidden,
   allowNoBankRef = false,
   todayHint,
+  currency,
 }: {
   action: (prev: PlanFormState, form: FormData) => Promise<PlanFormState>;
   hidden: Record<string, string>;
   allowNoBankRef?: boolean;
   todayHint: string;
+  /** Invoice currency (prefilled only with the currency, never with an amount: §4.5 S13). */
+  currency: string;
 }) {
-  const [state, run, pending] = useActionState<PlanFormState, FormData>(action, {});
-  // Controlled fields: React resets uncontrolled fields after a form action, and Confirm must resend what was previewed.
-  const [v, setV] = useState({ amount: "", decimal: ".", date: "", bank_ref: "", no_bank_ref: false, note: "" });
-  const set = (k: keyof typeof v) => (e: { target: { value: string; checked?: boolean; type?: string } }) =>
-    setV((o) => ({ ...o, [k]: e.target.type === "checkbox" ? Boolean(e.target.checked) : e.target.value }));
+  const schema = paymentSchema({ currency, today: todayHint, allowNoBankRef });
+  const { form, state, pending, formProps, errorId } = useActionForm<PlanFormState, typeof schema>({
+    schema,
+    action,
+    initial: {},
+    defaultValues: { amount: "", decimal: ".", date: "", bank_ref: "", note: "" },
+    id: "payment",
+  });
+  const e = form.formState.errors;
+  const decimal = (form.watch("decimal") as "." | "," | undefined) ?? ".";
   const p = state.plan;
   return (
-    <form action={run} className="grid gap-3 rounded-lg border p-4" aria-describedby="payment-help">
+    <form {...formProps} className="card-edge grid gap-5 rounded-xl border border-line bg-panel p-5" aria-describedby="payment-help">
       {Object.entries(hidden).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
-      <p id="payment-help" className="text-sm text-muted-foreground">
+      <p id="payment-help" className="t-body-sm text-ink-muted">
         Type the amount, date and bank reference exactly as they appear on your bank statement.
       </p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="grid gap-1">
-          <label htmlFor="amount" className="text-sm">
-            Amount received
-          </label>
-          <Input id="amount" name="amount" required inputMode="decimal" autoComplete="off" maxLength={40} aria-describedby="amount-help" value={v.amount} onChange={set("amount")} />
-          <p id="amount-help" className="text-xs text-muted-foreground">
-            In the invoice currency, e.g. 1250.50
-          </p>
-        </div>
-        <div className="grid gap-1">
-          <label htmlFor="decimal" className="text-sm">
-            Decimal separator
-          </label>
-          <select id="decimal" name="decimal" value={v.decimal} onChange={set("decimal")} className="h-9 rounded-md border bg-background px-2">
-            <option value=".">. (1250.50)</option>
-            <option value=",">, (1250,50)</option>
-          </select>
-        </div>
-        <div className="grid gap-1">
-          <label htmlFor="date" className="text-sm">
-            Date the money arrived
-          </label>
-          <Input id="date" name="date" type="date" required max={todayHint} value={v.date} onChange={set("date")} />
-        </div>
-        <div className="grid gap-1">
-          <label htmlFor="bank_ref" className="text-sm">
-            Bank reference
-          </label>
-          <Input id="bank_ref" name="bank_ref" maxLength={120} autoComplete="off" value={v.bank_ref} onChange={set("bank_ref")} />
-          {allowNoBankRef ? (
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" name="no_bank_ref" value="1" checked={v.no_bank_ref} onChange={set("no_bank_ref")} /> The statement shows no reference
-            </label>
-          ) : null}
-        </div>
-        <div className="grid gap-1 sm:col-span-2">
-          <label htmlFor="note" className="text-sm">
-            Note (optional)
-          </label>
-          <Input id="note" name="note" maxLength={500} value={v.note} onChange={set("note")} />
-        </div>
+      <FormError id={errorId} message={state.error} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id="amount" label="Amount received" help={`In ${currency}, e.g. ${amountExample(currency, decimal)}`} error={e.amount?.message as string | undefined}>
+          {(a) => <MoneyInput {...a} currency={currency} maxLength={40} {...form.register("amount")} />}
+        </Field>
+        <Field id="decimal" label="Decimal separator">
+          {(a) => (
+            <RhfSelect control={form.control} name="decimal" field={a} options={[{ value: ".", label: ". (1250.50)" }, { value: ",", label: ", (1250,50)" }]} />
+          )}
+        </Field>
+        <Field id="date" label="Date the money arrived" error={e.date?.message as string | undefined}>
+          {(a) => <DatePicker {...a} {...form.register("date")} max={todayHint} />}
+        </Field>
+        <Field id="bank_ref" label="Bank reference" help="Shown on the receipt." error={e.bank_ref?.message as string | undefined}>
+          {(a) => (
+            <div className="grid gap-1">
+              <Input {...a} maxLength={120} autoComplete="off" {...form.register("bank_ref")} />
+              {allowNoBankRef ? <Checkbox value="1" label="The statement shows no reference" {...form.register("no_bank_ref")} /> : null}
+            </div>
+          )}
+        </Field>
+        <Field id="note" label="Note (optional)" className="sm:col-span-2" error={e.note?.message as string | undefined}>
+          {(a) => <Input {...a} maxLength={500} {...form.register("note")} />}
+        </Field>
       </div>
       {p ? (
-        <div className="grid gap-1 rounded-md bg-muted/40 p-3 text-sm" data-testid="payment-plan" role="status">
-          <p className="font-medium">Plan for invoice {p.invoiceNumber}</p>
-          <p>Balance now: {formatMinor(p.balance, p.currency)}</p>
-          <p>Amount: {formatMinor(p.amount, p.currency)}</p>
-          <p>Applied to the invoice: {formatMinor(p.applied, p.currency)}</p>
-          {p.credit !== "0" ? <p>Kept as credit: {formatMinor(p.credit, p.currency)}</p> : null}
+        <div className="grid gap-3 rounded-lg border border-line bg-sunken p-4 t-body-sm" data-testid="payment-plan" role="status">
+          <p className="t-heading-sm">Plan for invoice {p.invoiceNumber}</p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1">
+            <dt className="text-ink-muted">Balance now</dt>
+            <dd className="text-right tabular-nums">{formatMinor(p.balance, p.currency)}</dd>
+            <dt className="text-ink-muted">Amount</dt>
+            <dd className="text-right tabular-nums">{formatMinor(p.amount, p.currency)}</dd>
+            <dt className="text-ink-muted">Applied to the invoice</dt>
+            <dd className="text-right font-semibold tabular-nums">{formatMinor(p.applied, p.currency)}</dd>
+            {p.credit !== "0" ? (
+              <>
+                <dt className="text-ink-muted">Kept as credit</dt>
+                <dd className="text-right tabular-nums">{formatMinor(p.credit, p.currency)}</dd>
+              </>
+            ) : null}
+          </dl>
+          {p.credit !== "0" ? <Banner tone="info">{formatMinor(p.credit, p.currency)} more than the balance will be recorded as credit.</Banner> : null}
           <p>Status after: {p.transition ?? "unchanged"}</p>
           {p.promise ? <p>Promise: {p.promise}</p> : null}
           <p>{p.receipt ? "A receipt will be emailed to the customer." : "No receipt will be sent."}</p>
           {p.warnings.map((w) => (
-            <p key={w} className="text-destructive">
+            <p key={w} className="text-error-ink">
               {w}
             </p>
           ))}
           <input type="hidden" name="fingerprint" value={p.fingerprint} />
         </div>
       ) : null}
-      {state.error ? (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-      {state.message ? (
-        <p role="status" className="text-sm text-success">
-          {state.message}
-        </p>
-      ) : null}
+      {state.message ? <Banner tone="success" role="status">{state.message}</Banner> : null}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" name="op" value="preview" variant="outline" disabled={pending}>
+        <Button type="submit" name="op" value="preview" variant={p ? "outline" : "default"} disabled={pending}>
           Preview
         </Button>
         {p ? (
-          <Button type="submit" name="op" value="confirm" disabled={pending}>
+          <Button type="submit" name="op" value="confirm" loading={pending} loadingLabel="Recording…">
             Confirm and record
           </Button>
         ) : null}

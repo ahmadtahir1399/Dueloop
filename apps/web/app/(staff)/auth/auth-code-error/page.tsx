@@ -12,7 +12,7 @@ export default function AuthCodeErrorPage() {
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link href="/login">Back to sign in</Link>
+            <Link href="/sign-in">Back to sign in</Link>
           </Button>
         </CardContent>
       </Card>

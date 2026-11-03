@@ -62,7 +62,7 @@ test.describe("as accountant", () => {
     const anon = await anonCtx.get(`/proofs/${f.proofs.ui}/file`, { maxRedirects: 0 });
     // Signed out: never the file (a redirect to /login, which the client may follow, or a 404).
     expect(anon.headers()["content-type"] ?? "").not.toContain("image/");
-    expect(anon.url().endsWith("/login") || [302, 307, 404].includes(anon.status())).toBe(true);
+    expect(anon.url().endsWith("/sign-in") || [302, 307, 404].includes(anon.status())).toBe(true);
     await anonCtx.dispose();
     await page.getByLabel("Amount received").fill("2.00");
     await page.getByLabel("Date the money arrived").fill(today());

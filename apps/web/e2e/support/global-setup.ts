@@ -39,11 +39,11 @@ export async function ensureUsers(): Promise<Record<E2eUser, string>> {
 export async function signInAndSave(user: E2eUser) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ baseURL: BASE_URL });
-  await page.goto("/login");
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill(USERS[user].email);
   await page.getByLabel("Password").fill(E2E_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 30_000 });
+  await page.waitForURL((u) => !u.pathname.startsWith("/sign-in"), { timeout: 30_000 });
   await page.context().storageState({ path: authFile(user) });
   await browser.close();
 }

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 /** Only same-site relative paths, so the link cannot be used as an open redirect. */
 function safeNext(value: string | null): string {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/";
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/overview";
 }
 
 export async function GET(request: NextRequest) {

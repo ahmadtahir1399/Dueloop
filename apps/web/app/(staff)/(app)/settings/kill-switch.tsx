@@ -1,32 +1,43 @@
 "use client";
 
-import { useActionState } from "react";
-import { Result } from "@/components/action-result";
 import { Button } from "@/components/ui/button";
+import { Field, FormError, FormSuccess } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { killSwitchSchema } from "@/forms/schemas";
 import type { ActionState } from "@/lib/actions";
+import { useActionForm } from "@/lib/use-action-form";
 import { setPaused } from "./actions";
 
-/** A confirm step that works without JavaScript: the owner types PAUSE or RESUME. */
-export function KillSwitch({ paused }: { paused: boolean }) {
-  const [state, action, pending] = useActionState<ActionState, FormData>(setPaused, {});
+/**
+ * S24 kill switch (F18). A typed confirmation that works without JavaScript: the owner types PAUSE or RESUME (the
+ * existing server check, CONFLICTS C-20). Stopping is the destructive button; resuming is a normal one.
+ */
+export function KillSwitch({ paused, businessName }: { paused: boolean; businessName: string }) {
   const word = paused ? "RESUME" : "PAUSE";
+  const schema = killSwitchSchema(word);
+  const { form, state, pending, formProps, errorId } = useActionForm<ActionState, typeof schema>({
+    schema,
+    action: setPaused,
+    initial: {},
+    defaultValues: { confirm: "" },
+    id: "kill",
+  });
   return (
-    <form action={action} className="grid gap-2" aria-label="Kill switch">
+    <form {...formProps} className="grid gap-3" aria-label="Kill switch">
       <input type="hidden" name="paused" value={paused ? "false" : "true"} />
-      <p className="text-sm">
+      <p className="t-body-md prose-width">
         {paused
-          ? "Sending is paused for this business. Resuming lets due reminders and receipts go out again (quiet hours and approvals still apply)."
-          : "Pausing stops every reminder and receipt for this business at once, including ones already approved."}
+          ? `Sending is paused for ${businessName}. Resuming lets due reminders and receipts go out again (quiet hours and approvals still apply).`
+          : `No reminders or receipts will go out for ${businessName} until an owner turns sending back on, including ones already approved. Nothing already sent changes.`}
       </p>
-      <label htmlFor="kill-confirm" className="text-sm">
-        Type {word} to confirm
-      </label>
-      <Input id="kill-confirm" name="confirm" autoComplete="off" className="w-40" required />
-      <Button type="submit" variant={paused ? "default" : "destructive"} className="w-fit" disabled={pending}>
+      <FormError id={errorId} message={state.error} />
+      <Field id="kill-confirm" label={`Type ${word} to confirm`} error={form.formState.errors.confirm?.message as string | undefined} className="max-w-60">
+        {(a) => <Input {...a} autoComplete="off" {...form.register("confirm")} />}
+      </Field>
+      <Button type="submit" variant={paused ? "default" : "destructive"} className="w-fit" loading={pending} loadingLabel={paused ? "Resuming…" : "Stopping…"}>
         {paused ? "Resume sending" : "Pause all sending"}
       </Button>
-      <Result state={state} />
+      <FormSuccess message={state.message} />
     </form>
   );
 }

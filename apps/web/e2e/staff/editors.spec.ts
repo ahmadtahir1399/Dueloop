@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { cli } from "../support/cli";
 import { db } from "../support/db";
 import { authFile, DEMO_TENANT } from "../support/users";
+import { choose } from "../support/choice";
 
 test.describe("accountant", () => {
   test.use({ storageState: authFile("accountant") });
@@ -78,11 +79,11 @@ test.describe("owner", () => {
     // Demo Agency has two owners (seed + e2e). Demote the seed owner first so e2e owner is the last one.
     await page.goto("/settings/members");
     const seedOwner = page.locator('[data-member="owner@demo-agency.test"]');
-    await seedOwner.getByLabel(/Role of/).selectOption("accountant");
+    await choose(seedOwner.getByLabel(/Role of/), "accountant");
     await seedOwner.getByRole("button", { name: "Change role" }).click();
     await expect(seedOwner.getByRole("status")).toContainText("Saved");
     const me = page.locator('[data-member="owner@e2e.test"]');
-    await me.getByLabel(/Role of/).selectOption("collector");
+    await choose(me.getByLabel(/Role of/), "collector");
     await me.getByRole("button", { name: "Change role" }).click();
     await expect(me.getByRole("alert")).toContainText("at least one owner");
     const owners = await db().query("select count(*)::int as n from public.memberships where tenant_id = $1 and role = 'owner'", [DEMO_TENANT]);
@@ -104,7 +105,7 @@ test.describe("owner", () => {
     // Review round 2: an email password is only offered with SMTP_ALLOW_TENANT_HOST; the WhatsApp token is the same
     // write-only path (set_channel_secret).
     await expect(form.getByLabel("Channel").locator("option", { hasText: "email" })).toHaveCount(0);
-    await form.getByLabel("Channel").selectOption("whatsapp");
+    await choose(form.getByLabel("Channel"), /^whatsapp/);
     await form.getByLabel("Secret").fill("wa-token-e2e-0001");
     await form.getByRole("button", { name: "Save secret" }).click();
     await expect(form.getByRole("status")).toContainText("cannot be shown again");
@@ -265,7 +266,7 @@ test.describe("owner: two-step payment connect", () => {
       // Switching test -> live needs the live signing secret first: switched off until then.
       await page.reload();
       const live = page.getByRole("form", { name: "Connect a payment account" });
-      await live.getByLabel("Mode").selectOption("live");
+      await choose(live.getByLabel("Mode"), "live");
       await live.getByLabel("API key").fill("rk_live_e2e_two_step_0003");
       await live.getByRole("button", { name: "Connect" }).click();
       await expect(live.getByRole("status")).toContainText("switched off");
@@ -290,13 +291,13 @@ test.describe("owner: integration input checks", () => {
   test("a wrong Slack URL, a Stripe key of the other mode and the test-only gateway are refused", async ({ page }) => {
     await page.goto("/settings/integrations");
     const creds = page.getByRole("form", { name: "Set channel credentials" });
-    await creds.getByLabel("Channel").selectOption("slack");
+    await choose(creds.getByLabel("Channel"), /^slack/);
     await creds.getByLabel("Secret").fill("https://example.com/not-slack");
     await creds.getByRole("button", { name: "Save secret" }).click();
     await expect(creds.getByRole("alert")).toContainText("https://hooks.slack.com/");
 
     const connect = page.getByRole("form", { name: "Connect a payment account" });
-    await connect.getByLabel("Mode").selectOption("test");
+    await choose(connect.getByLabel("Mode"), "test");
     await connect.getByLabel("API key").fill("rk_live_not_for_a_test_account");
     await connect.getByRole("button", { name: "Connect" }).click();
     await expect(connect.getByRole("alert")).toContainText("Use a Stripe test key");
@@ -341,7 +342,7 @@ test.describe("WhatsApp template: add, then an owner approves", () => {
       await page.goto("/settings/templates");
       const form = page.getByRole("form", { name: "New WhatsApp template" });
       await form.getByLabel("Template key").fill("firm");
-      await form.getByLabel("Tone").selectOption("firm");
+      await choose(form.getByLabel("Tone"), "firm");
       await form.getByLabel("Name at Meta").fill("invoice_firm_v1");
       await form.getByLabel("Language code at Meta").fill("en");
       await form.getByLabel(/Text/).fill("Hello {{customer_name}}, invoice {{invoice_number}} is still open. {{business_name}}");

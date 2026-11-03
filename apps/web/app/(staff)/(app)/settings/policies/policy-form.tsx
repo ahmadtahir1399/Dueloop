@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { policyAction, type PolicyState } from "./actions";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 interface Step {
   id: string;
@@ -42,17 +43,24 @@ export function PolicyForm(p: { id: string; name: string; isDefault: boolean; st
                 <input type="hidden" name="step_id" value={s.id} />
               </td>
               <td>
-                <Input name="step_days" aria-label={`Days after due for ${s.id || "a new step"}`} inputMode="numeric" defaultValue={Number.isNaN(s.daysAfterDue) ? "" : String(s.daysAfterDue)} className="h-8 w-20" disabled={!p.canEdit} />
+                <Input name="step_days" aria-label={`Days after due for ${s.id || "a new step"}`} inputMode="numeric" defaultValue={Number.isNaN(s.daysAfterDue) ? "" : String(s.daysAfterDue)} className="w-20" disabled={!p.canEdit} />
               </td>
               <td>
-                <select name="step_channel" aria-label={`Channel for ${s.id || "a new step"}`} defaultValue={s.channel} className="h-8 rounded-md border bg-background px-2" disabled={!p.canEdit}>
-                  <option value="email">email</option>
-                  <option value="whatsapp">whatsapp</option>
-                  <option value="sms">sms</option>
-                </select>
+                <ChoiceSelect
+                  name="step_channel"
+                  ariaLabel={`Channel for ${s.id || "a new step"}`}
+                  defaultValue={s.channel}
+                  disabled={!p.canEdit}
+                  className="w-36"
+                  options={[
+                    { value: "email", label: "email" },
+                    { value: "whatsapp", label: "whatsapp" },
+                    { value: "sms", label: "sms" },
+                  ]}
+                />
               </td>
               <td>
-                <Input name="step_template" aria-label={`Template for ${s.id || "a new step"}`} defaultValue={s.templateKey} className="h-8 w-32" disabled={!p.canEdit} />
+                <Input name="step_template" aria-label={`Template for ${s.id || "a new step"}`} defaultValue={s.templateKey} className="w-32" disabled={!p.canEdit} />
               </td>
               <td>{s.id ? <input type="checkbox" name="step_remove" value={s.id} aria-label={`Remove ${s.id}`} disabled={!p.canEdit} /> : null}</td>
             </tr>

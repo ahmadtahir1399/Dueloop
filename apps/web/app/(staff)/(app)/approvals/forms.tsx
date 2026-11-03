@@ -3,81 +3,115 @@
 import { useActionState } from "react";
 import { Result } from "@/components/action-result";
 import { Button } from "@/components/ui/button";
+import { Checkbox, Field, Fieldset, FormError, FormSuccess, Textarea } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { bulkApproveSchema, editApprovalSchema, rejectApprovalSchema } from "@/forms/schemas";
 import type { ActionState } from "@/lib/actions";
+import { useActionForm } from "@/lib/use-action-form";
 import { bulkApprove, decideApproval, editApproval } from "./actions";
 
+/**
+ * Exactly two decisions per item (§4.5). Approve is immediate (no extra confirm); Reject needs a reason, which the
+ * server requires too (CONFLICTS C-12). Both forms post the same fields as before to decideApproval.
+ */
 export function ActionForm({ approvalId, subject, body, channel }: { approvalId: string; subject: string; body: string; channel: string }) {
-  const [decided, decide, deciding] = useActionState<ActionState, FormData>(decideApproval, {});
-  const [edited, edit, editing] = useActionState<ActionState, FormData>(editApproval, {});
+  const [approved, approve, approving] = useActionState<ActionState, FormData>(decideApproval, {});
+  const reject = useActionForm<ActionState, typeof rejectApprovalSchema>({
+    schema: rejectApprovalSchema,
+    action: decideApproval,
+    initial: {},
+    defaultValues: { note: "" },
+    id: `reject-${approvalId}`,
+  });
+  const edit = useActionForm<ActionState, typeof editApprovalSchema>({
+    schema: editApprovalSchema,
+    action: editApproval,
+    initial: {},
+    defaultValues: { subject, body },
+    id: `edit-${approvalId}`,
+  });
   return (
-    <div className="grid gap-2">
-      <form action={decide} className="flex flex-wrap items-end gap-2">
-        <input type="hidden" name="approval" value={approvalId} />
-        <div className="grid gap-1">
-          <label htmlFor={`note-${approvalId}`} className="text-xs">
-            Reason (needed to reject)
-          </label>
-          <Input id={`note-${approvalId}`} name="note" className="h-8 w-64" maxLength={500} />
-        </div>
-        <Button type="submit" name="decision" value="approve" size="sm" disabled={deciding}>
-          Approve
-        </Button>
-        <Button type="submit" name="decision" value="reject" size="sm" variant="outline" disabled={deciding}>
-          Reject
-        </Button>
-      </form>
-      <Result state={decided} />
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-t border-line pt-4">
+        <form {...reject.formProps} aria-label="Reject" className="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="approval" value={approvalId} />
+          <input type="hidden" name="decision" value="reject" />
+          <Field id={`note-${approvalId}`} label="Reason (needed to reject)" error={reject.form.formState.errors.note?.message as string | undefined} className="w-64">
+            {(a) => <Input {...a} maxLength={500} {...reject.form.register("note")} />}
+          </Field>
+          <Button type="submit" variant="outline" loading={reject.pending} loadingLabel="Rejecting…" disabled={approving}>
+            Reject
+          </Button>
+        </form>
+        <form action={approve} aria-label="Approve">
+          <input type="hidden" name="approval" value={approvalId} />
+          <Button type="submit" name="decision" value="approve" loading={approving} loadingLabel="Approving…" disabled={reject.pending}>
+            Approve
+          </Button>
+        </form>
+      </div>
+      <FormError id={reject.errorId} message={reject.state.error} />
+      <Result state={approved} />
+      <FormSuccess message={reject.state.message} />
       {channel === "email" ? (
-        <details>
-          <summary className="cursor-pointer text-sm">Edit before sending</summary>
-          <form action={edit} className="mt-2 grid gap-2">
+        <details className="rounded-lg border border-line">
+          <summary className="flex min-h-11 cursor-pointer items-center px-4 t-body-sm font-semibold text-link">Edit before sending</summary>
+          <form {...edit.formProps} aria-label="Edit before sending" className="grid gap-3 border-t border-line p-4">
             <input type="hidden" name="approval" value={approvalId} />
-            <label htmlFor={`subject-${approvalId}`} className="text-xs">
-              Subject
-            </label>
-            <Input id={`subject-${approvalId}`} name="subject" defaultValue={subject} maxLength={200} />
-            <label htmlFor={`body-${approvalId}`} className="text-xs">
-              Message (the footer with the opt-out link is added after this and cannot be removed)
-            </label>
-            <textarea id={`body-${approvalId}`} name="body" defaultValue={body} maxLength={5000} rows={8} dir="auto" className="rounded-md border bg-background p-2 text-sm" />
-            <Button type="submit" size="sm" variant="outline" disabled={editing} className="w-fit">
+            <FormError id={edit.errorId} message={edit.state.error} />
+            <Field id={`subject-${approvalId}`} label="Subject" error={edit.form.formState.errors.subject?.message as string | undefined}>
+              {(a) => <Input {...a} maxLength={200} {...edit.form.register("subject")} />}
+            </Field>
+            <Field
+              id={`body-${approvalId}`}
+              label="Message"
+              help="The footer with the opt-out link is added after this and cannot be removed."
+              error={edit.form.formState.errors.body?.message as string | undefined}
+            >
+              {(a) => <Textarea {...a} maxLength={5000} rows={8} {...edit.form.register("body")} />}
+            </Field>
+            <Button type="submit" variant="outline" loading={edit.pending} className="w-fit">
               Save edit and refresh preview
             </Button>
+            <FormSuccess message={edit.state.message} />
           </form>
-          <Result state={edited} />
         </details>
       ) : (
-        <p className="text-xs text-muted-foreground">WhatsApp messages use the approved template text and cannot be edited here.</p>
+        <p className="t-caption text-ink-muted">WhatsApp messages use the approved template text and cannot be edited here.</p>
       )}
     </div>
   );
 }
 
+/** Bulk approve: the human confirms the exact count; a mismatch approves nothing (server checks it again). */
 export function BulkApproveForm({ ids }: { ids: { id: string; label: string }[] }) {
-  const [state, action, pending] = useActionState<ActionState, FormData>(bulkApprove, {});
+  const { form, state, pending, formProps, errorId } = useActionForm<ActionState, typeof bulkApproveSchema>({
+    schema: bulkApproveSchema,
+    action: bulkApprove,
+    initial: {},
+    defaultValues: { confirm_count: "" },
+    id: "bulk",
+  });
+  const e = form.formState.errors;
   return (
-    <form action={action} className="grid gap-3 rounded-lg border p-4" aria-label="Approve several">
-      <fieldset className="grid gap-1">
-        <legend className="mb-1 text-sm font-medium">Approve several at once</legend>
-        {ids.map((i) => (
-          <label key={i.id} className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="approval" value={i.id} /> {i.label}
-          </label>
-        ))}
-      </fieldset>
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="grid gap-1">
-          <label htmlFor="confirm_count" className="text-xs">
-            Type how many you selected, to confirm
-          </label>
-          <Input id="confirm_count" name="confirm_count" inputMode="numeric" className="h-8 w-28" required />
+    <form {...formProps} className="card-edge grid gap-4 rounded-xl border border-line bg-panel p-5" aria-label="Approve several">
+      <FormError id={errorId} message={state.error} />
+      <Fieldset legend="Approve several at once" error={e.approval?.message as string | undefined}>
+        <div className="grid gap-0 sm:grid-cols-2">
+          {ids.map((i) => (
+            <Checkbox key={i.id} value={i.id} label={i.label} {...form.register("approval")} />
+          ))}
         </div>
-        <Button type="submit" size="sm" disabled={pending}>
+      </Fieldset>
+      <div className="flex flex-wrap items-end gap-3">
+        <Field id="confirm_count" label="Type how many you selected, to confirm" error={e.confirm_count?.message as string | undefined}>
+          {(a) => <Input {...a} inputMode="numeric" className="w-28" {...form.register("confirm_count")} />}
+        </Field>
+        <Button type="submit" variant="outline" loading={pending} loadingLabel="Approving…">
           Approve selected
         </Button>
       </div>
-      <Result state={state} />
+      {state.message ? <Result state={state} /> : null}
     </form>
   );
 }

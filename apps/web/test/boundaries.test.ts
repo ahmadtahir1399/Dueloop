@@ -38,6 +38,12 @@ describe('header classes', () => {
     expect(routeClass('/o/abc')).toBe('public');
     expect(routeClass('/v1/invoices')).toBe('api');
     expect(routeClass('/login')).toBe('auth');
+    expect(routeClass('/sign-in')).toBe('auth');
+    expect(routeClass('/sign-up')).toBe('auth');
+    expect(routeClass('/dev/loop')).toBe('auth'); // dev-only pages (404 in production) need no session
+    expect(routeClass('/signed')).toBe('staff');
+    expect(routeClass('/')).toBe('marketing');
+    expect(routeClass('/overview')).toBe('staff');
     expect(routeClass('/invoices')).toBe('staff');
     expect(routeClass('/pay')).toBe('staff'); // only /p and /p/... are public
   });
@@ -46,6 +52,12 @@ describe('header classes', () => {
     expect(h['Cache-Control']).toContain('no-store');
     expect(h['Referrer-Policy']).toBe('no-referrer');
     expect(h['X-Robots-Tag']).toContain('noindex');
+  });
+  it('the landing page may be indexed but is never cached shared; staff pages stay noindex', () => {
+    const m = classHeaders('marketing');
+    expect(m['X-Robots-Tag']).toBeUndefined();
+    expect(m['Cache-Control']).toContain('no-store');
+    expect(classHeaders('staff')['X-Robots-Tag']).toContain('noindex');
   });
   it('the CSP has a nonce, no unsafe-inline for scripts, and frame-ancestors none', () => {
     const csp = contentSecurityPolicy('abc', false);

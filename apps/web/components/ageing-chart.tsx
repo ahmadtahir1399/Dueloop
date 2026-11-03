@@ -1,55 +1,46 @@
 import { BUCKET_LABEL, BUCKETS, type Bucket } from "@/lib/data/overview";
 import { formatMinor } from "@/lib/money";
+import { cn } from "cn";
 
-// Ageing chart without a chart library: server-rendered bars (no JavaScript) plus the same numbers as a table.
-// The bars are decorative (aria-hidden); the table is the accessible version and is always shown.
-export function AgeingChart({ rows }: { rows: { currency: string; bucket: Bucket; invoices: number; balance: string }[] }) {
+// "Where money is stuck" (§4.4 S05): one real table per currency. The bars are decorative (aria-hidden) and use the
+// chart colours, never red (§2.3: overdue is a fact, not an alarm); the figures carry the meaning.
+export function AgeingChart({ rows, inverse = false }: { rows: { currency: string; bucket: Bucket; invoices: number; balance: string }[]; inverse?: boolean }) {
   const currencies = [...new Set(rows.map((r) => r.currency))].sort();
-  if (currencies.length === 0) return <p className="text-sm text-muted-foreground">No open invoices.</p>;
+  if (currencies.length === 0) return <p className={cn("t-body-sm", inverse ? "text-ink-inverse-muted" : "text-ink-muted")}>No open invoices.</p>;
   return (
     <div className="grid gap-6">
       {currencies.map((cur) => {
         const byBucket = new Map(rows.filter((r) => r.currency === cur).map((r) => [r.bucket, r]));
         const max = [...byBucket.values()].reduce((m, r) => (BigInt(r.balance) > m ? BigInt(r.balance) : m), 0n);
         return (
-          <div key={cur} className="grid gap-3" data-testid={`ageing-${cur}`}>
-            <div aria-hidden="true" className="grid gap-1.5">
+          <table key={cur} className="w-full t-body-sm" data-testid={`ageing-${cur}`}>
+            <caption className={cn("mb-2 text-left t-caption", inverse ? "text-ink-inverse-muted" : "text-ink-muted")}>Open balances by age, {cur}</caption>
+            <thead className="sr-only">
+              <tr>
+                <th scope="col">Age</th>
+                <th scope="col">Invoices</th>
+                <th scope="col">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
               {BUCKETS.map((b) => {
                 const r = byBucket.get(b);
                 const pct = r && max > 0n ? Number((BigInt(r.balance) * 1000n) / max) / 10 : 0;
                 return (
-                  <div key={b} className="grid grid-cols-[10rem_1fr] items-center gap-2 text-xs">
-                    <span className="text-muted-foreground">{BUCKET_LABEL[b]}</span>
-                    <span className="h-4 rounded-sm bg-muted">
-                      <span className={`block h-4 rounded-sm ${b === "not_due" ? "bg-chart-2" : "bg-destructive"}`} style={{ width: `${pct}%` }} />
-                    </span>
-                  </div>
+                  <tr key={b} data-bucket={b} className="align-bottom">
+                    <th scope="row" className="py-1.5 pr-3 text-left font-normal">
+                      <span className="block">{BUCKET_LABEL[b]}</span>
+                      <span aria-hidden="true" className={cn("mt-1 block h-1.5 rounded-full", inverse ? "bg-inverse-raised" : "bg-track")}>
+                        <span className={cn("block h-1.5 rounded-full", b === "not_due" ? "bg-chart-2" : inverse ? "bg-lime" : "bg-chart-1")} style={{ width: `${pct}%` }} />
+                      </span>
+                    </th>
+                    <td className={cn("py-1.5 pr-3 text-right tabular-nums", inverse ? "text-ink-inverse-muted" : "text-ink-muted")}>{r?.invoices ?? 0}</td>
+                    <td className="py-1.5 text-right font-semibold tabular-nums">{formatMinor(r?.balance ?? "0", cur)}</td>
+                  </tr>
                 );
               })}
-            </div>
-            <table className="w-full text-sm">
-              <caption className="text-left text-muted-foreground">Open balances by age, {cur}</caption>
-              <thead>
-                <tr className="border-b text-left">
-                  <th scope="col" className="py-1 font-medium">Age</th>
-                  <th scope="col" className="py-1 text-right font-medium">Invoices</th>
-                  <th scope="col" className="py-1 text-right font-medium">Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BUCKETS.map((b) => {
-                  const r = byBucket.get(b);
-                  return (
-                    <tr key={b} className="border-b last:border-0" data-bucket={b}>
-                      <th scope="row" className="py-1 text-left font-normal">{BUCKET_LABEL[b]}</th>
-                      <td className="py-1 text-right tabular-nums">{r?.invoices ?? 0}</td>
-                      <td className="py-1 text-right tabular-nums">{formatMinor(r?.balance ?? "0", cur)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+            </tbody>
+          </table>
         );
       })}
     </div>

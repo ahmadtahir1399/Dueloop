@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { HOSTILE } from "../support/fixtures";
 import { guardAgainstScript } from "../support/guard";
 import { authFile, fixtureIds } from "../support/users";
+import { choose } from "../support/choice";
 
 test.use({ storageState: authFile("owner") });
 
@@ -13,7 +14,7 @@ test("overview: KPI cards, ageing chart with a table alternative, local-day peri
   await expect(table).toBeVisible();
   await expect(table.getByRole("rowheader", { name: "1-30 days overdue" })).toBeVisible();
   await expect(page.getByTestId("period-range")).toContainText("Europe/London");
-  await page.getByLabel("Period").selectOption("last_30");
+  await choose(page.getByLabel("Period"), "Last 30 days");
   await page.getByRole("button", { name: "Show" }).click();
   await expect(page).toHaveURL(/period=last_30/);
 });

@@ -6,6 +6,7 @@ import { expect, request as pwRequest, test } from "@playwright/test";
 import { issueFor, revoke } from "../support/links";
 import { BASE_URL, stack } from "../support/stack";
 import { authFile } from "../support/users";
+import { choose } from "../support/choice";
 
 const BUILD = path.resolve(__dirname, "../../.next-e2e");
 
@@ -21,7 +22,7 @@ function files(dir: string, out: string[] = []): string[] {
 test.describe("headers per route class", () => {
   test("staff, auth, public, api and file routes", async ({ browser }) => {
     const anon = await pwRequest.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } });
-    const login = await anon.get("/login");
+    const login = await anon.get("/sign-in");
     const l = await issueFor("DA-0027");
     const pub = await anon.get(`/p/${l.payToken}`);
     const api = await anon.post("/v1/invoices", { data: {} });
@@ -70,7 +71,7 @@ test("cookie flags: the tenant hint is httpOnly + SameSite=Lax; nothing is set o
   const page = await ctx.newPage();
   await page.goto("/");
   await page.waitForLoadState("networkidle");
-  await page.getByLabel("Business").selectOption({ index: 1 });
+  await choose(page.getByLabel("Business"), { index: 1 });
   await page.getByRole("button", { name: "Switch" }).click();
   await expect(page.getByTestId("whoami")).toContainText("accountant");
   const hint = (await ctx.cookies()).find((c) => c.name === "dl_tenant");

@@ -1,29 +1,42 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Field, FormError, FormSuccess, Textarea } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { noteRequiredSchema } from "@/forms/schemas";
 import type { ActionState } from "@/lib/actions";
-import { Result } from "@/components/action-result";
+import { useActionForm } from "@/lib/use-action-form";
 import { resolveTask } from "../actions";
 
+/** F08 Resolve / reopen a task. The note is recorded with the person's name (server requires >= 3 characters). */
 export function TaskForm({ taskId, open }: { taskId: string; open: boolean }) {
-  const [state, action, pending] = useActionState<ActionState, FormData>(resolveTask, {});
+  const { form, state, pending, formProps, errorId } = useActionForm<ActionState, typeof noteRequiredSchema>({
+    schema: noteRequiredSchema,
+    action: resolveTask,
+    initial: {},
+    defaultValues: { note: "" },
+    id: "task",
+  });
   return (
-    <form action={action} className="grid gap-2 rounded-lg border p-4">
+    <form {...formProps} aria-label={open ? "Resolve task" : "Reopen task"} className="card-edge grid content-start gap-4 rounded-xl border border-line bg-panel p-5">
       <input type="hidden" name="task" value={taskId} />
       <input type="hidden" name="op" value={open ? "resolve" : "reopen"} />
-      <label htmlFor="task-note" className="text-sm font-medium">
-        {open ? "How was it resolved?" : "Why reopen it?"}
-      </label>
-      <Input id="task-note" name="note" required minLength={3} maxLength={500} aria-describedby="task-note-help" />
-      <p id="task-note-help" className="text-xs text-muted-foreground">
-        Your name and this note are recorded.
-      </p>
-      <Button type="submit" size="sm" className="w-fit" disabled={pending}>
+      <h2 className="t-heading-md">{open ? "Resolve" : "Reopen"}</h2>
+      <FormError id={errorId} message={state.error} />
+      <Field
+        id="task-note"
+        label={open ? "How was it resolved?" : "Why reopen it?"}
+        help="Your name and this note are recorded."
+        error={form.formState.errors.note?.message as string | undefined}
+      >
+        {(a) => <Input {...a} maxLength={500} {...form.register("note")} />}
+      </Field>
+      <Button type="submit" loading={pending} className="w-fit">
         {open ? "Resolve" : "Reopen"}
       </Button>
-      <Result state={state} />
+      <FormSuccess message={state.message} />
     </form>
   );
 }
@@ -33,17 +46,21 @@ export function CopyDraft({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="grid gap-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">AI-generated, untrusted: check every word</p>
-      <textarea readOnly value={text} rows={8} dir="auto" className="rounded-md border bg-muted/30 p-2 text-sm" aria-label="Suggested reply" />
+      <p className="t-label">AI-generated, untrusted: check every word</p>
+      <Textarea readOnly value={text} rows={8} aria-label="Suggested reply" className="bg-sunken" />
       <Button
         type="button"
         size="sm"
         variant="outline"
         className="w-fit"
         onClick={() => {
-          void navigator.clipboard?.writeText(text).then(() => setCopied(true));
+          void navigator.clipboard?.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          });
         }}
       >
+        {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
         {copied ? "Copied" : "Copy text"}
       </Button>
     </div>

@@ -7,6 +7,7 @@ import { mailboxStatus } from "@/lib/data/mailbox";
 import { requirePermission } from "@/lib/session";
 import { formatInstant } from "@/lib/time";
 import { integrationAction } from "../admin-actions";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 // Connection STATUS only. Secrets can be set or replaced, never read back (issue N); webhook URLs carry an opaque
 // token and are shown once, to an owner, when created or rotated.
@@ -61,7 +62,7 @@ export default async function IntegrationsPage() {
   const status = owner && imap ? await mailboxStatus(ctx) : null;
   return (
     <div className="grid max-w-2xl gap-4">
-      <h1 className="text-xl font-semibold">Integrations</h1>
+      <h1 className="t-display-lg text-ink">Integrations</h1>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Channels</CardTitle>
@@ -79,11 +80,15 @@ export default async function IntegrationsPage() {
               <input type="hidden" name="op" value="channel_secret" />
               <label className="grid gap-1">
                 Channel
-                <select name="channel" className="h-9 rounded-md border bg-background px-2">
-                  {tenantSmtp ? <option value="email">email (password for your own mail server)</option> : null}
-                  <option value="whatsapp">whatsapp (access token)</option>
-                  <option value="slack">slack (webhook URL)</option>
-                </select>
+                <ChoiceSelect
+                  name="channel"
+                  defaultValue="whatsapp"
+                  options={[
+                    ...(tenantSmtp ? [{ value: "email", label: "email (password for your own mail server)" }] : []),
+                    { value: "whatsapp", label: "whatsapp (access token)" },
+                    { value: "slack", label: "slack (webhook URL)" },
+                  ]}
+                />
               </label>
               <label className="grid gap-1">
                 Secret
@@ -244,17 +249,15 @@ export default async function IntegrationsPage() {
                 <input type="hidden" name="op" value="connect_payment" />
                 <label className="grid gap-1">
                   Provider
-                  <select name="provider" className="h-9 rounded-md border bg-background px-2">
-                    <option value="stripe">Stripe</option>
-                    {process.env.PAYMENTS_ALLOW_FAKE === "true" ? <option value="fake">Fake gateway (tests only)</option> : null}
-                  </select>
+                  <ChoiceSelect
+                    name="provider"
+                    defaultValue="stripe"
+                    options={[{ value: "stripe", label: "Stripe" }, ...(process.env.PAYMENTS_ALLOW_FAKE === "true" ? [{ value: "fake", label: "Fake gateway (tests only)" }] : [])]}
+                  />
                 </label>
                 <label className="grid gap-1">
                   Mode
-                  <select name="mode" className="h-9 rounded-md border bg-background px-2">
-                    <option value="test">test</option>
-                    <option value="live">live</option>
-                  </select>
+                  <ChoiceSelect name="mode" defaultValue="test" options={[{ value: "test", label: "test" }, { value: "live", label: "live" }]} />
                 </label>
                 <label className="grid gap-1">
                   API key
@@ -273,13 +276,7 @@ export default async function IntegrationsPage() {
                   <input type="hidden" name="op" value="webhook_secret" />
                   <label className="grid gap-1">
                     Payment account
-                    <select name="provider" className="h-9 rounded-md border bg-background px-2">
-                      {(payments.data ?? []).map((p) => (
-                        <option key={p.provider} value={p.provider}>
-                          {p.provider} ({p.mode})
-                        </option>
-                      ))}
-                    </select>
+                    <ChoiceSelect name="provider" options={(payments.data ?? []).map((p) => ({ value: p.provider, label: `${p.provider} (${p.mode})` }))} />
                   </label>
                   <label className="grid gap-1">
                     Signing secret
@@ -295,13 +292,7 @@ export default async function IntegrationsPage() {
                 <input type="hidden" name="op" value="rotate_webhook" />
                 <label className="grid gap-1">
                   Payment account
-                  <select name="provider" className="h-9 rounded-md border bg-background px-2">
-                    {(payments.data ?? []).map((p) => (
-                      <option key={p.provider} value={p.provider}>
-                        {p.provider} ({p.mode})
-                      </option>
-                    ))}
-                  </select>
+                  <ChoiceSelect name="provider" options={(payments.data ?? []).map((p) => ({ value: p.provider, label: `${p.provider} (${p.mode})` }))} />
                 </label>
                 <Button type="submit" variant="outline" className="w-fit">
                   Rotate webhook URL

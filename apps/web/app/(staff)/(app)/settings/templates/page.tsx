@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/session";
 import { Input } from "@/components/ui/input";
 import { addStandardTemplatesAction, newWhatsAppTemplateAction } from "./actions";
 import { TemplateForm } from "./template-form";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 export default async function TemplatesPage() {
   const ctx = await requirePermission("settings.view");
@@ -19,8 +20,8 @@ export default async function TemplatesPage() {
   if (error) throw new Error("could not load templates");
   const missing = missingStandardTemplates(data ?? []);
   return (
-    <div className="grid gap-4">
-      <h1 className="text-xl font-semibold">Message templates</h1>
+    <div className="grid gap-6">
+      <h1 className="t-display-lg text-ink">Message templates</h1>
       {missing.length > 0 && can(ctx.role, "templates.edit") ? (
         <Card>
           <CardContent className="pt-6">
@@ -63,11 +64,15 @@ export default async function TemplatesPage() {
               </label>
               <label className="grid gap-1">
                 Tone
-                <select name="tone" className="h-9 rounded-md border bg-background px-2" defaultValue="neutral">
-                  <option value="friendly">friendly</option>
-                  <option value="neutral">neutral</option>
-                  <option value="firm">firm</option>
-                </select>
+                <ChoiceSelect
+                  name="tone"
+                  defaultValue="neutral"
+                  options={[
+                    { value: "friendly", label: "friendly" },
+                    { value: "neutral", label: "neutral" },
+                    { value: "firm", label: "firm" },
+                  ]}
+                />
               </label>
               <label className="grid gap-1">
                 Customer language
@@ -83,7 +88,7 @@ export default async function TemplatesPage() {
               </label>
               <label className="grid gap-1">
                 Text (variables like {"{{customer_name}}"})
-                <textarea name="body" required maxLength={5000} rows={4} dir="auto" className="rounded-md border bg-background p-2" />
+                <textarea name="body" required maxLength={5000} rows={4} dir="auto" className="rounded-sm border border-line-strong bg-panel p-3 text-ink" />
               </label>
               <Button type="submit" className="w-fit">
                 Add WhatsApp template

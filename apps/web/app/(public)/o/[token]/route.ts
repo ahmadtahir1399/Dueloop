@@ -17,6 +17,6 @@ export async function GET(req: Request, ctx: RouteContext<"/o/[token]">) {
   }
   return page({
     title: EN.optOutTitle(d.business),
-    body: `<h1 dir="auto">${esc(EN.optOutTitle(d.business))}</h1><p>${esc(EN.optOutBody)}</p><form method="post" action="/o/${esc(token)}/unsubscribe"><button type="submit">${esc(EN.optOutButton)}</button></form>`,
+    body: `<h1 dir="auto">${esc(EN.optOutTitle(d.business))}</h1><p>${esc(EN.optOutBody)}</p><form method="post" action="/o/${esc(token)}/unsubscribe"><button type="submit" class="danger">${esc(EN.optOutButton)}</button></form>`,
   });
 }

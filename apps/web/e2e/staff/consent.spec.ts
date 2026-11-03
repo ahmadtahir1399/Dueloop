@@ -4,6 +4,7 @@
 import { expect, test } from "@playwright/test";
 import { db } from "../support/db";
 import { authFile, DEMO_TENANT } from "../support/users";
+import { choose } from "../support/choice";
 
 const customer = async (name: string) => (await db().query("select id from public.customers where tenant_id = $1 and display_name = $2", [DEMO_TENANT, name])).rows[0].id as string;
 const active = async (id: string) => (await db().query("select source from public.customer_consents where tenant_id = $1 and customer_id = $2 and channel = 'whatsapp' and revoked_at is null", [DEMO_TENANT, id])).rows;
@@ -16,7 +17,7 @@ test.describe("accountant", () => {
     await db().query("update public.customer_consents set revoked_at = now() where tenant_id = $1 and customer_id = $2 and revoked_at is null", [DEMO_TENANT, id]);
     await page.goto(`/customers/${id}`);
     const form = page.getByRole("form", { name: "Record consent" });
-    await form.getByLabel("Channel").selectOption("whatsapp");
+    await choose(form.getByLabel("Channel"), "WhatsApp");
     await form.getByRole("button", { name: "Record consent" }).click();
     await expect(form.getByRole("alert")).toContainText("Say how");
     await form.getByLabel(/How did they agree/).fill("Signed order form, 2 March");

@@ -42,7 +42,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export async function requireUser() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) redirect("/login");
+  if (!data?.claims) redirect("/sign-in");
   const email = typeof data.claims.email === "string" ? data.claims.email : null;
   return { supabase, userId: data.claims.sub, email };
 }

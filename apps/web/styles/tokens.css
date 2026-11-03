@@ -1,0 +1,234 @@
+/*
+ * Dueloop design tokens (docs/redesign/REDESIGN.md §3). The ONLY place where colours, font sizes, spacing, radii,
+ * shadows, z-index and motion values are written as literals (plus features/landing/three/* for the 3D scene).
+ * Components use the semantic tokens (--color-text-muted), never the primitive scales (--green-600) or raw hex.
+ * Contrast pairs are checked by scripts/check-contrast.ts (D1); light/dark parity by test/tokens.test.ts.
+ */
+
+:root {
+  /* ---- Primitive scales (§3.1.1) ---- */
+  --green-50: #EEF7F1; --green-100: #D6EDDF; --green-200: #ADDBC0; --green-300: #7DC29C; --green-400: #4DA477;
+  --green-500: #2D875B; --green-600: #1F6E48; --green-700: #1A5A3C; --green-800: #164831; --green-900: #123A28;
+  --green-950: #0A2318;
+  --stone-0: #FFFFFF; --stone-50: #F7F8F6; --stone-100: #EEF0EC; --stone-200: #DDE1DB; --stone-300: #C3C9C1;
+  --stone-400: #98A096; --stone-500: #6E776D; --stone-600: #555D54; --stone-700: #3F463F; --stone-800: #2A302A;
+  --stone-900: #1A1F1B; --stone-950: #0E120F;
+  --lime: #C8F169;
+
+  /* ---- Typography (§3.2) ---- */
+  --font-family-body: var(--font-body, system-ui), system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
+  --font-family-display: var(--font-display, var(--font-body, system-ui)), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-display-2xl: clamp(2.75rem, 1.9rem + 3.5vw, 4.5rem);
+  --text-display-xl: clamp(2.25rem, 1.8rem + 1.9vw, 3.5rem);
+  --text-display-lg: clamp(1.75rem, 1.5rem + 1.1vw, 2.5rem);
+  --text-display-md: clamp(1.625rem, 1.5rem + 0.5vw, 2rem);
+  --text-heading-lg: 1.5rem;
+  --text-heading-md: 1.25rem;
+  --text-heading-sm: 1.0625rem;
+  --text-body-lg: 1.0625rem;
+  --text-body-md: 0.9375rem;
+  --text-body-sm: 0.875rem;
+  --text-caption: 0.8125rem;
+  --text-label: 0.75rem;
+
+  /* ---- Spacing (§3.3) ---- */
+  --space-0: 0; --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px;
+  --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px; --space-20: 80px;
+  --gutter: 16px;
+  --content-max: 1280px;
+  --sidebar-width: 264px;
+  --rail-width: 72px;
+  --header-height: 64px;
+  --touch-target: 44px;
+
+  /* ---- Radius (§3.4) ---- */
+  --radius-xs: 6px; --radius-sm: 8px; --radius-md: 10px; --radius-lg: 12px; --radius-xl: 16px; --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ---- Z-index (§3.6) ---- */
+  --z-base: 0; --z-raised: 10; --z-sticky: 100; --z-header: 200; --z-dropdown: 300; --z-overlay: 400; --z-dialog: 500;
+  --z-popover-in-dialog: 550; --z-toast: 600; --z-skip-link: 700;
+
+  /* ---- Motion (§3.7) ---- */
+  --duration-instant: 80ms; --duration-fast: 140ms; --duration-base: 220ms; --duration-slow: 320ms;
+  --duration-slower: 480ms; --duration-scene: 900ms; --duration-ambient: 60000ms;
+  --duration-transform-fast: var(--duration-fast);
+  --duration-transform-base: var(--duration-base);
+  --duration-transform-slow: var(--duration-slow);
+  --duration-transform-slower: var(--duration-slower);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-settle: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease-linear: linear;
+
+  /* ---- Semantic colour, light (§3.1.2) ---- */
+  color-scheme: light;
+  --color-bg: #F7F8F6;
+  --color-surface: #FFFFFF;
+  --color-surface-sunken: #EEF0EC;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-inverse: #0A2318;
+  --color-surface-inverse-raised: #164831;
+  --color-border: #DDE1DB;
+  --color-border-strong: #6E776D;
+  --color-border-control: #C3C9C1;
+  --color-text: #1A1F1B;
+  --color-text-secondary: #3F463F;
+  --color-text-muted: #555D54;
+  --color-text-subtle: #6E776D; /* >= 24px or icons only */
+  --color-text-inverse: #FFFFFF;
+  --color-text-inverse-muted: #ADDBC0;
+  --color-primary: #1F6E48;
+  --color-primary-hover: #1A5A3C;
+  --color-primary-active: #164831;
+  --color-on-primary: #FFFFFF;
+  --color-primary-soft: #EEF7F1;
+  --color-primary-soft-text: #1A5A3C;
+  --color-selected: #D6EDDF;
+  --color-link: #1F6E48;
+  --color-accent: #C8F169;
+  --color-on-accent: #0A2318;
+  --color-focus-ring: #1F6E48;
+  --color-focus-ring-inverse: #C8F169;
+  --color-success-text: #1A5A3C; --color-success-bg: #EEF7F1; --color-success-border: #ADDBC0;
+  --color-warning-text: #8A5A00; --color-warning-bg: #FFF4DB; --color-warning-border: #F0D28A;
+  --color-error-text: #B42318; --color-error-bg: #FEF0EE; --color-error-border: #F6C2BB;
+  --color-info-text: #2856A8; --color-info-bg: #EDF3FF; --color-info-border: #BBD0F7;
+  --color-escalated-text: #FFFFFF; --color-escalated-bg: #2A302A;
+  --color-neutral-chip-text: #3F463F; --color-neutral-chip-bg: #EEF0EC;
+  --color-destructive: #B42318;
+  --color-destructive-hover: #912018;
+  --color-on-destructive: #FFFFFF;
+  --color-chart-1: #2D875B;
+  --color-chart-2: #98A096;
+  --color-chart-track: #DDE1DB;
+  --color-scrim: rgb(10 35 24 / 0.45);
+
+  /* ---- Elevation (§3.5) ---- */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgb(10 35 24 / .06), 0 1px 1px rgb(10 35 24 / .04);
+  --elev-2: 0 4px 12px -2px rgb(10 35 24 / .08), 0 2px 4px -2px rgb(10 35 24 / .06);
+  --elev-3: 0 12px 32px -8px rgb(10 35 24 / .18), 0 4px 8px -4px rgb(10 35 24 / .08);
+  --elev-4: 0 24px 64px -12px rgb(10 35 24 / .28);
+}
+
+@media (min-width: 768px) {
+  :root { --gutter: 24px; }
+}
+@media (min-width: 1024px) {
+  :root { --gutter: 40px; }
+}
+
+/* ---- Semantic colour, dark ----
+ * Two blocks with IDENTICAL bodies: one follows the OS (unless the user picked light), one is the explicit choice.
+ * test/tokens.test.ts fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #0C110E;
+    --color-surface: #141A16;
+    --color-surface-sunken: #0C110E;
+    --color-surface-raised: #1B231E;
+    --color-surface-inverse: #0A2318;
+    --color-surface-inverse-raised: #164831;
+    --color-border: #2A332D;
+    --color-border-strong: #6B776F;
+    --color-border-control: #6B776F;
+    --color-text: #E8EDE9;
+    --color-text-secondary: #C3C9C1;
+    --color-text-muted: #9AA59D;
+    --color-text-subtle: #9AA59D;
+    --color-text-inverse: #FFFFFF;
+    --color-text-inverse-muted: #ADDBC0;
+    --color-primary: #4DA477;
+    --color-primary-hover: #7DC29C;
+    --color-primary-active: #ADDBC0;
+    --color-on-primary: #0A2318;
+    --color-primary-soft: #123A28;
+    --color-primary-soft-text: #ADDBC0;
+    --color-selected: #123A28;
+    --color-link: #7DC29C;
+    --color-accent: #C8F169;
+    --color-on-accent: #0A2318;
+    --color-focus-ring: #C8F169;
+    --color-focus-ring-inverse: #C8F169;
+    --color-success-text: #7DC29C; --color-success-bg: #10261A; --color-success-border: #1F4A33;
+    --color-warning-text: #F2C14E; --color-warning-bg: #2A2110; --color-warning-border: #4A3A12;
+    --color-error-text: #FF8A7A; --color-error-bg: #2C1412; --color-error-border: #5A2420;
+    --color-info-text: #8CB4FF; --color-info-bg: #131D33; --color-info-border: #25365C;
+    --color-escalated-text: #0E120F; --color-escalated-bg: #E8EDE9;
+    --color-neutral-chip-text: #C3C9C1; --color-neutral-chip-bg: #2A302A;
+    --color-destructive: #FF8A7A;
+    --color-destructive-hover: #FFB1A6;
+    --color-on-destructive: #2C1412;
+    --color-chart-1: #4DA477;
+    --color-chart-2: #6B776F;
+    --color-chart-track: #2A332D;
+    --color-scrim: rgb(0 0 0 / 0.6);
+    --elev-1: 0 0 0 1px #2A332D;
+    --elev-2: 0 0 0 1px #2A332D, 0 4px 12px rgb(0 0 0 / .4);
+    --elev-3: 0 0 0 1px #2A332D, 0 12px 32px rgb(0 0 0 / .5);
+    --elev-4: 0 0 0 1px #2A332D, 0 24px 64px rgb(0 0 0 / .6);
+  }
+}
+:root[data-theme="dark"], [data-theme="dark"] {
+    color-scheme: dark;
+    --color-bg: #0C110E;
+    --color-surface: #141A16;
+    --color-surface-sunken: #0C110E;
+    --color-surface-raised: #1B231E;
+    --color-surface-inverse: #0A2318;
+    --color-surface-inverse-raised: #164831;
+    --color-border: #2A332D;
+    --color-border-strong: #6B776F;
+    --color-border-control: #6B776F;
+    --color-text: #E8EDE9;
+    --color-text-secondary: #C3C9C1;
+    --color-text-muted: #9AA59D;
+    --color-text-subtle: #9AA59D;
+    --color-text-inverse: #FFFFFF;
+    --color-text-inverse-muted: #ADDBC0;
+    --color-primary: #4DA477;
+    --color-primary-hover: #7DC29C;
+    --color-primary-active: #ADDBC0;
+    --color-on-primary: #0A2318;
+    --color-primary-soft: #123A28;
+    --color-primary-soft-text: #ADDBC0;
+    --color-selected: #123A28;
+    --color-link: #7DC29C;
+    --color-accent: #C8F169;
+    --color-on-accent: #0A2318;
+    --color-focus-ring: #C8F169;
+    --color-focus-ring-inverse: #C8F169;
+    --color-success-text: #7DC29C; --color-success-bg: #10261A; --color-success-border: #1F4A33;
+    --color-warning-text: #F2C14E; --color-warning-bg: #2A2110; --color-warning-border: #4A3A12;
+    --color-error-text: #FF8A7A; --color-error-bg: #2C1412; --color-error-border: #5A2420;
+    --color-info-text: #8CB4FF; --color-info-bg: #131D33; --color-info-border: #25365C;
+    --color-escalated-text: #0E120F; --color-escalated-bg: #E8EDE9;
+    --color-neutral-chip-text: #C3C9C1; --color-neutral-chip-bg: #2A302A;
+    --color-destructive: #FF8A7A;
+    --color-destructive-hover: #FFB1A6;
+    --color-on-destructive: #2C1412;
+    --color-chart-1: #4DA477;
+    --color-chart-2: #6B776F;
+    --color-chart-track: #2A332D;
+    --color-scrim: rgb(0 0 0 / 0.6);
+    --elev-1: 0 0 0 1px #2A332D;
+    --elev-2: 0 0 0 1px #2A332D, 0 4px 12px rgb(0 0 0 / .4);
+    --elev-3: 0 0 0 1px #2A332D, 0 12px 32px rgb(0 0 0 / .5);
+    --elev-4: 0 0 0 1px #2A332D, 0 24px 64px rgb(0 0 0 / .6);
+}
+
+/* ---- Reduced motion (§3.7, §6.4): transform/layout durations collapse; opacity/colour keep `fast`. ---- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-transform-fast: 1ms;
+    --duration-transform-base: 1ms;
+    --duration-transform-slow: 1ms;
+    --duration-transform-slower: 1ms;
+    --duration-base: var(--duration-fast);
+    --duration-slow: var(--duration-fast);
+    --duration-slower: var(--duration-fast);
+  }
+}

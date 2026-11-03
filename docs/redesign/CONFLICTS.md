@@ -147,6 +147,51 @@ plain `<img>` with width/height). No runtime image work on the 1 GB server.
 
 **C-27 · Pricing (Q18), legal pages (Q19), analytics (Q21).** None exist, so none are rendered.
 
+## Found during the build (3 November 2026)
+
+**Decisions taken when the user said "build everything":** landing page at `/` (user's call), Overview moved to
+`/overview`, auth at `/sign-in` and `/sign-up` (`/login` redirects), landing rendered per request with the
+unchanged nonce CSP (C-02 option a), new route class `marketing` for `/` only (C-03), existing data only (C-11 to
+C-17), PAUSE/RESUME kept (C-20), required reject reason and the Preview → Confirm payment kept (C-12, C-18).
+
+**C-28 · Damping constant.** §6.2.2 gives λ = 6 and also "settles in about 120 ms"; λ = 6 needs ~0.5 s. The scene
+uses λ = 25 for camera, card and pointer (≈120 ms). `keyframes.damp` defaults to 6.
+
+**C-29 · The committed spec is v1.0 · OPEN.** `docs/redesign/REDESIGN.md` in the repo is **v1.0** (no landing page,
+no §4.9 or §6.2). The build follows **v1.1**, which the user supplied in the chat. Please commit v1.1 over the file.
+`test/landing-copy.test.ts` reports its copy check as **skipped** until §4.9.4 is in the file.
+
+**C-30 · Stills are WebP only.** §6.2.6 asks for AVIF and WebP. `sharp` is disabled in this repo and browsers have
+no canvas AVIF encoder, so the stills script writes WebP (and a PNG for Open Graph).
+
+**C-31 · 3D lighting and tilt.** (a) three.js r155+ uses physical light units, so the spec's 0.6 / 0.9 / 0.25
+intensities rendered the cards grey; the scene multiplies them by π (rim ×12). (b) "Group tilt X −18°" showed the
+ring from below in three's convention; the scene uses +18°, which gives the intended view from slightly above. Both
+were checked by looking at rendered stills.
+
+**C-32 · Custom select and date fields (user request).** The user asked for custom controls instead of native ones
+(§7 prefers native `<select>` and `<input type="date">`). Built: `components/ui/choice-select.tsx` (Radix Select
+listbox, posts a hidden input) and `components/ui/date-picker.tsx` (typeable YYYY-MM-DD input plus a calendar
+popover with keyboard navigation). Consequences: without JavaScript a custom select cannot be changed (it posts its
+default). e2e specs that used `selectOption` now use `e2e/support/choice.ts`. Public pay/opt-out pages keep native
+controls (no React there by design, C-22).
+
+**C-33 · The repo's `.env` points at a hosted Supabase project.** `SUPABASE_URL`, `DATABASE_URL`, `DIRECT_URL`,
+`SUPABASE_DB_URL` and `WORKER_DATABASE_URL` in the root `.env` point at `*.supabase.co`, not the local stack. A dev
+server started with plain `pnpm dev` talks to that project. During this build one dev server did, for a short time:
+it served pages and received two failed sign-in attempts for `owner@e2e.test` (a user that does not exist there).
+Nothing was written. All later checks ran with every database/auth variable overridden to the local stack.
+
+**C-34 · Forms not moved to React Hook Form.** The import wizard (F12: file + state machine), policy editor (F14a:
+dynamic step rows + impact check), template editor (F14b) and integrations (F16) keep their existing server-action
+forms, restyled. One-button forms (resume, withdraw, revoke, remove, tenant switch) have no fields to validate. Every
+other form in §5.3 uses RHF + zodResolver. D11 is therefore **partial**.
+
+**C-35 · Not built or not measured.** ⌘K is a focus shortcut into the existing invoice search (no command dialog);
+queue items do not animate out (M5) or move focus to the next item; S10 is not a split view; S15 stays a page;
+Lighthouse (D6/D19), bundle size (D8), Core Web Vitals (D7) and the full Playwright suites need the production build
+and a DB reset (C-05, C-06) and were **not run**.
+
 ## Open questions answered by the code
 
 | # | Answer |

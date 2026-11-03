@@ -13,7 +13,7 @@ export function TemplateForm(p: { id: string; channel: string; subject: string |
     <form action={action} className="grid gap-2" key={JSON.stringify(state.draft ?? null)} aria-label="Template">
       <input type="hidden" name="template" value={p.id} />
       {p.channel === "whatsapp" ? (
-        <p className="text-sm text-muted-foreground" data-testid="wa-status">
+        <p className="t-body-sm text-ink-muted" data-testid="wa-status">
           Provider status: {p.status ?? "unknown"}. WhatsApp sends only text Meta approved; editing it here marks it for resubmission and stops
           sending until an owner confirms Meta approved the new text.
         </p>
@@ -26,12 +26,12 @@ export function TemplateForm(p: { id: string; channel: string; subject: string |
       ) : null}
       <label className="grid gap-1 text-sm">
         Body (variables like {"{{invoice_number}}"}; unknown variables are refused)
-        <textarea name="body" defaultValue={v.body} rows={8} maxLength={5000} dir="auto" className="rounded-md border bg-background p-2 text-sm" disabled={!p.canEdit} />
+        <textarea name="body" defaultValue={v.body} rows={8} maxLength={5000} dir="auto" className="rounded-sm border border-line-strong bg-panel p-3 text-ink text-sm" disabled={!p.canEdit} />
       </label>
       {p.channel === "whatsapp" ? (
-        <p className="text-xs text-muted-foreground">WhatsApp sends only the text Meta approved; no footer is added. Include an opt-out line such as "Reply STOP to stop these reminders." in it.</p>
+        <p className="t-caption text-ink-muted">WhatsApp sends only the text Meta approved; no footer is added. Include an opt-out line such as "Reply STOP to stop these reminders." in it.</p>
       ) : (
-        <p className="text-xs text-muted-foreground">The opt-out footer is added after your text when the message is sent. It cannot be edited or removed.</p>
+        <p className="t-caption text-ink-muted">The opt-out footer is added after your text when the message is sent. It cannot be edited or removed.</p>
       )}
       {pv ? (
         <div className="grid gap-1 rounded-md bg-muted/40 p-3 text-sm" role="status" data-testid="template-preview">

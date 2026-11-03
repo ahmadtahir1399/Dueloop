@@ -1,0 +1,269 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./tokens.css";
+
+/* Dark mode: the explicit choice (data-theme on <html>, from the dl-theme cookie) or the OS when no choice is set. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * Tailwind utility names → semantic tokens (tokens.css). Utility names differ from token names on purpose
+ * (bg-panel → --color-surface) so no theme variable refers to itself. No literal values here (D12).
+ */
+@theme inline {
+  --font-sans: var(--font-family-body);
+  --font-heading: var(--font-family-display);
+  --font-display: var(--font-family-display);
+
+  --breakpoint-wide: 90rem;
+
+  /* shadcn primitives keep working: their variables point at our tokens (below, :root). */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--color-success-text);
+  --color-warning: var(--color-warning-border);
+  --color-warning-foreground: var(--color-warning-text);
+  --color-chart-1: var(--color-chart-1);
+  --color-chart-2: var(--color-chart-2);
+
+  /* Our own names. */
+  --color-canvas: var(--color-bg);
+  --color-panel: var(--color-surface);
+  --color-sunken: var(--color-surface-sunken);
+  --color-raised: var(--color-surface-raised);
+  --color-inverse: var(--color-surface-inverse);
+  --color-inverse-raised: var(--color-surface-inverse-raised);
+  --color-line: var(--color-border);
+  --color-line-strong: var(--color-border-strong);
+  --color-line-control: var(--color-border-control);
+  --color-ink: var(--color-text);
+  --color-ink-2: var(--color-text-secondary);
+  --color-ink-muted: var(--color-text-muted);
+  --color-ink-subtle: var(--color-text-subtle);
+  --color-ink-inverse: var(--color-text-inverse);
+  --color-ink-inverse-muted: var(--color-text-inverse-muted);
+  --color-brand: var(--color-primary);
+  --color-brand-hover: var(--color-primary-hover);
+  --color-brand-active: var(--color-primary-active);
+  --color-on-brand: var(--color-on-primary);
+  --color-brand-soft: var(--color-primary-soft);
+  --color-brand-soft-ink: var(--color-primary-soft-text);
+  --color-selected: var(--color-selected);
+  --color-link: var(--color-link);
+  --color-lime: var(--color-accent);
+  --color-on-lime: var(--color-on-accent);
+  --color-focus: var(--color-focus-ring);
+  --color-success-ink: var(--color-success-text);
+  --color-success-soft: var(--color-success-bg);
+  --color-success-line: var(--color-success-border);
+  --color-warning-ink: var(--color-warning-text);
+  --color-warning-soft: var(--color-warning-bg);
+  --color-warning-line: var(--color-warning-border);
+  --color-error-ink: var(--color-error-text);
+  --color-error-soft: var(--color-error-bg);
+  --color-error-line: var(--color-error-border);
+  --color-info-ink: var(--color-info-text);
+  --color-info-soft: var(--color-info-bg);
+  --color-info-line: var(--color-info-border);
+  --color-escalated-ink: var(--color-escalated-text);
+  --color-escalated: var(--color-escalated-bg);
+  --color-chip-ink: var(--color-neutral-chip-text);
+  --color-chip: var(--color-neutral-chip-bg);
+  --color-danger: var(--color-destructive);
+  --color-danger-hover: var(--color-destructive-hover);
+  --color-on-danger: var(--color-on-destructive);
+  --color-track: var(--color-chart-track);
+  --color-scrim: var(--color-scrim);
+
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-3: var(--elev-3);
+  --shadow-elev-4: var(--elev-4);
+
+  --ease-standard: var(--ease-standard);
+  --ease-enter: var(--ease-enter);
+  --ease-exit: var(--ease-exit);
+  --ease-settle: var(--ease-settle);
+}
+
+/* shadcn variable names → tokens (follows light/dark automatically because the tokens do). */
+:root {
+  --radius: var(--radius-md);
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface-raised);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-on-primary);
+  --secondary: var(--color-surface);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-surface-sunken);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-surface-sunken);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-destructive);
+  --border: var(--color-border);
+  --input: var(--color-border-strong);
+  --ring: var(--color-focus-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-family: var(--font-family-body);
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--text-body-md);
+    line-height: 1.55;
+  }
+  /* Visible focus for every interactive element (§7.1): never removed, never colour-only. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+  .on-inverse :focus-visible,
+  .on-inverse:focus-visible {
+    outline-color: var(--color-focus-ring-inverse);
+  }
+  [id] {
+    scroll-margin-top: calc(var(--header-height) + var(--space-2));
+  }
+  /* Money, counts, dates and IDs line up like a statement. */
+  .tabular,
+  time,
+  td,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Type scale (§3.2). Display face only for page titles, KPI figures, the auth hero and empty-state titles. */
+@layer components {
+  .t-display-2xl { font-family: var(--font-family-display); font-size: var(--text-display-2xl); line-height: 1.0; font-weight: 700; letter-spacing: -0.03em; }
+  .t-display-xl { font-family: var(--font-family-display); font-size: var(--text-display-xl); line-height: 1.05; font-weight: 700; letter-spacing: -0.025em; }
+  .t-display-lg { font-family: var(--font-family-display); font-size: var(--text-display-lg); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+  .t-display-md { font-family: var(--font-family-display); font-size: var(--text-display-md); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .t-heading-lg { font-family: var(--font-family-display); font-size: var(--text-heading-lg); line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; }
+  .t-heading-md { font-size: var(--text-heading-md); line-height: 1.3; font-weight: 600; letter-spacing: -0.005em; }
+  .t-heading-sm { font-size: var(--text-heading-sm); line-height: 1.35; font-weight: 600; }
+  .t-body-lg { font-size: var(--text-body-lg); line-height: 1.6; }
+  .t-body-md { font-size: var(--text-body-md); line-height: 1.55; }
+  .t-body-sm { font-size: var(--text-body-sm); line-height: 1.5; }
+  .t-caption { font-size: var(--text-caption); line-height: 1.45; font-weight: 500; }
+  .t-label { font-size: var(--text-label); line-height: 1.4; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+  .prose-width { max-width: 68ch; }
+
+  .gutter { padding-inline: var(--gutter); }
+
+  /* Transitions that obey the reduced-motion tokens. */
+  .transition-colors-fast { transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
+  .press { transition: transform var(--duration-instant) var(--ease-standard), background-color var(--duration-instant) var(--ease-standard); }
+  .press:active { transform: scale(0.98); }
+  @media (prefers-reduced-motion: reduce) {
+    .press:active { transform: none; }
+  }
+
+  /* M2: field messages fade in and settle. */
+  .field-message-enter { animation: field-message-in var(--duration-fast) var(--ease-enter); }
+  /* M9: page content fades in with a 4 px rise (staff app template). */
+  .page-enter { animation: page-in var(--duration-transform-base) var(--ease-enter); }
+  /* M10: wizard step slides 24 px in the direction of travel + fade. */
+  .step-enter { animation: step-in var(--duration-transform-slower) var(--ease-enter); }
+  /* M8: mobile nav sheet slides in from the left; the backdrop fades. */
+  .sheet-left[open] { animation: sheet-left-in var(--duration-transform-slow) var(--ease-enter); }
+  .sheet-left[open]::backdrop { animation: fade-in var(--duration-slow) var(--ease-enter); }
+  /* M13: skeleton pulse. */
+  .skeleton-pulse { animation: skeleton 1200ms var(--ease-standard) infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .field-message-enter, .page-enter, .step-enter, .sheet-left[open] { animation: none; }
+    .skeleton-pulse { animation: none; }
+  }
+}
+
+@keyframes field-message-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes step-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheet-left-in {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes skeleton {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Windows High Contrast: keep chip and card edges visible. */
+@media (forced-colors: active) {
+  .chip, .card-edge { border: 1px solid CanvasText; }
+}
+
+/* ---- Landing page (S32) ---- */
+@layer components {
+  /* Desktop: the hero row's inverse band spans both columns behind the transparent header. */
+  @media (min-width: 1024px) {
+    .story { background: linear-gradient(to bottom, var(--color-surface-inverse) 0, var(--color-surface-inverse) 100svh, var(--color-bg) 100svh); }
+  }
+  /* Stage background cross-fades inverse → page bg as beat 0 → 1 (--stage-mix is written by the scroll handler). */
+  .stage { background: color-mix(in oklab, var(--color-surface-inverse), var(--color-bg) var(--stage-mix, 0%)); }
+  .still { transition: opacity var(--duration-fast) var(--ease-standard); }
+  .canvas-fade { transition: opacity var(--duration-slow) var(--ease-standard); }
+  .reveal { animation: reveal-in var(--duration-transform-base) var(--ease-enter) both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+  @media (prefers-reduced-motion: reduce) {
+    .still, .canvas-fade { transition: none; }
+    .reveal { animation: none; }
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq details[open] .faq-chevron { transform: rotate(90deg); }
+  .faq-chevron { transition: transform var(--duration-transform-base) var(--ease-standard); }
+  .faq details[open] .faq-answer { animation: fade-in var(--duration-base) var(--ease-enter); }
+}
+@keyframes reveal-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}

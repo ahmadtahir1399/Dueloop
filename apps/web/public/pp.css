@@ -1,26 +1,49 @@
-/* Public pages: small, no framework, no web fonts. Tokens as CSS variables; light and dark; visible focus. */
+/*
+ * Customer pages (/p, /o; redesign §4.7, S25–S28): small, no framework, no web fonts, no motion beyond colour.
+ * Values mirror styles/tokens.css (this file is served as-is to pages that load no app CSS, so it cannot import
+ * it; keep the two in step). Light and dark follow the OS only. Visible focus everywhere.
+ */
 :root {
-  --bg: #ffffff;
-  --fg: #1a1a1a;
-  --muted: #5c5c5c;
-  --line: #d9d9d9;
-  --accent: #1f4fbf;
-  --accent-fg: #ffffff;
-  --ok: #17663a;
-  --warn-bg: #fff4d6;
-  --radius: 8px;
+  --bg: #F7F8F6;
+  --surface: #FFFFFF;
+  --sunken: #EEF0EC;
+  --fg: #1A1F1B;
+  --muted: #555D54;
+  --line: #DDE1DB;
+  --line-strong: #6E776D;
+  --primary: #1F6E48;
+  --primary-hover: #1A5A3C;
+  --on-primary: #FFFFFF;
+  --focus: #1F6E48;
+  --ok: #1A5A3C;
+  --ok-bg: #EEF7F1;
+  --warn: #8A5A00;
+  --warn-bg: #FFF4DB;
+  --danger: #B42318;
+  --on-danger: #FFFFFF;
+  --radius: 10px;
+  --radius-card: 24px;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121212;
-    --fg: #f2f2f2;
-    --muted: #b5b5b5;
-    --line: #3a3a3a;
-    --accent: #8fb0ff;
-    --accent-fg: #0b1530;
-    --ok: #7fd6a2;
-    --warn-bg: #3a3000;
+    --bg: #0C110E;
+    --surface: #141A16;
+    --sunken: #1B231E;
+    --fg: #E8EDE9;
+    --muted: #9AA59D;
+    --line: #2A332D;
+    --line-strong: #6B776F;
+    --primary: #4DA477;
+    --primary-hover: #7DC29C;
+    --on-primary: #0A2318;
+    --focus: #C8F169;
+    --ok: #7DC29C;
+    --ok-bg: #10261A;
+    --warn: #F2C14E;
+    --warn-bg: #2A2110;
+    --danger: #FF8A7A;
+    --on-danger: #2C1412;
   }
 }
 * { box-sizing: border-box; }
@@ -28,34 +51,70 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
+  font: 1.0625rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
 }
-main { max-width: 34rem; margin: 0 auto; padding: 1rem; }
-h1 { font-size: 1.35rem; margin: 0.5rem 0 1rem; }
-h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
-section { border-top: 1px solid var(--line); padding: 1rem 0; }
-dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 0; }
+main {
+  max-width: 35rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+@media (min-width: 640px) {
+  main {
+    margin: 2.5rem auto;
+    padding: 2rem 2.25rem 2.5rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+  }
+}
+h1 { font-size: 0.9375rem; font-weight: 600; color: var(--muted); margin: 0 0 0.75rem; }
+h2 { font-size: 1.0625rem; margin: 0 0 0.5rem; }
+section { border-top: 1px solid var(--line); padding: 1.25rem 0; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 0 0 1rem; }
 dt { color: var(--muted); }
-dd { margin: 0; font-variant-numeric: tabular-nums; }
-.amount { font-size: 1.6rem; font-weight: 650; }
-.muted { color: var(--muted); font-size: 0.9rem; }
-.note { background: var(--warn-bg); padding: 0.75rem; border-radius: var(--radius); }
-.ok { color: var(--ok); font-weight: 600; }
-pre { white-space: pre-wrap; word-break: break-word; font: inherit; margin: 0.5rem 0; }
-label { display: block; margin: 0.5rem 0 0.25rem; }
-input[type="date"], input[type="file"] { font: inherit; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); width: 100%; background: var(--bg); color: var(--fg); }
+dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+.amount {
+  font-size: clamp(2.25rem, 1.8rem + 1.9vw, 3.5rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  grid-column: 1 / -1;
+  text-align: left;
+}
+.muted { color: var(--muted); font-size: 0.9375rem; }
+.note { background: var(--warn-bg); color: var(--warn); padding: 0.75rem 1rem; border-radius: var(--radius); }
+.ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; padding: 0.75rem 1rem; border-radius: var(--radius); }
+pre { white-space: pre-wrap; word-break: break-word; font: inherit; margin: 0.5rem 0; padding: 0.75rem 1rem; background: var(--sunken); border-radius: var(--radius); }
+label { display: block; margin: 0.5rem 0 0.25rem; font-weight: 600; font-size: 0.9375rem; }
+input[type="date"], input[type="file"] {
+  font: inherit;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  width: 100%;
+  background: var(--surface);
+  color: var(--fg);
+}
 button {
   font: inherit;
+  font-weight: 600;
   margin-top: 0.75rem;
-  padding: 0.65rem 1rem;
+  padding: 0.65rem 1.25rem;
   min-height: 44px;
-  border: 1px solid var(--accent);
+  width: 100%;
+  border: 1px solid var(--primary);
   border-radius: var(--radius);
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--primary);
+  color: var(--on-primary);
   cursor: pointer;
+  transition: background-color 140ms cubic-bezier(0.2, 0, 0, 1);
 }
-button.secondary { background: transparent; color: var(--accent); }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+button.secondary { background: transparent; color: var(--fg); border-color: var(--line-strong); }
+button.secondary:hover { background: var(--sunken); }
+button.danger { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .ref { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.05rem; letter-spacing: 0.05em; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (forced-colors: active) { button { border: 1px solid ButtonText; } }

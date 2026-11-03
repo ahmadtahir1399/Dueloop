@@ -1,82 +1,79 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
+import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
+import { RhfSelect } from "@/components/ui/choice-select";
+import { Field, FormError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Stepper } from "@/components/ui/stepper";
+import { onboardingSchema } from "@/forms/schemas";
+import { useActionForm } from "@/lib/use-action-form";
 import { createBusiness, type OnboardingState } from "./actions";
 
-const HOURS = Array.from({ length: 24 }, (_, h) => String(h));
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({ value: String(h), label: `${String(h).padStart(2, "0")}:00` }));
 
+/**
+ * S04 Onboarding (F04): one form, shown as two steps (Business · Time & money). Only the fields the existing
+ * create_tenant call accepts (no country; CONFLICTS C-21). Without JavaScript both steps show and post together.
+ */
 export function OnboardingForm({ zones, defaultZone }: { zones: string[]; defaultZone: string }) {
-  const [state, action, pending] = useActionState<OnboardingState, FormData>(createBusiness, {});
-  const [timezone, setTimezone] = useState(defaultZone);
-  const [quietStart, setQuietStart] = useState("20");
-  const [quietEnd, setQuietEnd] = useState("9");
+  const [step, setStep] = useState(0);
+  const { form, state, pending, formProps, errorId } = useActionForm<OnboardingState, typeof onboardingSchema>({
+    schema: onboardingSchema,
+    action: createBusiness,
+    initial: {},
+    defaultValues: { name: "", timezone: defaultZone, currency: "", quietStart: "20", quietEnd: "9" },
+    id: "onboarding",
+  });
+  const e = form.formState.errors;
+  const next = async () => {
+    if (await form.trigger("name")) setStep(1);
+  };
   return (
-    <form action={action} className="grid gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="name">Business name</Label>
-        <Input id="name" name="name" required />
+    <form {...formProps} className="grid gap-6" aria-label="Set up your business">
+      <Stepper steps={["Business", "Time and money"]} current={step} label="Setup steps" />
+      <FormError id={errorId} message={state.error} />
+      <div className={step === 0 ? "step-enter grid gap-4" : "hidden"}>
+        <Field id="name" label="Business name" help="Customers see this name on reminders and the pay page." error={e.name?.message as string | undefined}>
+          {(a) => <Input {...a} autoComplete="organization" {...form.register("name")} />}
+        </Field>
+        <Button type="button" onClick={() => void next()} className="w-full sm:w-fit sm:justify-self-end">
+          Continue
+        </Button>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="timezone">Time zone</Label>
-        <input type="hidden" name="timezone" value={timezone} />
-        <Select value={timezone} onValueChange={setTimezone}>
-          <SelectTrigger id="timezone" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="max-h-72">
-            {zones.map((z) => (
-              <SelectItem key={z} value={z}>
-                {z}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className={step === 1 ? "step-enter grid gap-4" : "hidden"}>
+        <Field id="timezone" label="Time zone" error={e.timezone?.message as string | undefined}>
+          {(a) => (
+            <RhfSelect control={form.control} name="timezone" field={a} options={zones.map((z) => ({ value: z, label: z }))} />
+          )}
+        </Field>
+        <Field id="currency" label="Main currency" help="A 3-letter code, like PKR or USD." error={e.currency?.message as string | undefined}>
+          {(a) => <Input {...a} maxLength={3} className="w-32 uppercase" {...form.register("currency")} />}
+        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field id="quietStart" label="No messages from" error={e.quietStart?.message as string | undefined}>
+            {(a) => (
+              <RhfSelect control={form.control} name="quietStart" field={a} options={HOUR_OPTIONS} />
+            )}
+          </Field>
+          <Field id="quietEnd" label="until" error={e.quietEnd?.message as string | undefined}>
+            {(a) => (
+              <RhfSelect control={form.control} name="quietEnd" field={a} options={HOUR_OPTIONS} />
+            )}
+          </Field>
+        </div>
+        <p className="t-caption text-ink-muted">Quiet hours are in the business&apos;s local time. Choose the same hour twice for no quiet hours.</p>
+        <Banner tone="info">No reminder can go out until a sender address is set. You can add it in Settings › Integrations after this step.</Banner>
+        <div className="flex flex-wrap justify-between gap-2">
+          <Button type="button" variant="outline" onClick={() => setStep(0)}>
+            Back
+          </Button>
+          <Button type="submit" loading={pending} loadingLabel="Creating…">
+            Create business
+          </Button>
+        </div>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="currency">Main currency</Label>
-        <Input id="currency" name="currency" placeholder="PKR" maxLength={3} required className="uppercase" />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        {(
-          [
-            ["quietStart", "No messages from", quietStart, setQuietStart],
-            ["quietEnd", "until", quietEnd, setQuietEnd],
-          ] as const
-        ).map(([name, label, value, set]) => (
-          <div key={name} className="grid gap-2">
-            <Label htmlFor={name}>{label}</Label>
-            <input type="hidden" name={name} value={value} />
-            <Select value={value} onValueChange={set}>
-              <SelectTrigger id={name} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                {HOURS.map((h) => (
-                  <SelectItem key={h} value={h}>
-                    {h.padStart(2, "0")}:00
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ))}
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Quiet hours are in the business&apos;s local time. Choose the same hour twice for no quiet hours.
-      </p>
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? "Creating…" : "Create business"}
-      </Button>
     </form>
   );
 }

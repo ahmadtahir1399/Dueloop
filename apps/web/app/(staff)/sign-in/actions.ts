@@ -24,8 +24,9 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   if (!input.success) return { error: input.error.issues[0]?.message ?? "Invalid input." };
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(input.data);
-  if (error) return { error: error.message };
-  redirect("/");
+  // §5.6 copy for wrong credentials (display text only; Supabase decides). Other errors keep the provider text.
+  if (error) return { error: error.code === "invalid_credentials" ? "That email and password don't match. Try again." : error.message };
+  redirect("/overview");
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -46,5 +47,5 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/sign-in");
 }

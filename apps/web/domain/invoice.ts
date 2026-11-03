@@ -1,0 +1,19 @@
+// UI-facing domain enums (redesign §5.2). The VALUES come from the core and authz packages; nothing is re-listed
+// here, so a new status in core reaches the UI (and test/domain.test.ts keeps the types equal).
+import { CHANNELS, INVOICE_STATUSES } from "@dueloop/core";
+import { ROLES } from "@dueloop/authz";
+import { z } from "zod";
+
+export const InvoiceStatus = z.enum(INVOICE_STATUSES);
+export type InvoiceStatus = z.infer<typeof InvoiceStatus>;
+
+export const Channel = z.enum(CHANNELS);
+export type Channel = z.infer<typeof Channel>;
+
+/** Channels a business can actually use today (SMS exists in the schema but is not built). */
+export const LiveChannel = Channel.extract(["email", "whatsapp"]);
+
+export const Role = z.enum(ROLES);
+export type Role = z.infer<typeof Role>;
+
+export const IsoDate = z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Use a valid date." });

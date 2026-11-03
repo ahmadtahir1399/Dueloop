@@ -1,6 +1,7 @@
 // Step 1: authentication and tenant context (issue H).
 import { expect, test } from "@playwright/test";
-import { authFile, DEMO_TENANT, OTHER_TENANT } from "../support/users";
+import { authFile, OTHER_TENANT } from "../support/users";
+import { choose } from "../support/choice";
 
 test.describe("signed out", () => {
   for (const path of ["/", "/invoices", "/customers", "/approvals", "/settings", "/import"]) {
@@ -51,11 +52,11 @@ test.describe("multi-tenant user", () => {
   test("switches between tenants and sees each one's role", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("whoami")).toContainText("collector");
-    await page.getByLabel("Business").selectOption(OTHER_TENANT);
+    await choose(page.getByLabel("Business"), /^Isolation Test Co/);
     await page.getByRole("button", { name: "Switch" }).click();
     await expect(page.getByTestId("whoami")).toContainText("accountant");
     await expect(page.getByText("Isolation Test Co").first()).toBeVisible();
-    await page.getByLabel("Business").selectOption(DEMO_TENANT);
+    await choose(page.getByLabel("Business"), /^Demo Agency/);
     await page.getByRole("button", { name: "Switch" }).click();
     await expect(page.getByTestId("whoami")).toContainText("collector");
   });

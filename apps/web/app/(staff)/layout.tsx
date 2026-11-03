@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Toaster } from "@/components/ui/sonner";
-import "./globals.css";
+import { MotionProvider } from "@/components/motion/motion-provider";
+import { fontVariables } from "@/app/fonts";
+import { dataTheme, parseTheme, THEME_COOKIE } from "@/lib/theme";
+import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: "Dueloop",
@@ -9,15 +13,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// System font stack only (no web fonts, no third-party requests). Every page renders per request so the proxy's
-// CSP nonce reaches the framework scripts (Next.js CSP guide, "Forcing dynamic rendering").
+// Every page renders per request so the proxy's CSP nonce reaches the framework scripts (Next.js CSP guide,
+// "Forcing dynamic rendering"). The theme comes from the dl-theme cookie, so the server renders data-theme and
+// there is no flash and no inline script. Fonts are self-hosted by next/font.
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   await connection();
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   return (
-    <html lang="en">
-      <body className="min-h-svh bg-background font-sans text-foreground antialiased">
-        {children}
-        <Toaster richColors />
+    <html lang="en" data-theme={dataTheme(theme)} className={fontVariables}>
+      <body className="min-h-svh bg-canvas font-sans text-ink antialiased">
+        <MotionProvider>{children}</MotionProvider>
+        <Toaster theme={theme} />
       </body>
     </html>
   );
