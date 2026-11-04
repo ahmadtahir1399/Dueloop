@@ -16,3 +16,6 @@ playwright-report/
 .reports/
 # Rendered from docs/guides/*.html by `pnpm guide:pdf`; binaries are not committed (repo:audit).
 docs/guides/*.pdf
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat

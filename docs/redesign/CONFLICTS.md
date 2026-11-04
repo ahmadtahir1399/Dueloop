@@ -370,6 +370,16 @@ the tab the list fell back to. Not changed, noted: the overview "messages sent /
 `STATUSES` copy in `lib/data/invoices.ts` (identical to core's today); chips are server-built so they trail the
 optimistic controls during a load; the search box keeps its fixed width on mobile.
 
+**C-60 · Hero decision and story polish (4 November 2026).** The user ran the 8e Loop Track hero (spec §6.2) and asked
+to go back to the ring of cards, so the ring stays and `redesign/8e-3d` is not merged. This overrides §6.2 and the
+"superseded" note in §0.5; D23 (icon silhouettes) and the Loop Track parts of §6.2.11 no longer apply to main. At the
+user's request the story steps on the ring scene were improved: beat 1 is a real spreadsheet with rows checked by a scan
+line, and the other cards leave the stage; beat 2 is a timeline with a fill stopping on each station and channel tiles;
+beat 3 tips the card back so a lathe-turned stamp presses it and leaves a printed mark, with a solid person bust standing
+on the timeline; beat 4 is a full clock (dial, hour marks, hour and minute hands, allowed-time window) and a folded plane
+with a dotted trail. Camera targets for beats 1 to 3 moved down so the props sit mid-frame. Still NOT VERIFIED on real
+devices or in Firefox and Safari; FPS was not measured after this change.
+
 ## Open questions answered by the code
 
 | # | Answer |
