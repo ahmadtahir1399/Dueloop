@@ -1,6 +1,6 @@
 // Phase 6: the Loop is a pure function of (beat, time). These lock the §6.2.4 table and the scroll mapping.
 import { describe, expect, it } from 'vitest';
-import { beatFromBlocks, BEAT_COUNT, CAMERA, cameraAt, damp, ringAngle, ringCardState, RING, splitBeat, storyAt } from '../features/landing/three/keyframes.ts';
+import { beatFromBlocks, BEAT_COUNT, CAMERA, cameraAt, damp, RAIL, ringAngle, ringCardState, RING, splitBeat, storyAt } from '../features/landing/three/keyframes.ts';
 import { decideTier, watchdogStep, type TierInputs } from '../features/landing/three/tier.ts';
 
 describe('keyframes', () => {
@@ -42,6 +42,35 @@ describe('keyframes', () => {
     expect(close.cardOut).toBeLessThan(0.05);
     expect(close.ringOpacity).toBe(1);
     expect(close.ringGreenWave).toBeGreaterThan(0.95);
+  });
+  it('import: rows are checked first, then the card rises and stands up, with the ring off stage', () => {
+    expect(storyAt(1.1).scan).toBeGreaterThan(0);
+    expect(storyAt(1.1).scan).toBeLessThan(1);
+    expect(storyAt(1.5).scan).toBe(1);
+    expect(storyAt(1.1).cardTilt).toBeLessThan(0);
+    expect(storyAt(1.6).cardTilt).toBeCloseTo(0);
+    expect(storyAt(1.2).ringOpacity).toBe(0);
+  });
+  it('plan: the lime fill stops exactly on each station and the tiles only show in this beat', () => {
+    const stations = [-1.2, 0, 1.2].map((x) => (x + RAIL.length / 2) / RAIL.length);
+    expect(storyAt(2.52).railFill).toBeCloseTo(stations[0] as number);
+    expect(storyAt(3.2).railFill).toBeCloseTo(stations[1] as number);
+    expect(storyAt(4.8).railFill).toBeCloseTo(stations[2] as number);
+    expect(storyAt(2.5).planTiles).toBeGreaterThan(0.5);
+    expect(storyAt(3.2).planTiles).toBe(0);
+  });
+  it('approve: the card tips back, the stamp leaves a mark that stays until the send is done', () => {
+    expect(storyAt(3.4).cardTilt).toBeLessThan(-0.7);
+    expect(storyAt(3.2).mark).toBe(0);
+    expect(storyAt(3.65).mark).toBeGreaterThan(0.9);
+    expect(storyAt(4.3).mark).toBe(1);
+    expect(storyAt(5.2).mark).toBe(0);
+    expect(storyAt(3.99).cardTilt).toBeCloseTo(0, 1);
+  });
+  it('send: the allowed window lights as the hands arrive, before the plane leaves', () => {
+    expect(storyAt(4.2).clock.window).toBe(0);
+    expect(storyAt(4.42).clock.window).toBe(1);
+    expect(storyAt(4.39).plane.visible).toBe(0);
   });
   it('turns once a minute; cards go green as they pass the front and reset at the back', () => {
     expect(ringAngle(0)).toBe(0);
