@@ -35,9 +35,9 @@ export const CARD = { width: 1.0, height: 1.32, radius: 0.08, depth: 0.03 } as c
 /** Camera position and look-at target per beat (the §6.2.4 table). */
 export const CAMERA: readonly [{ position: Vec3; target: Vec3 }, ...{ position: Vec3; target: Vec3 }[]] = [
   { position: [0, 1.2, 9], target: [0, 0, 0] },
-  { position: [-1.4, 1.0, 6.5], target: [-0.4, 0, 0] },
-  { position: [0, 1.6, 6.0], target: [0, 0, 0] },
-  { position: [0.8, 1.2, 5.5], target: [0, 0.1, 0] },
+  { position: [-1.4, 1.0, 6.5], target: [-0.4, -0.35, 0] },
+  { position: [0, 1.4, 6.0], target: [0, -0.35, 0] },
+  { position: [0.8, 1.1, 5.5], target: [0.1, -0.3, 0] },
   { position: [1.5, 1.4, 6.5], target: [1.2, 0.5, 0] },
   { position: [0.5, 1.0, 5.8], target: [0, 0, 0] },
   { position: [0, 1.1, 5.2], target: [0, 0, 0] },
@@ -47,7 +47,11 @@ export const CAMERA: readonly [{ position: Vec3; target: Vec3 }, ...{ position: 
 /** Where the story card stands during each beat (beat 1 adds the lift out of the sheet; beat 0 and 7 = ring front). */
 /** The ring's front slot in world space (ring group at the origin, tilted about X). */
 export const RING_FRONT: Vec3 = [0, -RING.radius * Math.sin(RING.tiltX), RING.radius * Math.cos(RING.tiltX)];
-const CARD_SPOT: readonly Vec3[] = [RING_FRONT, [-0.4, -0.5, 0], [-1.2, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], RING_FRONT];
+const CARD_SPOT: readonly Vec3[] = [RING_FRONT, [-0.4, -0.5, 0.15], [-1.2, -0.2, 0], [0, -0.2, 0], [0, -0.2, 0], [0, 0, 0], [0, 0, 0], RING_FRONT];
+
+/** The timeline's three stations as fractions of the rail, so the lime fill stops exactly on each one. */
+export const RAIL = { length: 4.2, stations: [-1.2, 0, 1.2] } as const;
+const stationFill = (x: number) => (x + RAIL.length / 2) / RAIL.length;
 
 export const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -115,11 +119,23 @@ export interface StoryState {
   ringStack: number;
   ringGreenWave: number;
   sheet: number;
+  /** Beat 1: 0..1 progress of the lime scan line down the spreadsheet's rows. */
+  scan: number;
   rail: number;
   activeTick: number;
+  /** Beats 2–4: how far the lime progress runs along the rail, 0..1. */
+  railFill: number;
+  /** Beat 2: 0..1 drives the three channel tiles popping in one after another. */
+  planTiles: number;
+  /** Card lean: X tips the top away from the viewer (paper on a desk), Z leans it into its travel along the rail. */
+  cardTilt: number;
+  cardLean: number;
+  /** Beat 3: the printed approval mark left on the card, and the ripple at the moment of contact. */
+  mark: number;
+  impact: number;
   stamp: { visible: number; press: number };
   person: number;
-  clock: { visible: number; sweep: number };
+  clock: { visible: number; sweep: number; window: number };
   plane: { visible: number; along: number };
   bubble: { visible: number; along: number };
   seal: { visible: number; drop: number };
@@ -142,11 +158,18 @@ export function storyAt(beat: number): StoryState {
     ringStack: 0,
     ringGreenWave: 0,
     sheet: 0,
+    scan: 0,
     rail: 0,
     activeTick: 0,
+    railFill: 0,
+    planTiles: 0,
+    cardTilt: 0,
+    cardLean: 0,
+    mark: 0,
+    impact: 0,
     stamp: { visible: 0, press: 0 },
     person: 0,
-    clock: { visible: 0, sweep: 0 },
+    clock: { visible: 0, sweep: 0, window: 0 },
     plane: { visible: 0, along: 0 },
     bubble: { visible: 0, along: 0 },
     seal: { visible: 0, drop: 0 },
@@ -161,17 +184,22 @@ export function storyAt(beat: number): StoryState {
     case 0:
       s.cardOut = t;
       s.ringStack = t;
-      s.ringOpacity = lerp(1, 0.3, t);
+      // The other invoices clear the stage completely, so the one being imported has it to itself.
+      s.ringOpacity = 1 - t;
       s.sheet = t;
+      s.cardTilt = -0.4 * t;
       break;
     case 1: {
       s.cardOut = 1;
       s.ringStack = 1;
-      s.ringOpacity = lerp(0.3, 0, t);
+      s.ringOpacity = 0;
       s.sheet = 1 - t;
-      // The card lifts 0.6 units out of the sheet over 0–60 % of the beat.
-      const lift = smoothstep(0, 0.6, l) * 0.6;
-      s.cardPosition = [s.cardPosition[0], s.cardPosition[1] + lift, s.cardPosition[2]];
+      // The rows are checked first (the preview), then the card rises off the sheet and stands up.
+      s.scan = smoothstep(0, 0.42, l);
+      const lift = smoothstep(0.3, 0.6, l);
+      s.cardPosition = [s.cardPosition[0], s.cardPosition[1] + lift * 0.6, s.cardPosition[2]];
+      s.cardTilt = -0.4 * (1 - lift);
+      s.cardLean = Math.sin(Math.PI * t) * 0.14; // leans into its glide onto the rail
       s.rail = t;
       break;
     }
@@ -181,6 +209,9 @@ export function storyAt(beat: number): StoryState {
       s.ringStack = 1;
       s.rail = 1;
       s.activeTick = smoothstep(0.3, 0.6, l);
+      s.railFill = lerp(stationFill(RAIL.stations[0]) * smoothstep(0.05, 0.5, l), stationFill(RAIL.stations[1]), t);
+      s.planTiles = smoothstep(0.15, 0.6, l) * (1 - t);
+      s.cardLean = -Math.sin(Math.PI * t) * 0.14;
       break;
     case 3:
       s.cardOut = 1;
@@ -188,10 +219,14 @@ export function storyAt(beat: number): StoryState {
       s.ringStack = 1;
       s.rail = 1;
       s.activeTick = 1;
+      s.railFill = stationFill(RAIL.stations[1]);
       s.outline = smoothstep(0, 0.3, l);
       s.person = smoothstep(0, 0.25, l) * (1 - t);
-      // The stamp descends, presses at 40–70 %, then lifts.
+      // The card tips back like paper on a desk; the stamp descends, presses at 40–70 %, then lifts and leaves a mark.
+      s.cardTilt = -0.78 * smoothstep(0, 0.22, l) * (1 - smoothstep(0.8, 1, l));
       s.stamp = { visible: smoothstep(0, 0.2, l) * (1 - smoothstep(0.85, 1, l)), press: smoothstep(0.25, 0.45, l) * (1 - smoothstep(0.7, 0.85, l)) };
+      s.mark = settle(smoothstep(0.44, 0.6, l));
+      s.impact = smoothstep(0.42, 0.68, l);
       break;
     case 4:
       s.cardOut = 1;
@@ -199,8 +234,10 @@ export function storyAt(beat: number): StoryState {
       s.ringStack = 1;
       s.rail = 1 - t;
       s.activeTick = 1;
+      s.railFill = lerp(stationFill(RAIL.stations[1]), stationFill(RAIL.stations[2]), smoothstep(0.4, 0.75, l));
       s.outline = 1 - smoothstep(0, 0.3, l);
-      s.clock = { visible: smoothstep(0, 0.15, l) * (1 - smoothstep(0.85, 1, l)), sweep: smoothstep(0, 0.4, l) };
+      s.mark = 1 - t;
+      s.clock = { visible: smoothstep(0, 0.15, l) * (1 - smoothstep(0.85, 1, l)), sweep: smoothstep(0, 0.4, l), window: smoothstep(0.3, 0.42, l) };
       s.plane = { visible: l >= 0.4 && l < 1 ? 1 : 0, along: smoothstep(0.4, 1, l) };
       break;
     case 5: {
