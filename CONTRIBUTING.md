@@ -1,8 +1,8 @@
 # Contributing
 
 TODO(contribution-policy): the owner has not decided how outside contributions are accepted (for example a Developer
-Certificate of Origin sign-off or a contributor licence agreement), and no licence has been chosen yet. Until both are
-decided, outside pull requests cannot be accepted, because there would be no agreed terms for the code they add.
+Certificate of Origin sign-off or a contributor licence agreement). The code is MIT licensed (LICENSE), but until the
+contribution policy is decided, outside pull requests cannot be accepted.
 
 Issues describing bugs or ideas are welcome (see the templates). Do not include real customer data, credentials or
 security vulnerabilities in an issue (SECURITY.md).

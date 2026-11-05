@@ -21,7 +21,7 @@ Changelog 1.1.0.
 5. The owner tags the commit (`git tag vX.Y.Z`, then pushes the tag). The release workflow re-runs `verify:all`, builds
    the images without pushing them, and keeps the evidence (reports, licence report) as an artifact.
 6. Publishing images or packages, and writing release notes on GitHub, are separate manual decisions. Before
-   distributing images, settle the licence decision and the LGPL review (docs/limitations.md).
+   distributing images, settle the LGPL review (docs/limitations.md); the project itself is MIT (LICENSE).
 
 ## Migrations
 

@@ -67,7 +67,7 @@ legal advice, and it makes no compliance claim. Consent, debt-collection rules, 
 with providers are for the operator and their advisers. TODO(disclaimer): the build guide's Section 2.4 wording
 was not available here; the owner may replace this paragraph with it. <!-- claims-ok: disclaimer -->
 
-No warranty: until a licence is chosen, nothing in this repository is offered under any terms.
+No warranty: the code is offered under the MIT licence (LICENSE), "as is", without warranty of any kind.
 
 ## Developing
 

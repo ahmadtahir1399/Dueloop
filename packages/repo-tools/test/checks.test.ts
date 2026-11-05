@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { claimFindings, piiFindings, reservedDomain, reservedPhone, scriptFindings } from '../src/checks.ts';
+import { claimFindings, LICENCE_DECISION, licenceFindings, piiFindings, reservedDomain, reservedPhone, scriptFindings } from '../src/checks.ts';
 import { scanText } from '../src/secrets.ts';
 
 const j = (...p: string[]) => p.join('_');
@@ -83,5 +83,21 @@ describe('script portability', () => {
       'package.json#bad2',
       'package.json#bad3',
     ]);
+  });
+});
+
+describe('licence presence', () => {
+  const repoRoot = path.resolve(import.meta.dirname, '../../..');
+  it('the recorded decision matches the LICENSE file the owner added (MIT)', () => {
+    expect(LICENCE_DECISION).toBe('MIT');
+    expect(licenceFindings(repoRoot)).toEqual([]);
+  });
+  it('a decided licence without a LICENSE file is a finding', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'licence-'));
+    try {
+      expect(licenceFindings(dir)).toEqual([{ where: '.', detail: 'licence decision is MIT but no LICENSE file exists' }]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

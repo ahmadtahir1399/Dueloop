@@ -13,7 +13,7 @@ item has evidence or says what is missing. Checked on 2026-10-29 at the commit t
 | [ ] | Personal data in git history | Every commit records the author's name and email address. They become public with the repository. History is not rewritten here (rule: no history rewrite); the owner decides whether that is acceptable |
 | [ ] | Internal notes | `CLAUDE.md` (instructions for the AI assistant that built this) and `docs/reports/` (per-phase engineering reports) are internal working documents. DECISION for the owner: keep, edit or remove before publishing |
 | [x] | The build guide excluded or sanitised | `docs/build-guide.md` is not in this repository at all (DECISION recorded: publish, sanitise or keep private) |
-| [ ] | Licence in place | No licence chosen: no LICENSE file, README says TODO(licence). Until chosen, nobody may reuse the code |
+| [x] | Licence in place | MIT, chosen by the owner: LICENSE, `package.json` and README agree; `pnpm repo:audit` checks the decision |
 | [ ] | SECURITY.md contact set | TODO(security-contact) |
 | [ ] | Contribution policy | TODO(contribution-policy) in CONTRIBUTING.md |
 | [ ] | Project name | TODO(project-name): "invoice-followup-agent" is a working name; no trademark check |
@@ -26,6 +26,6 @@ item has evidence or says what is missing. Checked on 2026-10-29 at the commit t
 | [ ] | A person has watched the demo video | not done: `pnpm demo:record` output is local only and the owner hosts it (TODO(video-url)) |
 | [ ] | Nothing tagged, published or made public | true at this commit; keep it so until every unchecked item above is decided |
 
-Placeholders to fill (search the repository for `TODO(`): project-name, licence, security-contact,
+Placeholders to fill (search the repository for `TODO(`): project-name, security-contact,
 contribution-policy, repo-url, support-hours, response-targets, escalation, on-call, monitoring-hookup,
 retention-policy, disclaimer, video-url.
