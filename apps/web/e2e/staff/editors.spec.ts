@@ -100,9 +100,11 @@ test.describe("owner", () => {
     await page.getByLabel("Name").fill("ERP sync");
     await page.getByRole("button", { name: "Create key" }).click();
     const secret = (await page.getByTestId("secret-once").locator("code").innerText()).trim();
-    expect(secret).toMatch(/^dl_[a-z0-9]{8}_/);
+    // The secret part is base64url and may itself contain "_", so split("_") could yield "" (always "contained").
+    const secretPart = /^dl_[a-z0-9]{8}_([A-Za-z0-9_-]{43,44})$/.exec(secret)?.[1] ?? "";
+    expect(secretPart).not.toBe("");
     await page.reload();
-    expect(await page.content()).not.toContain(secret.split("_")[2]);
+    expect(await page.content()).not.toContain(secretPart);
     await expect(page.getByTestId("key-list")).toContainText("ERP sync");
 
     await page.goto("/settings/integrations");

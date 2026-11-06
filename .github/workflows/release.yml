@@ -36,7 +36,7 @@ jobs:
       - name: Every suite (verify:all), including images and the demo contract
         run: pnpm verify:all
 
-      - name: Licence report (the project's notices until a licence decision exists)
+      - name: Licence report (third-party notices)
         if: always()
         run: pnpm licences:report
 
