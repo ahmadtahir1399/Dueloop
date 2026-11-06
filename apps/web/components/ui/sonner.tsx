@@ -3,6 +3,9 @@
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+// sonner 2.x also injects this CSS as a <style> tag with no nonce (it has no nonce option), which the nonce-only
+// style-src blocks, so toasts rendered unstyled. Imported here, the same rules ship in the app's own CSS ('self').
+import "sonner/dist/styles.css"
 
 // Toasts follow the same next-themes choice as the page (§3.1.4), as in shadcn's generated Toaster.
 const Toaster = ({ ...props }: ToasterProps) => {
