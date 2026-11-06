@@ -2,9 +2,9 @@
   "name": "@dueloop/web",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node init && next dev",
+    "build": "node init && next build",
+    "start": "node init && next start",
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {
@@ -51,7 +51,7 @@
     "@playwright/test": "1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/luxon": "^3.7.6",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
