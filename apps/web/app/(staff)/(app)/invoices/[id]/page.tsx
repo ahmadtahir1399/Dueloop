@@ -14,7 +14,7 @@ import { Chip, StatusChip } from "@/components/ui/status-chip";
 import { loadInvoice } from "@/lib/data/invoices";
 import { eventLabel } from "@/lib/event-labels";
 import { formatMinor, minorIsPositive } from "@/lib/money";
-import { NOT_RESUMABLE, parkedText } from "@/lib/parked";
+import { NOT_RESUMABLE, parkedFixHref, parkedFixPermission, parkedText } from "@/lib/parked";
 import { requirePermission } from "@/lib/session";
 import { formatDate, formatInstant } from "@/lib/time";
 import { resumeInvoice } from "./actions";
@@ -40,6 +40,8 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const activePromise = d.promises.find((p) => p.status === "active");
   const canPay = can(ctx.role, "payments.record") && minorIsPositive(inv.balance);
   const parked = inv.parked_reason;
+  const fixHref = parked ? parkedFixHref(parked) : null;
+  const showFix = fixHref !== null && can(ctx.role, parkedFixPermission(fixHref));
 
   return (
     <div className="grid gap-6">
@@ -75,6 +77,10 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
               <Button asChild size="sm" variant="outline">
                 <Link href="/approvals">Review</Link>
               </Button>
+            ) : showFix ? (
+              <Button asChild size="sm" variant="outline">
+                <Link href={fixHref}>Open settings</Link>
+              </Button>
             ) : undefined
           }
         >
@@ -82,7 +88,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
           {!NOT_RESUMABLE.has(parked) && can(ctx.role, "invoices.resume") ? (
             <ActionForm action={resumeInvoice} label="Resume reminders" className="mt-3 grid gap-2">
               <input type="hidden" name="invoice" value={inv.id} />
-              <p>Fix the cause first (for example the template, the sending account or the budget).</p>
+              <p>Fix the cause first, then resume.</p>
               <Button type="submit" size="sm" variant="outline" className="w-fit">
                 Resume reminders
               </Button>
