@@ -3,8 +3,6 @@ coverage/
 *.log
 .DS_Store
 # Secrets and local env: only the generated example is committed.
-.env
-.env.*
 !.env.example
 *.pem
 # Demo state (prompt 7): logs, pids, per-run credentials, recordings, drill output.
@@ -20,3 +18,4 @@ branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
 .gitignore
+config.bat

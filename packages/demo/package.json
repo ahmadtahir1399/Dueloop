@@ -13,7 +13,7 @@
     "@dueloop/links": "workspace:*",
     "@dueloop/ops": "workspace:*",
     "@dueloop/worker": "workspace:*",
-    "@supabase/supabase-js": "2.118.0",
+    "@supabase/supabase-js": "2.119.0",
     "luxon": "^3.7.2",
     "pg": "8.23.1"
   }
