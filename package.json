@@ -85,7 +85,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@supabase/supabase-js": "2.118.0",
+    "@supabase/supabase-js": "2.119.0",
     "@types/node": "^24.19.2",
     "@types/pg": "8.23.1",
     "eslint": "^10.13.0",
